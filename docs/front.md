@@ -1,6 +1,6 @@
 # Guide développement front-end
 
-Le front est un repo **Nuxt 3** standalone séparé : [Safe-Campus-front](../../Safe-Campus-front).
+Le front est un repo **Nuxt 4** standalone séparé : [Safe-Campus-front](../../Safe-Campus-front).
 
 Conventions (BEM, structure, CSS variables, devcontainer) documentées dans son `README.md` et `CLAUDE.md`.
 

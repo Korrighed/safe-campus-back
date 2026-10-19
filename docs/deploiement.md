@@ -1,37 +1,46 @@
 # Déploiement en production
 
+> **Aucun hébergeur n'est retenu.** Le livrable est un jeu d'images Docker de production, déployables sur tout hôte Docker. Le reverse proxy et le certificat TLS sont à fournir en amont par l'hébergement choisi.
+
 > `docker-compose.yml` (racine) est un stack de développement : `artisan serve`, bind mount du code source, Adminer exposé. Il n'est pas destiné à la production.
 
 ## Stack Docker prod
 
-`docker-compose.prod.yml` — buildé par Dockploy. Différences avec le stack dev :
+`docker-compose.prod.yml` + `docker/8.4/Dockerfile.prod`. Différences avec le stack dev :
 
-- Code copié dans l'image au build (`docker/8.4/Dockerfile.prod`), pas de bind mount.
-- `composer install --no-dev --optimize-autoloader --no-scripts` au build (pas à chaque démarrage).
-- Pas d'Adminer, pas de port PostgreSQL publié sur l'hôte — seul `sc_back` atteint `pgsql`.
+- Code copié dans l'image au build, pas de bind mount.
+- `composer install --no-dev --optimize-autoloader --no-scripts` au build, pas à chaque démarrage.
+- Pas d'Adminer, pas de port PostgreSQL publié sur l'hôte : seul `sc_back` atteint `pgsql`.
 - `container_name` et réseau (`scback_prod`) distincts du stack dev : les deux peuvent tourner en parallèle sans collision.
-- Dockploy gère le reverse proxy/TLS en amont : le conteneur ne fait que parler HTTP sur `APP_PORT` (pas de nginx à l'intérieur).
+- Le conteneur ne parle que HTTP sur `APP_PORT`, sans nginx à l'intérieur. Le TLS est terminé par le reverse proxy de l'hébergement.
+
+> ⚠️ **À régler avant la mise en production** — voir [securite-rgpd.md § 10](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre) :
+> - S-10 : `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` sont absents du bloc `environment:` de `docker-compose.prod.yml`. La migration `seed_visiteur` lève une exception sans mot de passe : le premier `migrate --force` échoue.
+> - S-11 : `Dockerfile.prod` lance `php artisan serve`, serveur de développement mono-processus. À remplacer par PHP-FPM + nginx ou FrankenPHP.
+> - S-06 : volumes persistants manquants pour `storage/app` et `storage/logs` (voir [Logs d'audit](#logs-daudit)).
 
 ## Variables d'environnement
 
-À saisir dans Dockploy (voir [.env.production.example](../.env.production.example) pour la liste exacte consommée par `docker-compose.prod.yml`) :
+À saisir dans la configuration de l'hébergement. Aucun fichier `.env` n'est copié dans l'image. Liste exacte : [.env.production.example](../.env.production.example).
 
 | Variable | Valeur dev | Valeur prod |
 |---|---|---|
-| `APP_ENV` | `local` | `production` (fixé dans docker-compose.prod.yml) |
-| `APP_DEBUG` | `true` | `false` (fixé dans docker-compose.prod.yml) — expose stacktraces et données sensibles sinon |
-| `APP_KEY` | généré en local | généré **une seule fois** (`php artisan key:generate --show`), jamais régénéré ensuite — le régénérer invalide sessions/cookies/données chiffrées existantes |
+| `APP_ENV` | `local` | `production` (fixé dans `docker-compose.prod.yml`) |
+| `APP_DEBUG` | `true` | `false` (fixé dans `docker-compose.prod.yml`). Sinon : stacktraces et données sensibles exposées. |
+| `APP_KEY` | généré en local | Généré **une seule fois** (`php artisan key:generate --show`), jamais régénéré. Le régénérer invalide sessions, cookies et données chiffrées existantes. |
 | `APP_URL` | `http://localhost:8000` | URL publique en HTTPS |
 | `DB_DATABASE` | `sc_back` | Nom de base spécifique |
 | `DB_USERNAME` | `sail` | Utilisateur dédié sans droits superuser |
 | `DB_PASSWORD` | `password` | Mot de passe fort (min. 20 caractères, aléatoire) |
-| `LOG_LEVEL` | `debug` | `error` (fixé dans docker-compose.prod.yml) |
-| `CORS_ALLOWED_ORIGINS` / `SANCTUM_STATEFUL_DOMAINS` | `localhost:3000` | domaine public du front |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `admin@safe-campus.nc` / `password` | Premier compte admin, créé au premier `migrate`. Mot de passe fort obligatoire (14 caractères, majuscule, minuscule, caractère spécial), sinon la migration échoue. Peut être retiré de Dokploy une fois le compte créé |
+| `LOG_LEVEL` | `debug` | `error` (fixé dans `docker-compose.prod.yml`) |
+| `CORS_ALLOWED_ORIGINS` / `SANCTUM_STATEFUL_DOMAINS` | `localhost:3000` | Domaine public du front. `CORS_ALLOWED_ORIGINS` n'est lu par aucun `config/cors.php` à ce jour (S-09). |
+| `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` | `visiteur@safe-campus.nc` / valeur du `.env` | Compte visiteur partagé du front, créé au premier `migrate`. Mot de passe dédié, différent du dev. À ajouter au bloc `environment:` (S-10). |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `admin@safe-campus.nc` / `password` | Premier compte admin, créé au premier `migrate`. Mot de passe fort obligatoire (14 caractères, majuscule, minuscule, caractère spécial), sinon la migration échoue. Peut être retiré une fois le compte créé. |
+| `SESSION_SECURE_COOKIE` | — | `true`. Absente de `docker-compose.prod.yml` à ce jour (S-13). |
 
-## Hook de déploiement Dockploy
+## Commandes post-déploiement
 
-`migrate`/`key:generate`/`filament:upgrade` ne tournent pas dans le conteneur (pas d'accès `.env` au build, voir `Dockerfile.prod`) : à configurer comme commande de déploiement Dockploy (pre- ou post-deploy selon ce que l'interface propose), exécutée dans le conteneur `sc_back` après chaque déploiement :
+`migrate`, `filament:upgrade` et `package:discover` ne tournent pas au build : le `.env` et `APP_KEY` n'existent pas à ce moment-là (voir `Dockerfile.prod`). Ils s'exécutent dans le conteneur `sc_back` après chaque déploiement, comme hook post-déploiement de l'hébergement ou à la main :
 
 ```bash
 php artisan package:discover --ansi
@@ -40,28 +49,26 @@ php artisan migrate --force
 php artisan storage:link
 ```
 
-> `public/storage` (symlink) est exclu du build (`.dockerignore`) : sans `storage:link` au hook, les médias uploadés (images, PDF) renvoient 404 côté front.
+> `public/storage` (symlink) est exclu du build (`.dockerignore`). Sans `storage:link`, les médias uploadés (images, PDF) renvoient 404 côté front.
 
-> `php artisan migrate --force` bypass la confirmation interactive — ne jamais l'exécuter sur une base de production sans sauvegarde préalable. Ne jamais inclure `db:seed` (webmaster de démo) dans ce hook — réservé au dev.
+> `php artisan migrate --force` bypass la confirmation interactive. Ne jamais l'exécuter sur une base de production sans sauvegarde préalable. Ne jamais inclure `db:seed` (données de démonstration) : réservé au dev.
 >
-> `key:generate` ne fait **pas** partie de ce hook : à exécuter une seule fois à la main avant le tout premier déploiement, la valeur générée devient `APP_KEY` dans les variables d'environnement Dockploy (voir tableau ci-dessus).
+> `key:generate` ne fait **pas** partie de ces commandes. Il s'exécute une seule fois, à la main, avant le tout premier déploiement. La valeur générée devient `APP_KEY` (voir tableau ci-dessus).
+
+## Front
+
+Déploiement du front : [README de Safe-Campus-front § Déploiement](../../Safe-Campus-front/README.md#déploiement-prod). `NUXT_PUBLIC_API_BASE` doit pointer sur l'URL publique HTTPS de ce back.
 
 ## Logs d'audit
 
-Qui a fait quoi, quand, depuis quelle IP : canal `audit` (`config/logging.php`), distinct de
-`laravel.log`.
+Qui a fait quoi, quand, depuis quelle IP : canal `audit` (`config/logging.php`), distinct de `laravel.log`.
 
-- **Fichiers** : `storage/logs/audit-AAAA-MM-JJ.log`, un par jour, **365 jours** de conservation
-  (purge automatique par Laravel).
+- **Fichiers** : `storage/logs/audit-AAAA-MM-JJ.log`, un par jour, **365 jours** de conservation (purge automatique par Laravel).
 - **Format** : une entrée JSON par ligne (`message`, `context`, `datetime` en UTC).
-- **Contenu** : création, modification (avant/après) et suppression de tout modèle métier ;
-  connexion, échec de connexion (email tenté), déconnexion, inscription ; transfert d'histoires à la
-  suppression d'un rédacteur. Jamais de mot de passe ni de jeton ; textes longs tronqués à 200
-  caractères.
+- **Contenu** : création, modification (avant/après) et suppression de tout modèle métier. Connexion, échec de connexion (email tenté), déconnexion, inscription. Transfert d'histoires à la suppression d'un rédacteur. Jamais de mot de passe ni de jeton. Textes longs tronqués à 200 caractères.
 - **Niveau** : `info`, fixe, indépendant de `LOG_LEVEL` (qui vaut `error` en production).
 - **Écrit après commit** : une action annulée (transaction en échec) n'est pas tracée.
-- **Non tracé** : les rattachements N-N (histoire ↔ sous-thèmes, médias ↔ sous-thèmes), qui ne
-  passent pas par les événements de modèle.
+- **Non tracé** : les rattachements N-N (histoire ↔ sous-thèmes, médias ↔ sous-thèmes), qui ne passent pas par les événements de modèle.
 - **Consultation** : accès serveur uniquement, aucun écran dans le back-office.
 
 ```bash
@@ -69,8 +76,4 @@ docker exec SC_Back_Prod ls storage/logs
 docker exec SC_Back_Prod tail -f storage/logs/audit-2026-09-28.log
 ```
 
-> ⚠️ **À régler avant la mise en production** : `storage/logs` est à l'intérieur du conteneur, sans
-> volume. Chaque redéploiement recrée le conteneur et efface les logs (même problème pour
-> `storage/app`, qui contient les médias uploadés). Prévoir des volumes dans
-> `docker-compose.prod.yml`, et créer `storage/logs` dans `Dockerfile.prod` (le dossier est exclu par
-> `.dockerignore` : monté tel quel, il appartiendrait à root et `scback` ne pourrait plus y écrire).
+> ⚠️ **À régler avant la mise en production** : `storage/logs` est à l'intérieur du conteneur, sans volume. Chaque redéploiement recrée le conteneur et efface les logs. Même problème pour `storage/app`, qui contient les médias uploadés. Prévoir des volumes dans `docker-compose.prod.yml`, et créer `storage/logs` dans `Dockerfile.prod`. Le dossier est exclu par `.dockerignore` : monté tel quel, il appartiendrait à root et `scback` ne pourrait plus y écrire.

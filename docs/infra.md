@@ -68,7 +68,7 @@ Mesure au repos, aucune requête en cours. `SC_Front` domine : le serveur de dev
 
 ### Hypothèses
 
-- Laravel en production : **128–256 MB RAM** (PHP-FPM, sans Xdebug)
+- Laravel en production : **128–256 MB RAM** (PHP-FPM, sans Xdebug). L'image actuelle lance encore `php artisan serve` : à remplacer (S-11, [securite-rgpd.md](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre))
 - PostgreSQL : **256 MB–1 GB RAM** selon charge et taille des données
 - Nuxt en production : build statique ou SSR Node — le serveur de dev Vite et ses 275 MB n'existent pas
 - Pas de Redis dans le stack — à prévoir si queues volumineuses

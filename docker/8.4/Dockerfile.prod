@@ -27,12 +27,12 @@ USER scback
 
 # --no-scripts : les scripts composer (package:discover, filament:upgrade) ont
 # besoin d'un .env/APP_KEY qui n'existe pas au moment du build (.env n'est jamais
-# copie dans l'image). Ils tournent dans le hook de deploiement Dockploy a la place,
+# copie dans l'image). Ils tournent en commandes post-deploiement a la place,
 # avec migrate --force (voir docs/deploiement.md).
 RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
 EXPOSE ${APP_PORT}
 
-# migrate/key:generate/seed tournent en hook de deploiement Dockploy, pas ici
+# migrate/key:generate/seed tournent en commandes post-deploiement, pas ici
 # (voir docs/deploiement.md) : le conteneur ne fait que servir l'appli.
 CMD php artisan serve --host=0.0.0.0 --port="${APP_PORT:-8000}"

@@ -31,7 +31,7 @@ services:
         networks:
             - scback_prod
         # Point de depart, pas mesure en charge reelle (a ajuster selon le trafic
-        # observe sur Dockploy) : cf. docs/infra.md pour la mesure au repos en dev.
+        # observe en production) : cf. docs/infra.md pour la mesure au repos en dev.
         deploy:
             resources:
                 limits:

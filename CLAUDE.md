@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Laravel 13 · PHP 8.4 · Filament 3 · PostgreSQL 17
 
-> API/admin backend uniquement. L'UI applicative est [Safe-Campus-front](../Safe-Campus-front) (Nuxt 3 standalone, repo séparé). `routes/api.php` n'existe pas encore — à créer avant toute intégration réelle avec le front.
+> API/admin backend uniquement. L'UI applicative est [Safe-Campus-front](../Safe-Campus-front) (Nuxt 4 standalone, repo séparé), qui consomme `routes/api.php`.
 
-👉 Voir [README](README.md) pour l'installation et le stack Docker, [docs/deploiement.md](docs/deploiement.md) pour la mise en production.
+👉 Voir [README](README.md) pour l'installation et le stack Docker, [docs/README.md](docs/README.md) pour l'index de la documentation, [docs/deploiement.md](docs/deploiement.md) pour la mise en production.
 
 > Le code s'édite sur l'hôte, les commandes s'exécutent dans le container via `docker compose exec sc_back <cmd>`.
 
@@ -47,7 +47,7 @@ app/
 
 routes/
 ├── web.php             Actuellement minimal (health check `/`)
-└── api.php             N'existe pas encore — à créer pour servir le front Nuxt
+└── api.php             Routes JSON du front Nuxt (login visiteur, themes, sous-themes, histoires)
 ```
 
 Le schéma de base de données est décrit dans [docs/schema_bd.md](docs/schema_bd.md).
@@ -60,13 +60,11 @@ return HistoireResource::collection($histoires);
 return response()->json(['message' => 'created'], 201);
 ```
 
-**Routes** use resource routing with auth middleware:
+**Routes** (`routes/api.php`) bind models by `ref`, never by numeric id:
 ```php
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::apiResource('histoires', HistoireController::class);
-    Route::apiResource('histoires.scenes', SceneController::class);  // nested
-});
+Route::get('sous-themes/{sousTheme:ref}', [SousThemeController::class, 'show']);
 ```
+Read routes are public today; moving them under `auth:sanctum` is planned (S-01, [docs/securite-rgpd.md](docs/securite-rgpd.md)).
 
 **PostgreSQL-specific patterns:**
 - Use `DB::select()` with raw CTEs for recursive scene→choice→scene graph traversal

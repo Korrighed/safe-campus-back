@@ -1,8 +1,9 @@
 # Schéma de base de données — Safe Campus
 
-> **État : cible.** Aucune de ces tables n'est encore migrée. `database/migrations/` ne contient
-> que `users`, `cache`, `jobs` et `personal_access_tokens`. Ce document décrit ce qu'il faut
-> construire, pas ce qui existe.
+> **État : implémenté.** Toutes les tables décrites ici sont migrées (dernière migration :
+> `2026_09_28_110100_seed_admin`). Les diagrammes restent conceptuels : certaines colonnes ajoutées
+> depuis (`actif`, `ordre`, `latitude` / `longitude`, `province`, `description`…) sont listées dans
+> les migrations et dans [textes-front.md](textes-front.md#6-bilan-des-changements-de-schéma).
 
 Le schéma est découpé en trois domaines indépendants. Ils ne partagent que le socle commun et la
 taxonomie.
@@ -704,7 +705,8 @@ explicitement sur `sous_themes.theme_id`, `telephones.contact_id`, `signalements
 
 ## Enums
 
-Déclarés dans `app/Enums` (répertoire à créer), castés via `$casts` sur les modèles.
+Déclarés dans `app/Enums`, castés via `$casts` sur les modèles. `Contact.Province` (`p-sud`,
+`p-nord`, `p-iles`) s'y ajoute.
 
 | Enum | Valeurs |
 |---|---|
@@ -724,12 +726,12 @@ de paramètre d'URL dans les filtres Filament. L'accentuation reste au libellé 
 | # | Question | Impact |
 |---|---|---|
 | 1 | **Partage de scène et sous-arbre.** Une scène partagée emporte ses `Choix`, donc tout son sous-arbre aval. Si deux histoires doivent réutiliser la même scène avec des choix différents, `Choix` a besoin d'un `FK_Histoire` et le modèle change. | Structurel, à trancher avant migration |
-| 2 | **Carte du front.** Géocodage de `Localisation` à la volée, ou colonnes `Latitude` / `Longitude` stockées ? | Deux colonnes, mais un pipeline de géocodage |
+| 2 | ~~**Carte du front.**~~ **Tranché** : colonnes `latitude` / `longitude` stockées, géocodage Nominatim à la saisie (`GeocodingService`) avec ajustement sur carte dans Filament. | — |
 | 3 | **Horaires structurés.** `Horaires` texte libre suffit pour l'affichage. Si le front doit calculer « ouvert maintenant », il faut une table `Plage_horaire` (`FK_Contact`, jour, heure début, heure fin). | Une table |
 | 4 | **Contrainte `Choix.Issue`.** Poser un CHECK `Issue IS NOT NULL ⟺ FK_Next_Scene IS NULL` ? Interdit les états incohérents, fige la règle métier. | Une contrainte |
 | 5 | **Signalement.** Champ d'état (`nouveau`, `en_cours`, `traite`, `archive`) et cible de routage. Question ouverte côté DNSI. | Bloquant pour le module |
-| 6 | **Gestion des rôles.** Colonne `Role` + Policies, ou Spatie Permission + Filament Shield. | Voir ci-dessous |
-| 7 | **Emplacement de `contact.csv`.** Versionné sous `public/data/` — donc servi en HTTP. À déplacer sous `database/seeders/data/` avant l'écriture du seeder. | À faire, pas à arbitrer |
+| 6 | ~~**Gestion des rôles.**~~ **Tranché** : colonne `Role` + Policies. | Voir ci-dessous |
+| 7 | ~~**Emplacement de `contact.csv`.**~~ **Fait** : plus aucun `contact.csv` dans le dépôt, donc plus rien servi en HTTP. | — |
 
 ### Sur le point 6
 
@@ -748,8 +750,8 @@ Ni l'un ni l'autre n'est installé.
 | Granularité | rôle entier | action × ressource |
 | Coût d'écriture | 1 enum, 1 policy par ressource | installation + `shield:generate` |
 
-**Recommandation : colonne `Role`.** Deux rôles fixes, définis à l'avance, sans besoin de créer un
-rôle en production. Spatie et Shield répondent à un problème que le projet n'a pas. Le passage à
+**Retenu : colonne `Role`.** Quatre rôles fixes (`webmaster`, `redacteur`, `admin`, `visiteur`),
+définis à l'avance, sans besoin de créer un rôle en production. Spatie et Shield répondent à un problème que le projet n'a pas. Le passage à
 Spatie reste possible plus tard sans toucher au reste du schéma : il ajoute des tables, il n'en
 modifie aucune.
 

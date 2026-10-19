@@ -157,7 +157,7 @@ Le `.env` est lu par Docker avant le build : `WWWUSER`/`WWWGROUP` créent l'util
 | `SC_Back`     | Laravel (PHP 8.4) | ce repo                                   |
 | `SC_Postgres` | PostgreSQL 17     | ce repo                                   |
 | `SC_Adminer`  | Interface DB      | ce repo                                   |
-| `SC_Front`    | Nuxt 3 + Vite HMR | [Safe-Campus-front](../Safe-Campus-front) |
+| `SC_Front`    | Nuxt 4 + Vite HMR | [Safe-Campus-front](../Safe-Campus-front) |
 
 Ouvrir le code : `code .` depuis WSL, à la racine du repo.
 
@@ -202,7 +202,7 @@ docker compose up -d
 
 Le reste du code vit dans le bind mount et ne nécessite aucun rebuild.
 
-> Ce `docker-compose.yml` est un stack de **développement** uniquement. La stack de production (`docker-compose.prod.yml`, `docker/8.4/Dockerfile.prod`, buildée par Dockploy) est documentée dans [docs/deploiement.md](docs/deploiement.md).
+> Ce `docker-compose.yml` est un stack de **développement** uniquement. La stack de production (`docker-compose.prod.yml`, `docker/8.4/Dockerfile.prod`) est documentée dans [docs/deploiement.md](docs/deploiement.md). Aucun hébergeur n'est retenu à ce jour.
 
 ### Le front
 
@@ -220,7 +220,7 @@ storage/app/public/medias/
 └── document/     ← PDF (fiches ressources)
 ```
 
-Aucun nouveau volume Docker : `sc_back` bind-mount déjà tout le repo (`.:/var/www/html`), `storage/` persiste comme le reste du code. Un volume nommé ne sera à envisager que pour une éventuelle stack de prod sans bind mount (pas encore définie, voir [docs/deploiement.md](docs/deploiement.md)).
+Aucun nouveau volume Docker : `sc_back` bind-mount déjà tout le repo (`.:/var/www/html`), `storage/` persiste comme le reste du code. La stack de prod n'a pas de bind mount : elle a besoin d'un volume nommé pour `storage/app`, pas encore déclaré (voir [docs/deploiement.md](docs/deploiement.md)).
 
 Servis en statique via le lien symbolique `public/storage` (voir `storage:link` ci-dessus), donc accessibles en lecture directe par le front — un PDF s'ouvre dans un nouvel onglet via un simple lien (`target="_blank"`, pas de viewer embarqué), sans endpoint de téléchargement dédié.
 
@@ -306,21 +306,21 @@ graph TD
     root["safe-campus/"]
 
     root --> scback["Safe-Campus-back/\nAPI/admin Laravel\n+ Filament (autonome)"]
-    root --> scfront["Safe-Campus-front/\nUI principale\nNuxt 3 standalone"]
+    root --> scfront["Safe-Campus-front/\nUI principale\nNuxt 4 standalone"]
 
     scback --> readme["README.md\nGuide d'installation"]
     scback --> dc["docker-compose.yml\nOrchestration : sc_back, pgsql, adminer"]
     scback --> app["app/\nCode PHP Laravel + Filament"]
-    scback --> docker["docker/8.4/\nDockerfile PHP 8.4 (dev)\nDockerfile.prod (Dockploy)\nstart-container (entrypoint)"]
-    scback --> docs["docs/\nDocumentation"]
+    scback --> docker["docker/8.4/\nDockerfile PHP 8.4 (dev)\nDockerfile.prod (prod)\nstart-container (entrypoint)"]
+    scback --> docs["docs/\nDocumentation\n(index : docs/README.md)"]
 
-    docs --> back["back.md\nConventions backend"]
+    docs --> cdc["cahier-des-charges-techniques.md"]
+    docs --> secu["securite-rgpd.md"]
+    docs --> maint["maintenance-evolutive-2025-2029.md"]
     docs --> deploy["deploiement.md\nMise en production"]
-    docs --> front["front.md\nPointeur vers Safe-Campus-front"]
-    docs --> infra["infra.md\nInfrastructure"]
     docs --> schema["schema_bd.md\nSchéma de base de données"]
 
-    scfront --> fdocker["docker/\nDockerfile Node 22 (dev)\nDockerfile.prod (Dockploy)\nstart-container (entrypoint dev)"]
+    scfront --> fdocker["docker/\nDockerfile Node 22 (dev)\nDockerfile.prod (prod)\nstart-container (entrypoint dev)"]
     scfront --> fdc["docker-compose.yml\nOrchestration : sc_front\n(reseau `scback` partage avec le back)"]
     scfront --> pages["pages/\nPages Nuxt"]
     scfront --> components["components/\nComposants Vue"]

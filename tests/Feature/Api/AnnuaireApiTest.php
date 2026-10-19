@@ -249,8 +249,8 @@ class AnnuaireApiTest extends TestCase
         $response->assertJsonPath('data.theme.libelle_court', 'Addictions');
         $this->assertNotEmpty($response->json('data.article'));
         $this->assertNotEmpty($response->json('data.intro_ressources'));
-        // 2 fiches reflexives + le depliant DECLIC (partage avec tabac/drogue).
-        $response->assertJsonCount(3, 'data.documents');
+        // La fiche reflexive + le depliant DECLIC (partage avec tabac/drogue).
+        $response->assertJsonCount(2, 'data.documents');
     }
 
     public function test_get_sous_theme_embarque_les_telephones_des_contacts_avec_numero_vert(): void

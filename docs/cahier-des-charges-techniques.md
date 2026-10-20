@@ -42,7 +42,7 @@ Les étudiants confrontés à une addiction, à une souffrance psychique ou à d
 
 | Acteur | Besoin | Accès |
 |---|---|---|
-| Étudiant | Trouver vite et discrètement une information fiable et un contact joignable. Consultation sur smartphone, souvent dans un moment de stress. | Site étudiant, mot de passe partagé (compte visiteur) |
+| Étudiant | Trouver vite et discrètement une information fiable et un contact joignable. Consultation sur smartphone, souvent dans un moment de stress. | Site étudiant public. Pendant les événements du prototype : portillon visiteur à mot de passe partagé. |
 | Webmaster | Tenir à jour la taxonomie, les fiches, l'annuaire et les médias. | Back-office, rôle webmaster |
 | Rédacteur | Écrire, illustrer et publier des histoires interactives. | Back-office, rôle rédacteur |
 | Administrateur | Valider les demandes de compte, gérer les rôles et les suppressions. | Back-office, rôle administrateur |
@@ -86,7 +86,7 @@ Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans co
 
 | Route | Fonction | État |
 |---|---|---|
-| `POST /api/login` | Authentifie le compte visiteur et renvoie un jeton d'accès. | Conforme |
+| `POST /api/login` | Ouvre le portillon visiteur du prototype et renvoie un jeton d'accès. | Conforme |
 | `GET /api/themes` | Thèmes et sous-thèmes en version légère, pour l'accueil. | Conforme |
 | `GET /api/sous-themes/{ref}` | Détail d'un sous-thème : article, contacts actifs triés, téléphones, histoires publiées. | Conforme |
 | `GET /api/histoires/{ref}` | Graphe complet d'une histoire publiée, en une seule requête. | Conforme |
@@ -108,14 +108,14 @@ Une ressource refusée disparaît du menu du back-office. Appelée directement, 
 
 | Action | Anonyme | Visiteur | Webmaster | Rédacteur | Administrateur |
 |---|---|---|---|---|---|
-| Consulter le site étudiant | Non | Oui | Oui ¹ | Oui ¹ | Oui ¹ |
+| Consulter le site étudiant | Oui ¹ | Oui | Oui ¹ | Oui ¹ | Oui ¹ |
 | Appeler l'API de lecture | Oui ² | Oui | Oui | Oui | Oui |
 | S'inscrire au back-office | Oui | Non | Non | Non | Non |
 | Se connecter au back-office | Non | Non | Oui | Oui | Oui |
 | Voir le guide du tableau de bord | Non | Non | Oui | Oui | Non |
 
-¹ Avec le mot de passe partagé, comme tout étudiant.
-² L'API de lecture répond aujourd'hui sans jeton. Cible : refusé (exigence de sécurité non conforme, section 5).
+¹ Le site est public. Pendant les événements du prototype, il faut d'abord passer le portillon visiteur (mot de passe partagé).
+² L'API de lecture est publique par conception.
 
 ### 4.2 Contenus
 
@@ -193,13 +193,12 @@ Garde-fou : un administrateur ne pouvant agir sur son propre compte, le dernier 
 | Exigence | Vérification | État |
 |---|---|---|
 | Accès au back-office refusé à tout compte sans rôle et au compte visiteur. | Scénarios 7 et 8 | Conforme |
-| L'API de lecture exige le jeton visiteur. | Appel sans jeton refusé | Non conforme |
-| Limitation des tentatives : 5 connexions et 2 inscriptions par minute au back-office, limitation équivalente sur la connexion visiteur. | Essais répétés | Partiel : rien sur la connexion visiteur |
+| Limitation des tentatives : 5 connexions et 2 inscriptions par minute au back-office. | Essais répétés | Conforme |
 | Mots de passe du back-office : 14 à 72 caractères, majuscule, minuscule, caractère spécial, refus des mots de passe ayant fuité. Stockage haché. | Essai d'inscription | Conforme |
 | Le message « en attente de validation » n'apparaît qu'après un mot de passe correct : il ne révèle pas si un email est inscrit. | Scénario 7 | Conforme |
-| Jetons d'accès à durée de vie limitée. | Configuration de l'authentification | Non conforme : durée illimitée |
 | Cookies sécurisés en production, en-têtes HTTP de sécurité. | Inspection des réponses HTTP | Non conforme |
 | Requêtes inter-domaines limitées au domaine du site étudiant. | Appel depuis un autre domaine | Non conforme |
+| Téléversement des médias limité à une liste blanche de formats vérifiés sur le contenu (ni SVG ni HTML), 10 Mo par fichier. | Tests automatisés du back-office | Conforme |
 
 ### 5.4 Traçabilité
 
@@ -303,7 +302,7 @@ Aucun hébergeur n'est retenu. Le livrable est un jeu d'images Docker de product
 | Volumes persistants pour les médias et les journaux. | Non conforme : un redéploiement les efface |
 | Serveur d'application de production (PHP-FPM ou équivalent). | Non conforme : serveur de développement `artisan serve` |
 | Conteneurs exécutés avec un utilisateur non administrateur. | Partiel : back conforme, site étudiant exécuté en administrateur |
-| Toutes les variables requises transmises au conteneur, dont les identifiants du compte visiteur. | Non conforme : le premier déploiement échoue |
+| Images de production sans portillon visiteur (compte, page de connexion, middleware). | Non conforme : les images exigent encore le compte visiteur, à adapter au lancement officiel |
 | Sauvegarde quotidienne de la base et des médias, stockée hors du serveur, restauration testée chaque trimestre. | Non conforme |
 | Supervision de la disponibilité et des erreurs, avec alertes. | Non conforme |
 | Dimensionnement : 2 processeurs virtuels, 2 Go de mémoire, 40 Go de disque pour 50 à 500 utilisateurs simultanés. Minimum : 1 processeur virtuel, 1 Go. | Estimation |

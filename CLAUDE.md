@@ -64,7 +64,7 @@ return response()->json(['message' => 'created'], 201);
 ```php
 Route::get('sous-themes/{sousTheme:ref}', [SousThemeController::class, 'show']);
 ```
-Read routes are public today; moving them under `auth:sanctum` is planned (S-01, [docs/securite-rgpd.md](docs/securite-rgpd.md)).
+Read routes are public by design. The visitor login is a prototype-only gate for events, not authentication, and is removed at the official launch ([docs/securite-rgpd.md § 4.1](docs/securite-rgpd.md)).
 
 **PostgreSQL-specific patterns:**
 - Use `DB::select()` with raw CTEs for recursive scene→choice→scene graph traversal

@@ -15,7 +15,7 @@
 - Le conteneur ne parle que HTTP sur `APP_PORT`, sans nginx à l'intérieur. Le TLS est terminé par le reverse proxy de l'hébergement.
 
 > ⚠️ **À régler avant la mise en production** — voir [securite-rgpd.md § 10](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre) :
-> - S-10 : `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` sont absents du bloc `environment:` de `docker-compose.prod.yml`. La migration `seed_visiteur` lève une exception sans mot de passe : le premier `migrate --force` échoue.
+> - S-10 : les images exigent encore le compte visiteur du prototype. `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` sont absents du bloc `environment:` de `docker-compose.prod.yml`, et la migration `seed_visiteur` lève une exception sans mot de passe : le premier `migrate --force` échoue. Le portillon visiteur (compte, page de connexion, middleware) est à retirer au lancement officiel.
 > - S-11 : `Dockerfile.prod` lance `php artisan serve`, serveur de développement mono-processus. À remplacer par PHP-FPM + nginx ou FrankenPHP.
 > - S-06 : volumes persistants manquants pour `storage/app` et `storage/logs` (voir [Logs d'audit](#logs-daudit)).
 
@@ -34,7 +34,7 @@
 | `DB_PASSWORD` | `password` | Mot de passe fort (min. 20 caractères, aléatoire) |
 | `LOG_LEVEL` | `debug` | `error` (fixé dans `docker-compose.prod.yml`) |
 | `CORS_ALLOWED_ORIGINS` / `SANCTUM_STATEFUL_DOMAINS` | `localhost:3000` | Domaine public du front. `CORS_ALLOWED_ORIGINS` n'est lu par aucun `config/cors.php` à ce jour (S-09). |
-| `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` | `visiteur@safe-campus.nc` / valeur du `.env` | Compte visiteur partagé du front, créé au premier `migrate`. Mot de passe dédié, différent du dev. À ajouter au bloc `environment:` (S-10). |
+| `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` | `visiteur@safe-campus.nc` / valeur du `.env` | Portillon visiteur du prototype, créé au premier `migrate`. Mot de passe changé entre deux événements. Sans objet après le lancement officiel (S-10). |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `admin@safe-campus.nc` / `password` | Premier compte admin, créé au premier `migrate`. Mot de passe fort obligatoire (14 caractères, majuscule, minuscule, caractère spécial), sinon la migration échoue. Peut être retiré une fois le compte créé. |
 | `SESSION_SECURE_COOKIE` | — | `true`. Absente de `docker-compose.prod.yml` à ce jour (S-13). |
 

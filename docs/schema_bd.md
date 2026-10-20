@@ -1,9 +1,8 @@
 # Schéma de base de données — Safe Campus
 
-> **État : implémenté.** Toutes les tables décrites ici sont migrées (dernière migration :
-> `2026_09_28_110100_seed_admin`). Les diagrammes restent conceptuels : certaines colonnes ajoutées
-> depuis (`actif`, `ordre`, `latitude` / `longitude`, `province`, `description`…) sont listées dans
-> les migrations et dans [textes-front.md](textes-front.md#6-bilan-des-changements-de-schéma).
+> **État : implémenté.** Toutes les tables décrites ici sont migrées. Les diagrammes restent
+> conceptuels : certaines colonnes (`actif`, `ordre`, `latitude` / `longitude`, `province`,
+> `description`…) ne sont listées que dans `database/migrations/`.
 
 Le schéma est découpé en trois domaines indépendants. Ils ne partagent que le socle commun et la
 taxonomie.

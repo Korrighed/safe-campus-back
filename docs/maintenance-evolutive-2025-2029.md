@@ -95,7 +95,7 @@ gantt
 
 | Période | Action | Type | Déclencheur |
 |---|---|---|---|
-| 4e trimestre 2026 | Réaliser les mesures de sécurité de priorité haute : jeton exigé sur l'API, limitation des connexions visiteur, durée de vie des jetons, volumes et sauvegardes, variables du compte visiteur, serveur d'application de production | Corrective | Bloquant pour la mise en production |
+| 4e trimestre 2026 | Réaliser les mesures de sécurité de priorité haute : volumes et sauvegardes, serveur d'application de production, retrait du portillon visiteur des images au lancement officiel | Corrective | Bloquant pour la mise en production |
 | 4e trimestre 2026 | Activer Dependabot ou Renovate sur les deux dépôts | Préventive | Aucun outil de veille en place |
 | 4e trimestre 2026 | Mettre en place une CI : lint, typecheck, tests, build des images | Préventive | Aucune CI ; vérifications à la main |
 | 1er trimestre 2027 | Migrer Node 22 → Node 24 (images Docker du front) | Adaptative | EOL Node 22 au 30/04/2027 |
@@ -106,7 +106,7 @@ gantt
 | 2e et 3e trimestres 2029 | Migrer PostgreSQL 17 → version suivante (`pg_dump` / `pg_restore` ou `pg_upgrade`) | Adaptative | EOL PostgreSQL 17 au 08/11/2029 |
 | Mensuel | Revue des dépendances mineures Composer / npm | Préventive | — |
 | Trimestriel | Test de restauration, revue des comptes, revue des dates EOL | Préventive | — |
-| Annuel (rentrée) | Rotation du mot de passe visiteur, révocation des jetons | Préventive | Politique de sécurité |
+| Entre deux événements du prototype | Changement du mot de passe du portillon visiteur | Préventive | Politique de sécurité |
 
 ---
 
@@ -168,11 +168,10 @@ Rien en place. À définir avec l'hébergeur retenu :
 
 | Risque | Gravité | Probabilité | Mesure |
 |---|---|---|---|
-| Premier déploiement en échec : `VISITEUR_PASSWORD` non transmis au conteneur | Bloquant | Certaine en l'état | Transmettre les identifiants visiteur au conteneur |
+| Premier déploiement en échec : les images exigent encore le compte visiteur du prototype | Bloquant | Certaine en l'état | Retirer le portillon visiteur des images au lancement officiel |
 | Serveur `artisan serve` en production : mono-processus, non prévu pour la charge | Élevé | Élevée | Serveur d'application de production |
 | Perte des médias et journaux à chaque redéploiement (pas de volume) | Élevé | Certaine en l'état | Volumes persistants |
 | Aucune sauvegarde définie | Élevé | Élevée si mise en prod sans correction | Sauvegarde (section 7) |
-| API de lecture accessible sans jeton | Moyen | Élevée | Jeton exigé sur l'API |
 | Aucun porteur de maintenance après la SAE | Élevé | Élevée | Point à arrêter n° 1 |
 | Absence de CI : régressions non détectées | Moyen | Moyenne | Feuille de route, 4e trimestre 2026 |
 | Dépendances obsolètes sans veille automatique | Moyen | Moyenne | Dependabot / Renovate |

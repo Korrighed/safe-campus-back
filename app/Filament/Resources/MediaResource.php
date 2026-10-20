@@ -21,6 +21,11 @@ class MediaResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    /**
+     * Supports visuels (aplats, logos) : 10 Mo suffisent largement.
+     */
+    public const TAILLE_MAX_KO = 10240;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -45,16 +50,27 @@ class MediaResource extends Resource
                     ))
                     ->required()
                     ->native(false)
-                    ->live(),
+                    ->live()
+                    // Le type fixe le repertoire de stockage : le changer apres
+                    // coup laisserait le fichier dans le repertoire d'un autre type.
+                    ->disabledOn('edit')
+                    ->helperText(fn (string $operation) => $operation === 'edit'
+                        ? 'Non modifiable : pour changer de type, créez un nouveau média.'
+                        : null),
                 Forms\Components\FileUpload::make('chemin')
                     ->label('Fichier')
                     ->disk('public')
                     ->directory(fn (Get $get) => 'medias/'.($get('type') ?? MediaType::Document->value))
                     ->visibility('public')
+                    // Sans type choisi, aucun format n'est accepte.
+                    ->acceptedFileTypes(fn (Get $get) => MediaType::tryFrom((string) $get('type'))?->typesMimeAcceptes() ?? [])
+                    ->maxSize(self::TAILLE_MAX_KO)
                     ->downloadable()
                     ->openable()
                     ->required()
-                    ->helperText('Stocke sous storage/app/public/medias/{type}/, servi via /storage/... (voir README).'),
+                    ->helperText(fn (Get $get) => ($type = MediaType::tryFrom((string) $get('type')))
+                        ? $type->formatsAcceptes().', 10 Mo maximum.'
+                        : 'Choisissez d\'abord le type de média.'),
             ]);
     }
 

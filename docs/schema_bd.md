@@ -622,16 +622,19 @@ Filament ouvre une session sur le guard `web`, Sanctum utilise le guard `sanctum
 
 ## Taxonomie
 
-| Thème (`Ref`) | Sous-thèmes (`Ref`) |
-|---|---|
-| `sante_mentale` | `detresse_psychologique`, `crise_suicidaire` |
-| `addictions` | `alcool`, `cannabis_stupefiants`, `tabac`, `jeux_ecrans` |
-| `vss` | `violences_sexuelles`, `violences_intrafamiliales` |
-| `transverse` | `urgences` |
+Source : `database/seeders/ThemeSeeder.php` et `SousThemeSeeder.php`, joués par la migration
+`2026_07_31_120000_seed_taxonomie_themes_sous_themes`.
 
-Les contacts d'urgence transverses (SAMU 15, Police 17, Pompiers 18) sont rattachés au sous-thème
-`urgences`. Pas de booléen `Affichage_permanent` sur `Contact` : deux mécanismes concurrents pour le
-même besoin créeraient de l'ambiguïté. `Liaison_SousTheme_Contact.Ordre` suffit à les faire remonter.
+| Thème (`Ref`, libellé) | Sous-thèmes (`Ref`) |
+|---|---|
+| `addictions` — Conduites addictives | `alcool`, `tabac`, `drogue` |
+| `sante_mentale` — Santé mentale | `anxiete`, `depression`, `burn_out` |
+| `vss` — Violences | `violences_sexistes`, `violences_sexuelles`, `harcelement` |
+
+Pas de sous-thème dédié aux urgences. Les contacts d'urgence (SAMU 15, Police 17, Pompiers 18,
+3114) sont rattachés directement aux sous-thèmes concernés (`ContactSeeder`). Pas de booléen
+`Affichage_permanent` sur `Contact` : deux mécanismes concurrents pour le même besoin créeraient de
+l'ambiguïté. `Liaison_SousTheme_Contact.Ordre` suffit à les faire remonter.
 
 ---
 

@@ -1,290 +1,252 @@
 # Cahier des charges techniques — Safe Campus
 
-Statut : brouillon (v1.1, 20/10/2026)
-
 | Élément | Valeur |
 |---|---|
-| Projet | Safe Campus — SAE501 |
-| Version | 1.1 — remplace la v1.0 du 07/10/2026 (PDF) |
-| Périmètre | Safe-Campus-front (Nuxt 4) · Safe-Campus-back (Laravel 13 / Filament 3) |
-| Documents liés | [Sécurité et RGPD](securite-rgpd.md) · [Maintenance évolutive 2025–2029](maintenance-evolutive-2025-2029.md) · [Schéma de base de données](schema_bd.md) · [Déploiement](deploiement.md) |
+| Projet | Safe Campus — SAE501, Université de la Nouvelle-Calédonie |
+| Date | 20/10/2026 |
+| Périmètre | Site étudiant (Nuxt 4) · API et back-office (Laravel 13 / Filament 3) |
+| Livrables | Site étudiant, back-office d'administration, API REST JSON, images Docker de production |
 
-Ce fichier est la source de vérité. Les exports PDF sont générés à partir de lui.
+Les exigences sont classées en quatre familles :
 
-**Changements depuis la v1.0** : l'hébergement Dokploy est abandonné, aucun hébergeur n'est retenu (§ 8.3). La police Syne est remplacée par Cabin (§ 7.2). Le suivi et la maintenance renvoient au document dédié (§ 13).
+- les **exigences fonctionnelles** décrivent ce que le système fait ;
+- les **exigences non fonctionnelles** décrivent avec quelle qualité il le fait ;
+- les **exigences d'exploitation** décrivent comment il est hébergé et maintenu ;
+- les **contraintes** sont les limites imposées au projet.
+
+Chaque exigence est vérifiée par un scénario de recette (section 11). Son état est donné au 20/10/2026 : conforme, partiel ou non conforme.
 
 ---
 
-## 1. Contexte et présentation du projet
+## 1. Contexte
 
-### 1.1 Porteur du projet
+Safe Campus est réalisé dans le cadre de la SAE501 pour le campus de l'Université de la Nouvelle-Calédonie. Le périmètre fonctionnel est fourni par la SAE. Le périmètre technique est laissé au choix de l'équipe projet.
 
-Safe Campus est réalisé dans le cadre de la SAE501 pour le campus de l'Université de la Nouvelle-Calédonie (UNC). Le périmètre fonctionnel est fourni par la SAE. Le périmètre technique est laissé au choix de l'équipe projet et fait l'objet du présent document.
-
-### 1.2 Raisons du projet
-
-Les étudiants confrontés à une addiction, à une souffrance psychique ou à des violences ne savent pas toujours vers qui se tourner. L'information existe (annuaires de structures d'aide, numéros d'urgence, associations). Elle est dispersée, peu adaptée au mobile et rarement contextualisée pour la Nouvelle-Calédonie.
-
-Safe Campus centralise cette information dans une plateforme unique, sobre et bienveillante. Elle se consulte discrètement depuis un téléphone. Son contenu est maintenu par le personnel du campus, sans intervention d'un développeur.
-
-### 1.3 Valeurs
-
-- **Bienveillance et non-jugement** : ton neutre, aucune donnée personnelle demandée à l'étudiant.
-- **Discrétion** : aucun compte individuel côté étudiant, aucune trace nominative de consultation.
-- **Fiabilité** : contacts vérifiés, limités au territoire calédonien, mis à jour par le personnel.
-- **Accessibilité** : conception mobile-first, lisibilité, contraste.
-
-### 1.4 Thématiques couvertes
+Les étudiants confrontés à une addiction, à une souffrance psychique ou à des violences ne savent pas toujours vers qui se tourner. L'information existe, mais elle est dispersée, peu adaptée au mobile et rarement contextualisée pour la Nouvelle-Calédonie. Safe Campus la centralise dans une plateforme sobre, consultable discrètement depuis un téléphone. Le personnel du campus en maintient le contenu, sans développeur.
 
 | Thème | Sous-thèmes (fiches) |
 |---|---|
-| Santé mentale | Détresse psychologique, crise suicidaire |
-| Addictions | Alcool, cannabis et stupéfiants, tabac, jeux et écrans |
-| Violences sexistes et sexuelles (VSS) | Violences sexuelles, violences intrafamiliales |
-| Transverse | Urgences (SAMU 15, Police 17, Pompiers 18) |
+| Conduites addictives | Alcool, tabac, drogue |
+| Santé mentale | Anxiété, dépression, burn-out |
+| Violences | Violences sexistes, violences sexuelles, harcèlement |
 
-Références techniques (`ref`) : voir [schema_bd.md § Taxonomie](schema_bd.md#taxonomie).
-
----
-
-## 2. Objectifs du projet
-
-### 2.1 Objectifs stratégiques
+### Objectifs
 
 - Offrir aux étudiants un point d'entrée unique vers l'aide disponible sur le territoire.
 - Rendre le personnel du campus autonome sur la mise à jour des contenus.
 - Proposer un outil de prévention ludique (histoires interactives) en complément de l'information.
 
-### 2.2 Objectifs opérationnels
+---
 
-| Objectif | Traduction technique attendue |
-|---|---|
-| Séparer contenu et présentation | Back = API JSON + back-office. Front = consommateur de l'API, aucun couplage de vues. |
-| Gestion de contenu autonome | Back-office d'administration (CRUD, relations, médias) sans développement par écran. |
-| Usage en mobilité | Interface mobile-first, rendu serveur (SSR) pour un premier affichage rapide. |
-| Orientation rapide vers l'aide | Annuaire filtré par sous-thème, carte interactive, numéros cliquables. |
-| Prévention | Lecteur d'histoires à embranchements, contacts affichés en fin défavorable. |
-| Reproductibilité | Environnement 100 % conteneurisé (Docker), identique pour tous les développeurs. |
-| Traçabilité | Journal d'audit des actions du back-office. |
+## 2. Acteurs
 
-### 2.3 Objectifs qualitatifs
+| Acteur | Besoin | Accès |
+|---|---|---|
+| Étudiant | Trouver vite et discrètement une information fiable et un contact joignable. Consultation sur smartphone, souvent dans un moment de stress. | Site étudiant, mot de passe partagé (compte visiteur) |
+| Webmaster | Tenir à jour la taxonomie, les fiches, l'annuaire et les médias. | Back-office, rôle webmaster |
+| Rédacteur | Écrire, illustrer et publier des histoires interactives. | Back-office, rôle rédacteur |
+| Administrateur | Valider les demandes de compte, gérer les rôles et les suppressions. | Back-office, rôle administrateur |
 
-| ID | Exigence |
-|---|---|
-| NF-01 | Temps de chargement perçu court sur réseau mobile : rendu SSR, payloads API minimaux. |
-| NF-02 | Code typé, linté et testé. Conventions documentées dans chaque dépôt. |
-| NF-03 | Conformité RGPD : minimisation des données, droit à l'effacement sur les contacts nommés. Détail : [securite-rgpd.md](securite-rgpd.md). |
-| NF-04 | Back-office utilisable par un profil non technique (guides intégrés). |
+Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans compétence technique.
 
 ---
 
-## 3. Périmètre fonctionnel
+## 3. Exigences fonctionnelles
 
-Le système comprend deux applications indépendantes. Elles communiquent par une API REST JSON.
+### 3.1 Site étudiant
 
-### 3.1 Site étudiant (Safe-Campus-front)
-
-| ID | Fonctionnalité | Description |
+| Exigence | Vérification | État |
 |---|---|---|
-| F-01 | Accès protégé | Accès après saisie d'un mot de passe partagé (« accès visiteur »). Sans jeton valide, toute page redirige vers `/login`. |
-| F-02 | Accueil | Sections par thème, cartes par sous-thème (carrousel), barre de recherche avec synonymes (ex. « clope » → tabac). |
-| F-03 | Fiche ressources | Article éditorial du sous-thème et fiches réflexives PDF téléchargeables. |
-| F-04 | Fiche contacts | Annuaire des structures d'aide du sous-thème : téléphones cliquables, horaires, gratuité, anonymat, conditions d'accueil. Carte interactive des structures géolocalisées. |
-| F-05 | Histoire interactive | Parcours à choix multiples, scène par scène. Fin favorable ou défavorable. En fin défavorable, affichage des contacts d'aide adaptés. Possibilité de recommencer. |
-| F-06 | Navigation | Rail latéral (desktop), tiroir (mobile), bouton retour en haut, pied de page. |
-| F-07 | Pages légales | Mentions légales et CGU. |
+| Le site n'est accessible qu'après saisie du mot de passe partagé. Toute page redirige vers la page de connexion, puis revient à la page demandée. | Scénario 1 | Conforme |
+| L'accueil présente les thèmes en sections et les sous-thèmes en cartes. | Scénario 11 | Conforme |
+| La recherche couvre thèmes et sous-thèmes et reconnaît des synonymes (« clope » → tabac). | Scénario 2 | Conforme |
+| La fiche ressources affiche l'article du sous-thème et ses fiches PDF, ouvertes dans un nouvel onglet. | Scénario 4 | Conforme |
+| La fiche contacts liste les structures actives du sous-thème, dans l'ordre éditorial : téléphones cliquables, horaires, gratuité, anonymat, conditions d'accueil. | Scénario 3 | Conforme |
+| La fiche contacts affiche une carte des structures géolocalisées. | Scénario 3 | Conforme |
+| L'histoire interactive se joue scène par scène. Une fin défavorable affiche les contacts d'aide du thème. Le joueur peut recommencer. | Scénario 5 | Conforme |
+| Une histoire non publiée n'est pas accessible. | Scénario 6 | Conforme |
+| Mentions légales et conditions générales d'utilisation sont publiées. | Scénario 12 | Partiel : éditeur, hébergeur et directeur de publication à compléter |
 
-### 3.2 Back-office (Safe-Campus-back, `/admin`)
+### 3.2 Back-office
 
-| ID | Fonctionnalité | Description |
+| Exigence | Vérification | État |
 |---|---|---|
-| F-10 | Taxonomie | Gestion des thèmes et sous-thèmes : libellé, résumé, article, médias associés, activation. |
-| F-11 | Annuaire | Gestion des contacts, de leurs téléphones et de leur rattachement ordonné aux sous-thèmes. Géocodage de l'adresse, ajustement sur carte, province. |
-| F-12 | Médias | Bibliothèque d'images, vidéos, audios et documents PDF, avec libellé de recherche. |
-| F-13 | Histoires | Création d'histoires, de scènes et de choix. Circuit éditorial brouillon → relecture → validé → publié. Prévisualisation. |
-| F-14 | Comptes | Inscription publique validée par un administrateur. Attribution et retrait de rôle. Suppression avec transfert des histoires. |
-| F-15 | Aide intégrée | Guides contextuels webmaster et rédacteur, sur le tableau de bord et par section. |
-| F-16 | Audit | Journalisation des créations, modifications, suppressions, connexions et inscriptions. |
+| Gestion des thèmes et sous-thèmes : libellé, résumé, article, médias associés, activation. | Scénario 10 | Conforme |
+| Gestion des contacts et de leurs téléphones, rattachement ordonné aux sous-thèmes. | Scénario 10 | Conforme |
+| Géocodage de l'adresse d'un contact à la saisie, ajustement du point sur une carte. | Scénario 13 | Conforme |
+| Bibliothèque de médias (image, vidéo, audio, document PDF) avec libellé de recherche. | Revue du back-office | Conforme |
+| Gestion des histoires, scènes et choix. États : brouillon, relecture, validé, publié. | Scénario 6 | Conforme |
+| Prévisualisation d'une histoire avant publication. | Scénario 14 | Conforme |
+| Inscription publique. Le compte reste inactif jusqu'à l'attribution d'un rôle par un administrateur. | Scénario 7 | Conforme |
+| Suppression d'un rédacteur avec transfert obligatoire de ses histoires. | Scénario 9 | Conforme |
+| Guides contextuels pour le webmaster et le rédacteur, sur le tableau de bord et par section. | Revue du back-office | Conforme |
+| Journal d'audit : création, modification, suppression, connexion, échec de connexion, inscription. | Scénario 15 | Conforme |
 
 ### 3.3 API
 
-| Méthode et route | Rôle |
-|---|---|
-| `POST /api/login` | Authentifie le compte visiteur partagé et renvoie un jeton Bearer (Sanctum). |
-| `GET /api/themes` | Thèmes et sous-thèmes en version légère (accueil) : ref, libellé, résumé, médias, référence d'histoire. |
-| `GET /api/sous-themes/{ref}` | Détail d'un sous-thème : article, contacts actifs triés avec leurs téléphones, histoires publiées. |
-| `GET /api/histoires/{ref}` | Graphe complet d'une histoire publiée (scènes, choix, contacts résolus), en une seule requête. |
-
-Contrats détaillés : [schema_bd.md § Consommation API](schema_bd.md#consommation-api).
-
-> Les trois routes `GET` sont aujourd'hui publiques : le jeton visiteur n'est vérifié que par le front. Correction prévue : mesure S-01 de [securite-rgpd.md](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre).
-
-### 3.4 Hors périmètre de la version 1
-
-- Module de **signalement** anonyme : modélisé en base (drapeau par sous-thème), interface reportée. Le circuit de traitement reste à définir avec la DNSI.
-- Comptes étudiants individuels, commentaires, messagerie.
-- Version anglaise (traduction FR/EN à étudier).
-- Application mobile native : le site web responsive en tient lieu.
-
-Ces évolutions sont planifiées dans [maintenance-evolutive-2025-2029.md](maintenance-evolutive-2025-2029.md).
-
----
-
-## 4. Publics cibles
-
-| Profil | Besoins | Accès |
+| Route | Fonction | État |
 |---|---|---|
-| Étudiant | Trouver vite et discrètement une information fiable et un contact joignable. S'informer de façon ludique. | Site front, mot de passe visiteur partagé |
-| Webmaster | Tenir à jour la taxonomie, les fiches, l'annuaire et les médias. | Back-office, rôle `webmaster` |
-| Rédacteur | Écrire et faire valider des histoires interactives, illustrer les scènes. | Back-office, rôle `redacteur` |
-| Administrateur | Valider les demandes de compte, gérer les rôles et les suppressions. | Back-office, rôle `admin` |
+| `POST /api/login` | Authentifie le compte visiteur et renvoie un jeton d'accès. | Conforme |
+| `GET /api/themes` | Thèmes et sous-thèmes en version légère, pour l'accueil. | Conforme |
+| `GET /api/sous-themes/{ref}` | Détail d'un sous-thème : article, contacts actifs triés, téléphones, histoires publiées. | Conforme |
+| `GET /api/histoires/{ref}` | Graphe complet d'une histoire publiée, en une seule requête. | Conforme |
 
-**Comportements attendus côté étudiant.** Consultation majoritairement sur smartphone, souvent dans un moment de stress. L'information essentielle (numéro, horaires, gratuité, anonymat) doit être visible sans recherche ni défilement excessif.
+### 3.4 Hors périmètre
 
-**Comportements attendus côté personnel.** Usage ponctuel sur poste de bureau, sans compétence technique. L'interface doit guider et empêcher les erreurs : champs obligatoires, valeurs contraintes, références générées automatiquement.
-
----
-
-## 5. Contraintes et ressources disponibles
-
-### 5.1 Contraintes budgétaires
-
-| ID | Contrainte |
-|---|---|
-| C-01 | Projet académique sans budget de licence. Toute la pile repose sur des logiciels libres et des services gratuits : OpenStreetMap / Nominatim (cartographie, géocodage), Google Fonts, Heroicons. |
-
-### 5.2 Contraintes techniques
-
-| ID | Contrainte |
-|---|---|
-| C-02 | Deux dépôts Git indépendants, déployables séparément. |
-| C-03 | Aucune dépendance installée sur le poste hôte : toutes les commandes s'exécutent dans les conteneurs. |
-| C-04 | Le front ne détient aucune donnée métier : tout transite par l'API. |
-| C-05 | Base relationnelle PostgreSQL. Intégrité garantie par contraintes (clés étrangères, unicité, CHECK). |
-| C-06 | Géocodage Nominatim limité à 1 requête par seconde. Le volume de saisie est faible : contrainte acceptable. |
-
-### 5.3 Contraintes réglementaires
-
-| ID | Contrainte |
-|---|---|
-| C-07 | RGPD : aucune donnée personnelle collectée auprès des étudiants. Les données des référents nommés de l'annuaire doivent pouvoir être supprimées définitivement (suppression en cascade). |
-| C-08 | Mentions légales et CGU publiées sur le site et sur le back-office. |
-| C-09 | Mots de passe du back-office : 14 à 72 caractères, majuscule, minuscule, caractère spécial, absence dans les fuites connues (Have I Been Pwned, k-anonymat). |
-| C-10 | Périmètre des données : Nouvelle-Calédonie uniquement. Les numéros métropolitains non joignables depuis la NC sont exclus. |
-
-Détail : [securite-rgpd.md](securite-rgpd.md).
-
-### 5.4 Contraintes humaines
-
-Équipe étudiante réduite, temps contraint par le calendrier de la SAE. Le personnel du campus qui maintiendra le contenu n'a pas de profil technique.
-
-### 5.5 Ressources disponibles
-
-- Annuaire source des structures d'aide (fichier CSV), importé par des seeders idempotents (rejouables sans créer de doublon).
-- Logo, illustrations (personnages par sous-thème), polices.
-- Dépôts GitHub, Docker Desktop / WSL 2, VS Code.
-- Images Docker de production prêtes (`docker-compose.prod.yml` dans chaque dépôt). Aucune plateforme d'hébergement n'est retenue à ce jour.
+- Module de signalement anonyme : modélisé en base, interface reportée. Le circuit de traitement est à définir avec la direction du numérique de l'établissement.
+- Comptes étudiants individuels, commentaires, messagerie.
+- Version anglaise.
+- Application mobile native : le site responsive en tient lieu.
 
 ---
 
-## 6. Arborescence et navigation du site
+## 4. Matrice des droits
 
-### 6.1 Site étudiant
+Une ressource refusée disparaît du menu du back-office. Appelée directement, elle répond « accès interdit ».
 
-| Route | Page |
-|---|---|
-| `/login` | Connexion visiteur (mot de passe partagé) |
-| `/` | Accueil : thèmes, cartes de sous-thèmes, recherche |
-| `/ressources/{theme}/{slug}` | Fiche ressources du sous-thème (article, PDF) |
-| `/contact/{theme}/{slug}` | Annuaire et carte du sous-thème |
-| `/histoire/{theme}/{slug}` | Histoire interactive du sous-thème, ou message d'attente si aucune histoire |
-| `/mentions-legales` | Mentions légales |
-| `/cgu` | Conditions générales d'utilisation |
+### 4.1 Accès
 
-### 6.2 Parcours utilisateurs attendus
+| Action | Anonyme | Visiteur | Webmaster | Rédacteur | Administrateur |
+|---|---|---|---|---|---|
+| Consulter le site étudiant | Non | Oui | Oui ¹ | Oui ¹ | Oui ¹ |
+| Appeler l'API de lecture | Oui ² | Oui | Oui | Oui | Oui |
+| S'inscrire au back-office | Oui | Non | Non | Non | Non |
+| Se connecter au back-office | Non | Non | Oui | Oui | Oui |
+| Voir le guide du tableau de bord | Non | Non | Oui | Oui | Non |
+
+¹ Avec le mot de passe partagé, comme tout étudiant.
+² L'API de lecture répond aujourd'hui sans jeton. Cible : refusé (exigence de sécurité non conforme, section 5).
+
+### 4.2 Contenus
+
+| Ressource | Webmaster | Rédacteur | Administrateur |
+|---|---|---|---|
+| Thèmes | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
+| Sous-thèmes (fiches) | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
+| Contacts | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
+| Téléphones | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
+| Médias | Créer, lire, modifier, supprimer | Créer, lire, modifier, supprimer | Aucun droit |
+| Histoires | Aucun droit | Créer, lire, modifier, supprimer | Aucun droit |
+| Scènes | Aucun droit | Créer, lire, modifier, supprimer | Aucun droit |
+| Choix | Aucun droit | Créer, lire, modifier, supprimer | Aucun droit |
+| Prévisualiser une histoire | Non | Oui | Non |
+| Changer l'état d'une histoire, jusqu'à « publié » | Non | Oui | Non |
+
+Le circuit brouillon → relecture → validé → publié est déclaratif : le rédacteur fixe lui-même l'état. Aucun rôle distinct ne valide la publication.
+
+### 4.3 Comptes du personnel
+
+| Action | Webmaster | Rédacteur | Administrateur |
+|---|---|---|---|
+| Lister les comptes | Non | Non | Oui |
+| Créer un compte | Non | Non | Non ³ |
+| Attribuer ou retirer un rôle | Non | Non | Oui ⁴ |
+| Modifier les coordonnées d'un compte | Non | Non | Oui ⁴ |
+| Refuser une demande ou supprimer un compte | Non | Non | Oui ⁴ ⁵ |
+| Modifier ou supprimer son propre compte | Non | Non | Non |
+| Voir, modifier ou supprimer le compte visiteur | Non | Non | Non |
+
+³ Aucun compte n'est créé à la main : tout passe par l'inscription, puis la validation.
+⁴ Rôles attribuables : webmaster, rédacteur, administrateur. Le rôle visiteur ne s'attribue pas.
+⁵ La suppression d'un rédacteur exige un repreneur pour ses histoires.
+
+### 4.4 Cycle de vie d'un compte et de son rôle
 
 ```mermaid
-flowchart LR
-  URL["Toute URL"] --> Login["/login"]
-  Login --> Accueil["/ accueil"]
-  Accueil --> Contact["Fiche contacts"]
-  Accueil --> Ressources["Fiche ressources"]
-  Contact --> Appel["Appel tel:"]
-  Contact --> Histoire["Histoire"]
-  Ressources --> PDF["Fiche PDF"]
-  Histoire --> Fav["Fin favorable"]
-  Histoire --> Defav["Fin défavorable + contacts"]
-  Defav --> Histoire
+stateDiagram-v2
+  direction LR
+  SansRole : Sans rôle, connexion refusée
+  Actif : Actif, rôle webmaster, rédacteur ou administrateur
+  [*] --> SansRole : inscription
+  SansRole --> Actif : un administrateur attribue un rôle
+  Actif --> Actif : changement de rôle
+  Actif --> SansRole : retrait du rôle, compte conservé
+  SansRole --> [*] : refus de la demande ou suppression
+  Actif --> [*] : suppression, repreneur exigé pour un rédacteur
 ```
 
-- **Recherche d'aide** : accueil → carte du sous-thème → « Contact » → appel d'un numéro en un geste.
-- **Information** : accueil (ou recherche « clope », « stress »…) → « Ressources » → lecture de l'article ou ouverture d'une fiche PDF.
-- **Prévention** : fiche du sous-thème → « Suivre l'histoire » → choix successifs → fin favorable, ou fin défavorable avec contacts d'aide → recommencer ou revenir à la page d'origine.
-- **Première visite** : toute URL → `/login` → retour automatique à la page demandée après connexion.
+Un compte sans rôle, qu'il vienne de s'inscrire ou qu'on lui ait retiré son rôle, ne peut pas se connecter. Seul un administrateur fait changer un compte d'état. Il ne peut jamais agir sur son propre compte ni sur le compte visiteur, qui reste hors de ce cycle.
 
-### 6.3 Back-office
-
-| Section | Rôle autorisé |
-|---|---|
-| Tableau de bord + guide | `webmaster`, `redacteur` |
-| Thèmes / Sous-thèmes | `webmaster` |
-| Contacts / Téléphones | `webmaster` |
-| Médias | `webmaster`, `redacteur` |
-| Histoires / Scènes / Choix (+ prévisualisation) | `redacteur` |
-| Utilisateurs | `admin` |
-| `/admin/login`, `/admin/register` | Public |
+Garde-fou : un administrateur ne pouvant agir sur son propre compte, le dernier administrateur ne peut pas disparaître.
 
 ---
 
-## 7. Design et identité visuelle
+## 5. Exigences non fonctionnelles
 
-### 7.1 Approche
+### 5.1 Performance
 
-Design **sur mesure** pour le site étudiant, sans template ni framework CSS. Le back-office utilise les composants Filament, personnalisés aux couleurs du projet.
+| Exigence | Vérification | État |
+|---|---|---|
+| Premier affichage en moins de 3 secondes sur réseau 4G, grâce au rendu côté serveur. | Mesure Lighthouse mobile | À mesurer |
+| Une seule requête API par page. Une histoire est chargée en une requête. | Revue des appels réseau | Conforme |
 
-### 7.2 Charte graphique
+### 5.2 Ergonomie
 
-| Élément | Valeur |
-|---|---|
-| Couleur principale | `#1E466B` (bleu nuit) |
-| Couleur d'accent | `#4260E6` |
-| Fond / texte | `#F9F9F9` / `#0D0D0D` |
-| Texte secondaire | `#6B7A99` |
-| Titrage et corps de texte | Cabin 400 / 600 / 700 (Google Fonts) |
-| Polices secondaires | Bebas Neue (Google Fonts). Almost Textual, déclarée en local (`@font-face`). |
-| Icônes | Heroicons, style outline 24×24, trait 1,5 px, couleur héritée |
-| Cartes | Rayon 20 px, ombre douce |
+| Exigence | Vérification | État |
+|---|---|---|
+| Conception mobile-first. Aucun défilement horizontal du mobile au poste de bureau. | Scénario 11 | Conforme |
+| Un numéro d'aide joignable en trois interactions au plus depuis l'accueil. | Scénario 3 | Conforme |
+| Back-office utilisable sans compétence technique : guides, champs obligatoires, valeurs contraintes, références générées automatiquement. | Retours des testeurs | Conforme |
 
-Le chargement depuis Google Fonts transmet l'adresse IP du visiteur à Google. Il est prévu d'héberger les polices localement : mesure S-08 de [securite-rgpd.md](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre).
+### 5.3 Sécurité
 
-### 7.3 Ergonomie et responsive
+| Exigence | Vérification | État |
+|---|---|---|
+| Accès au back-office refusé à tout compte sans rôle et au compte visiteur. | Scénarios 7 et 8 | Conforme |
+| L'API de lecture exige le jeton visiteur. | Appel sans jeton refusé | Non conforme |
+| Limitation des tentatives : 5 connexions et 2 inscriptions par minute au back-office, limitation équivalente sur la connexion visiteur. | Essais répétés | Partiel : rien sur la connexion visiteur |
+| Mots de passe du back-office : 14 à 72 caractères, majuscule, minuscule, caractère spécial, refus des mots de passe ayant fuité. Stockage haché. | Essai d'inscription | Conforme |
+| Le message « en attente de validation » n'apparaît qu'après un mot de passe correct : il ne révèle pas si un email est inscrit. | Scénario 7 | Conforme |
+| Jetons d'accès à durée de vie limitée. | Configuration de l'authentification | Non conforme : durée illimitée |
+| Cookies sécurisés en production, en-têtes HTTP de sécurité. | Inspection des réponses HTTP | Non conforme |
+| Requêtes inter-domaines limitées au domaine du site étudiant. | Appel depuis un autre domaine | Non conforme |
 
-- Conception **mobile-first**, échelle typographique unique : racine 17 px, aucun texte lisible sous ~12,75 px.
-- Navigation par tiroir sur mobile, rail latéral sur desktop.
-- Numéros de téléphone en liens `tel:`. PDF ouverts dans un nouvel onglet.
-- Contraste renforcé dans le back-office : bordures et séparateurs retintés en bleu de marque.
-- Filigrane « prototype » tant que le site n'est pas en production.
+### 5.4 Traçabilité
 
-### 7.4 Conventions d'intégration
+| Exigence | Vérification | État |
+|---|---|---|
+| Journal d'audit au format JSON, un fichier par jour, conservé 365 jours, sans mot de passe ni jeton. | Scénario 15 | Conforme |
 
-- Aucun bloc `<style>` dans les composants. CSS dans `app/assets/css/` : `main.css`, un fichier par composant, un fichier par page.
-- Nommage **BEM** (`.bloc__element--modificateur`) et variables CSS pour toute valeur partagée.
-- Icônes SVG importées comme composants Vue (`vite-svg-loader`), jamais de tracé dupliqué.
+### 5.5 Conformité RGPD
 
-Détail : `CLAUDE.md` et `README.md` de Safe-Campus-front.
+| Exigence | Vérification | État |
+|---|---|---|
+| Aucune donnée personnelle collectée auprès des étudiants. Aucun traceur d'audience. | Inventaire des cookies | Conforme |
+| Les données d'un référent nommé de l'annuaire peuvent être effacées définitivement, en cascade. | Suppression d'un contact | Conforme |
+| Aucune ressource tierce non nécessaire chargée par le navigateur : polices hébergées sur le serveur. | Revue des requêtes réseau | Non conforme : polices chargées depuis Google |
+
+### 5.6 Maintenabilité
+
+| Exigence | Vérification | État |
+|---|---|---|
+| Lint, vérification de types et tests au vert avant chaque fusion. | Commandes de qualité | Partiel : lancées à la main, sans intégration continue |
+| Environnement de développement entièrement conteneurisé, identique pour tous. | Démarrage par `docker compose up -d` | Conforme |
 
 ---
 
-## 8. Développement technique
+## 6. Contraintes
 
-### 8.1 Architecture générale
+| Nature | Contrainte |
+|---|---|
+| Budgétaire | Aucun budget de licence : logiciels libres et services gratuits uniquement (OpenStreetMap, Nominatim, Heroicons). |
+| Technique | Deux dépôts indépendants, déployables séparément : Safe-Campus-front et Safe-Campus-back. |
+| Technique | Le site étudiant ne détient aucune donnée métier : tout transite par l'API. |
+| Technique | Base relationnelle PostgreSQL. Intégrité garantie par contraintes : clés étrangères, unicité, contrôles de valeur. |
+| Technique | Géocodage Nominatim limité à une requête par seconde. Acceptable vu le faible volume de saisie. |
+| Réglementaire | RGPD : minimisation des données, droit à l'effacement. |
+| Réglementaire | Données limitées à la Nouvelle-Calédonie. Les numéros métropolitains non joignables depuis le territoire sont exclus. |
+| Humaine | Équipe étudiante réduite, calendrier de la SAE. Personnel de maintenance des contenus sans profil technique. |
 
-Architecture découplée (« headless ») : le back expose une API REST JSON et héberge le back-office. Le front est une application Nuxt rendue côté serveur, qui consomme l'API. Chaque dépôt a sa propre stack Docker. En développement, les deux stacks partagent le réseau Docker `scback` : le rendu serveur du front joint l'API par le nom de son conteneur.
+---
+
+## 7. Architecture technique
+
+Architecture découplée : le back expose une API REST JSON et héberge le back-office. Le site étudiant est une application Nuxt rendue côté serveur, qui consomme l'API.
 
 ```mermaid
 flowchart LR
   subgraph Front["Safe-Campus-front"]
-    Nuxt["Nuxt 4 SSR"]
+    Nuxt["Nuxt 4, rendu serveur"]
   end
   subgraph Back["Safe-Campus-back"]
     API["API /api"]
@@ -292,225 +254,225 @@ flowchart LR
     DB[("PostgreSQL 17")]
   end
   Etudiant["Navigateur étudiant"] --> Nuxt
-  Nuxt -->|"HTTP JSON + Bearer"| API
+  Nuxt -->|"HTTP JSON"| API
   Personnel["Navigateur personnel"] --> Admin
   API --> DB
   Admin --> DB
-  Admin -->|géocodage| Nominatim["Nominatim OSM"]
+  Admin -->|géocodage| Nominatim["Nominatim OpenStreetMap"]
 ```
 
 | Couche | Technologie | Justification |
 |---|---|---|
-| Front | Nuxt 4.5, Vue 3.5, TypeScript, Vite | SSR pour un premier affichage rapide et un bon référencement. Routage par fichiers. Typage. |
-| Cartographie | Leaflet + OpenStreetMap | Libre, sans clé API, léger. Chargé uniquement sur la page contact. |
-| Back / API | Laravel 13, PHP 8.4 | Framework mature, ORM Eloquent, migrations, tests intégrés. |
-| Back-office | Filament 3.3 | CRUD, formulaires et relations générés. Aucun écran à développer à la main. |
-| Authentification API | Laravel Sanctum 4 (jetons Bearer) | Solution native Laravel, simple, sans OAuth. |
-| Base de données | PostgreSQL 17 | Contraintes CHECK, index partiels, robustesse. |
-| Géocodage | Nominatim (OSM) | Gratuit, sans clé. Conversion adresse → coordonnées à la saisie. |
-| Conteneurisation | Docker / Docker Compose | Environnement identique pour tous, déploiement par image. |
+| Site étudiant | Nuxt 4, Vue 3, TypeScript | Rendu côté serveur pour un premier affichage rapide. Routage par fichiers. Typage. |
+| Cartographie | Leaflet + OpenStreetMap | Libre, sans clé API, léger. Chargé uniquement sur la fiche contacts. |
+| API | Laravel 13, PHP 8.4 | Framework mature : accès aux données, migrations, tests intégrés. |
+| Back-office | Filament 3 | Écrans de gestion générés depuis les modèles. Aucun écran développé à la main. |
+| Authentification API | Laravel Sanctum, jeton d'accès | Solution native Laravel, sans protocole de délégation externe. |
+| Autorisations | Colonne de rôle contrainte + une règle d'autorisation par ressource | Rôles fixes, aucune dépendance supplémentaire. |
+| Base de données | PostgreSQL 17 | Contrôles de valeur, index partiels. |
+| Géocodage | Nominatim | Gratuit, sans clé. Adresse convertie en coordonnées à la saisie. |
+| Conteneurisation | Docker, Docker Compose | Environnement identique pour tous, déploiement par image. |
 
-### 8.2 Modèle de données
-
-Le schéma est organisé en trois domaines, qui partagent un socle commun (`Media`, `User`).
+### Modèle de données
 
 | Domaine | Tables principales |
 |---|---|
-| Annuaire | `themes`, `sous_themes`, `contacts`, `telephones`, `medias`, `signalements`. Pivots `contact_sous_theme` (avec ordre), `media_sous_theme`, `media_theme`. |
-| Histoires | `histoires`, `scenes`, `choix`. Pivots `histoire_sous_theme`, `histoire_scene` (scène initiale, ordre). |
-| Administration | `users` (rôle), `personal_access_tokens` (Sanctum). |
+| Annuaire | `themes`, `sous_themes`, `contacts`, `telephones`, `medias`, `signalements` |
+| Histoires | `histoires`, `scenes`, `choix` |
+| Administration | `users` (avec rôle), `personal_access_tokens` (jetons) |
 
-Règles de modélisation imposées :
+Règles de modélisation :
 
-- Chaque entité de référence porte une `ref` stable (URL, seeders), distincte du libellé affiché, qui reste modifiable.
-- Contraintes d'unicité sur les `ref` et sur l'email (insensible à la casse). Index partiel : une seule scène initiale par histoire.
-- Index explicites sur toutes les clés étrangères : PostgreSQL ne les crée pas automatiquement.
-- Énumérations stockées sans accent : rôle (`webmaster`, `redacteur`, `admin`, `visiteur`), état d'histoire (`brouillon`, `relecture`, `valide`, `publie`), issue de choix (`favorable`, `defavorable`), type de média, type de téléphone, province.
-- Aucun lien entre `User` (compte d'administration) et `Contact` (ressource d'aide publiée).
-- Désactivation (champ `actif`) pour l'éditorial, suppression définitive en cascade pour le RGPD.
+- Chaque entité de référence porte une référence stable (URL, import), distincte du libellé affiché, qui reste modifiable.
+- Unicité des références et des emails. Une seule scène initiale par histoire.
+- Index explicite sur chaque clé étrangère.
+- Aucun lien entre les comptes du personnel et les structures d'aide publiées.
+- Champ « actif » pour retirer un contenu du site sans le supprimer. Suppression définitive en cascade pour l'effacement RGPD.
 
-Détail complet : [schema_bd.md](schema_bd.md).
+---
 
-### 8.3 Hébergement
+## 8. Exigences d'exploitation
 
-**Aucune plateforme d'hébergement n'est retenue.** Le livrable est un jeu d'images Docker de production, déployables sur tout hôte Docker.
+Aucun hébergeur n'est retenu. Le livrable est un jeu d'images Docker de production, déployables sur tout hôte Docker.
 
-| ID | Exigence | État |
-|---|---|---|
-| T-01 | Images de production dédiées. Back : sans dépendances de développement, sans Xdebug, sans Adminer. Front : build multi-étapes (Nitro `node-server`), ne contenant que `.output/`. | Fait (`docker-compose.prod.yml`, `Dockerfile.prod`) |
-| T-02 | Base PostgreSQL non exposée hors du réseau Docker. | Fait |
-| T-03 | Reverse proxy et certificat TLS fournis en amont par l'hébergement retenu. Les conteneurs ne parlent que HTTP. | À fournir par l'hébergeur |
-| T-04 | Volumes persistants pour `storage/app` (médias) et `storage/logs` (audit). | À faire |
-| T-05 | Serveur d'application adapté à la production. L'image back lance aujourd'hui `php artisan serve`, serveur de développement mono-processus. | À faire |
-| T-06 | Dimensionnement cible : 2 vCPU / 2 Go RAM / 40 Go SSD (50 à 500 utilisateurs simultanés). Minimum : 1 vCPU / 1 Go. | Estimation, voir [infra.md](infra.md) |
-
-Procédure : [deploiement.md](deploiement.md).
-
-### 8.4 Sécurité
-
-| Exigence | Mise en œuvre |
+| Exigence | État |
 |---|---|
-| Accès au site étudiant | Middleware global côté front. Jeton Sanctum du compte visiteur stocké en cookie (`SameSite=Lax`). |
-| Accès au back-office | Session Laravel (guard `web`). `canAccessPanel()` refuse tout compte sans rôle et le compte visiteur. |
-| Autorisations | Une Policy Laravel par ressource, lue automatiquement par Filament : 403 et menu masqué. |
-| Comptes | Inscription sans rôle, validation par un admin. Un admin ne peut ni modifier ni supprimer son propre compte. |
-| Mots de passe | Politique forte + vérification des fuites connues. |
-| Énumération de comptes | Message « en attente de validation » affiché uniquement après un mot de passe correct. |
-| Configuration prod | `APP_DEBUG=false`, `LOG_LEVEL=error`, `APP_KEY` générée une seule fois, mot de passe BD aléatoire ≥ 20 caractères, utilisateur BD non superuser. |
-| CORS | Origines autorisées limitées au domaine public du front. Prévu, pas encore effectif : mesure S-09. |
-| Traçabilité | Canal `audit` JSON quotidien, conservation 365 jours, jamais de mot de passe ni de jeton. |
-
-Mesures, écarts constatés et plan d'action : [securite-rgpd.md](securite-rgpd.md).
-
-### 8.5 Gestion des rôles
-
-Rôle unique par compte, porté par une colonne contrainte (enum + CHECK) et des Policies Laravel. Ce choix, sans dépendance supplémentaire, couvre le besoin de rôles fixes. Une évolution vers Spatie Permission / Filament Shield reste possible sans modifier les tables existantes. Comparatif : [schema_bd.md § Sur le point 6](schema_bd.md#sur-le-point-6).
-
-### 8.6 Qualité et organisation du code
-
-- Workflow **git flow** : branches `feature/*` fusionnées sur `dev` en `--no-ff`, `hotfix/*` depuis `main`. Messages de commit normalisés (`type(scope): résumé.`).
-- Front : ESLint (`@nuxt/eslint`) et vérification de types (`nuxt typecheck` / `vue-tsc`) avant chaque fusion.
-- Back : PHPUnit (20 fichiers de test), Larastan (analyse statique), Laravel Pint (formatage).
-- Ordre des composants Vue : imports → props et emits → état → computed → fonctions.
-- Aucune intégration continue (CI) : les vérifications sont lancées à la main.
+| Images de production dédiées, sans outils de développement ni de débogage. Le site étudiant ne contient que son build. | Conforme |
+| Base de données non exposée hors du réseau Docker interne. | Conforme |
+| HTTPS assuré par un reverse proxy et un certificat fournis par l'hébergement. | À fournir par l'hébergeur |
+| Volumes persistants pour les médias et les journaux. | Non conforme : un redéploiement les efface |
+| Serveur d'application de production (PHP-FPM ou équivalent). | Non conforme : serveur de développement `artisan serve` |
+| Conteneurs exécutés avec un utilisateur non administrateur. | Partiel : back conforme, site étudiant exécuté en administrateur |
+| Toutes les variables requises transmises au conteneur, dont les identifiants du compte visiteur. | Non conforme : le premier déploiement échoue |
+| Sauvegarde quotidienne de la base et des médias, stockée hors du serveur, restauration testée chaque trimestre. | Non conforme |
+| Supervision de la disponibilité et des erreurs, avec alertes. | Non conforme |
+| Dimensionnement : 2 processeurs virtuels, 2 Go de mémoire, 40 Go de disque pour 50 à 500 utilisateurs simultanés. Minimum : 1 processeur virtuel, 1 Go. | Estimation |
 
 ---
 
 ## 9. Contenus à intégrer
 
-| Contenu | Source / responsable | Mode d'intégration |
+| Contenu | Responsable | Mode d'intégration |
 |---|---|---|
-| Taxonomie (4 thèmes, 9 sous-thèmes) | Équipe projet | Migration (donnée structurelle, tous environnements) |
-| Articles des fiches et résumés | Webmaster | Back-office (Sous-thèmes) |
-| Annuaire des structures d'aide NC | Annuaire source CSV, vérifié | Seeder idempotent, puis back-office |
-| Fiches réflexives PDF | Webmaster | Back-office (Médias, type `document`) |
-| Illustrations, logos, personnages | Équipe projet / rédacteurs | Back-office (Médias) et assets du front |
-| Histoires interactives | Rédacteurs | Back-office (Histoires), publication après validation |
-| Mentions légales et CGU | Équipe projet, à compléter par l'établissement | Pages statiques front et back |
-| Textes d'interface | Équipe projet | Recensés dans [textes-front.md](textes-front.md) |
-
-> Les informations d'éditeur, d'hébergeur et de directeur de publication des mentions légales sont à compléter avant la mise en production.
+| Taxonomie (3 thèmes, 9 sous-thèmes) | Équipe projet | Livrée avec l'application |
+| Articles et résumés des fiches | Webmaster | Back-office |
+| Annuaire des structures d'aide (source CSV vérifiée) | Équipe projet, puis webmaster | Import initial, puis back-office |
+| Fiches réflexives PDF | Webmaster | Back-office (médias) |
+| Illustrations et logos | Équipe projet | Back-office et application |
+| Histoires interactives | Rédacteurs | Back-office |
+| Mentions légales et conditions générales d'utilisation | Équipe projet, complétées par l'établissement | Pages du site et du back-office |
 
 ---
 
-## 10. Planning prévisionnel
+## 10. Planning
 
 | Phase | Période | Contenu |
 |---|---|---|
-| Cadrage | Avril 2026 | Analyse du besoin SAE, choix techniques, mise en place des dépôts et de l'environnement Docker |
-| Conception | Mai – juillet 2026 | Modèle de données (MCD), contrats d'API, maquettes du site étudiant |
-| Développement — annuaire | Juillet – août 2026 | Taxonomie, contacts, téléphones, médias, back-office, API annuaire, pages accueil / ressources / contact, carte |
-| Développement — histoires | Septembre 2026 | Modèle histoires, éditeur et prévisualisation, lecteur interactif |
-| Sécurisation et comptes | Septembre 2026 | Accès visiteur, inscription et validation, rôle admin, journal d'audit |
-| Intégration | Septembre – octobre 2026 | Pages légales, refonte CSS, guides du back-office, retours de tests |
-| Tests et recette | Octobre 2026 | Campagne de tests, correction des anomalies, validation |
-| Mise en ligne | À fixer avec l'établissement | Choix de l'hébergeur, déploiement des images, reprise des contenus, formation |
-| Suivi | Après mise en ligne | Voir [maintenance-evolutive-2025-2029.md](maintenance-evolutive-2025-2029.md) |
+| Cadrage | Avril 2026 | Analyse du besoin, choix techniques, dépôts, environnement Docker |
+| Conception | Mai – juillet 2026 | Modèle de données, contrats d'API, maquettes |
+| Développement — annuaire | Juillet – août 2026 | Taxonomie, contacts, médias, back-office, API, pages accueil / ressources / contacts, carte |
+| Développement — histoires | Septembre 2026 | Modèle, éditeur, prévisualisation, lecteur interactif |
+| Sécurisation et comptes | Septembre 2026 | Accès visiteur, inscription validée, rôle administrateur, journal d'audit |
+| Intégration | Septembre – octobre 2026 | Pages légales, refonte graphique, guides du back-office |
+| Recette | Octobre 2026 | Campagne de tests, corrections, validation |
+| Mise en ligne | À fixer avec l'établissement | Choix de l'hébergeur, déploiement, reprise des contenus, formation |
 
 ---
 
-## 11. Tests et recette
+## 11. Recette
 
-### 11.1 Tests automatisés
+### 11.1 Parcours de recette
 
-| Niveau | Couverture attendue |
-|---|---|
-| API | Contrats de `/api/themes`, `/api/sous-themes/{ref}`, `/api/histoires/{ref}` : filtrage actif / publié, tri, 404 sur histoire non publiée |
-| Base de données | Contraintes : taxonomie, contacts, médias, histoires, rôles, signalements |
-| Back-office | Accès par rôle à chaque ressource, inscription, gestion des utilisateurs, prévisualisation |
-| Audit | Écriture des événements, absence de secrets dans les journaux |
-| Front | Lint et vérification de types sans erreur |
+Chaque parcours se rejoue de bout en bout. Les numéros entre parenthèses sont les scénarios cités dans la colonne « Vérification » des exigences : l'étape marquée doit produire le résultat indiqué.
 
-Les tests back s'exécutent dans une transaction annulée en fin de test, sur une base migrée et seedée.
+#### Parcours 1 — Étudiant : accès et recherche d'aide
 
-```bash
-docker compose exec sc_back php artisan test        # Safe-Campus-back
-docker compose exec sc_front npm run lint           # Safe-Campus-front
-docker compose exec sc_front npm run typecheck      # Safe-Campus-front
+```mermaid
+flowchart LR
+  A["Ouverture d'une page du site"] --> B{"Connecté ?"}
+  B -->|Non| C["Page de connexion (1)"]
+  C --> D["Saisie du mot de passe partagé"]
+  D --> E["Retour à la page demandée (1)"]
+  B -->|Oui| F["Accueil : thèmes et cartes"]
+  E --> F
+  F --> G["Recherche « clope » (2)"]
+  G --> H["Carte Tabac proposée (2)"]
+  F --> I["Carte d'un sous-thème"]
+  H --> I
+  I --> J["Fiche contacts : structures actives triées (3)"]
+  I --> K["Fiche ressources : article"]
+  J --> L["Appel d'un numéro en un geste (3)"]
+  J --> M["Carte des structures (3)"]
+  K --> N["Fiche PDF ouverte dans un nouvel onglet (4)"]
 ```
 
-### 11.2 Scénarios de recette
+#### Parcours 2 — Étudiant : histoire interactive
 
-| ID | Scénario | Résultat attendu |
-|---|---|---|
-| R-01 | Accès à une page sans être connecté | Redirection vers `/login`, puis retour à la page demandée |
-| R-02 | Recherche « clope » sur l'accueil | La carte Tabac est proposée |
-| R-03 | Ouverture d'une fiche contact | Contacts actifs triés, téléphones cliquables, carte avec marqueurs |
-| R-04 | Ouverture d'une fiche PDF | Le document s'ouvre dans un nouvel onglet |
-| R-05 | Parcours d'histoire jusqu'à une fin défavorable | Contacts d'aide du thème affichés, possibilité de recommencer |
-| R-06 | Histoire non publiée appelée par son URL | Page indisponible (404 API) |
-| R-07 | Inscription au back-office puis connexion | Message « en attente de validation ». Accès après attribution d'un rôle. |
-| R-08 | Rédacteur ouvrant `/admin/contacts` | Accès refusé (403), entrée absente du menu |
-| R-09 | Suppression d'un rédacteur auteur d'histoires | Transfert obligatoire à un autre rédacteur |
-| R-10 | Désactivation d'un contact | Disparition immédiate du site étudiant |
-| R-11 | Affichage mobile / tablette / desktop | Aucun défilement horizontal, navigation adaptée |
+```mermaid
+flowchart LR
+  A["Fiche du sous-thème"] --> B["Suivre l'histoire"]
+  B --> C{"Histoire publiée ?"}
+  C -->|Non| D["Page indisponible (6)"]
+  C -->|Oui| E["Scène"]
+  E --> F["Choix"]
+  F -->|Scène suivante| E
+  F -->|Fin favorable| G["Fin favorable"]
+  F -->|Fin défavorable| H["Contacts d'aide du thème (5)"]
+  G --> I{"Recommencer ?"}
+  H --> I
+  I -->|Oui| E
+  I -->|Non| A
+```
 
-### 11.3 Critères de validation
+#### Parcours 3 — Personnel : inscription et accès au back-office
 
-- 100 % des tests automatisés au vert, lint et typecheck sans erreur.
-- Tous les scénarios de recette validés sur Chrome, Firefox et Safari mobile.
+```mermaid
+flowchart LR
+  A["Page d'inscription du back-office"] --> B["Prénom, nom, email, téléphone, mot de passe"]
+  B --> C["Compte créé sans rôle"]
+  C --> D["Connexion"]
+  D --> E{"Mot de passe correct ?"}
+  E -->|Non| F["Identifiants invalides"]
+  E -->|Oui| G{"Rôle attribué ?"}
+  G -->|Non| H["« En attente de validation » (7)"]
+  H -.-> L["Un administrateur attribue un rôle"]
+  L -.-> D
+  G -->|Oui| I["Tableau de bord du rôle (7)"]
+  I --> J["Un rédacteur ouvre la gestion des contacts"]
+  J --> K["Accès interdit, entrée absente du menu (8)"]
+```
+
+#### Parcours 4 — Webmaster : mise à jour de l'annuaire
+
+```mermaid
+flowchart LR
+  A["Gestion des contacts"] --> B["Création ou modification d'un contact"]
+  B --> C["Saisie de l'adresse"]
+  C --> D["Point placé sur la carte (13)"]
+  D --> E["Ajustement du point (13)"]
+  E --> F["Enregistrement"]
+  F --> G["Entrée au journal d'audit : auteur, adresse IP, avant et après, sans secret (15)"]
+  F --> H{"Contact actif ?"}
+  H -->|Non| I["Disparaît immédiatement du site étudiant (10)"]
+  H -->|Oui| J["Visible sur les fiches des sous-thèmes rattachés"]
+```
+
+#### Parcours 5 — Rédacteur : écriture et publication d'une histoire
+
+```mermaid
+flowchart LR
+  A["Gestion des histoires"] --> B["Création : titre, sous-thèmes"]
+  B --> C["Écriture des scènes et des choix"]
+  C --> D["Prévisualisation dans le back-office, sans publication (14)"]
+  D --> E{"Histoire prête ?"}
+  E -->|Non| C
+  E -->|Oui| F["État : brouillon, relecture, validé, puis publié"]
+  F --> G["Histoire accessible depuis le site étudiant"]
+```
+
+#### Parcours 6 — Administrateur : suppression d'un compte
+
+```mermaid
+flowchart LR
+  A["Gestion des comptes"] --> B{"Demande en attente ?"}
+  B -->|Oui| C["Refus de la demande"]
+  B -->|Non| D["Suppression du compte"]
+  D --> E{"Rédacteur auteur d'histoires ?"}
+  E -->|Oui| F["Choix obligatoire d'un repreneur (9)"]
+  F --> G["Histoires transférées, compte supprimé"]
+  E -->|Non| H["Compte supprimé"]
+```
+
+#### Contrôles hors parcours
+
+- **(11)** Affichage sur mobile, tablette et poste de bureau : aucun défilement horizontal, navigation adaptée.
+- **(12)** Mentions légales et conditions générales d'utilisation : pages complètes, sans champ à compléter.
+
+### 11.2 Critères de validation
+
+- Tests automatisés, lint et vérification de types au vert sur les deux dépôts.
+- Les six parcours et les deux contrôles validés sur Chrome, Firefox et Safari mobile.
 - Aucune anomalie bloquante ou majeure ouverte.
-- Retours des testeurs du back-office traités ou planifiés : [retours-tests.md](retours-tests.md).
+- Toutes les exigences d'exploitation conformes avant la mise en production.
 
 ---
 
 ## 12. Mise en ligne et formation
 
-### 12.1 Processus de mise en ligne
+1. Choisir l'hébergement (hôte Docker, reverse proxy, certificat) et signer le contrat de sous-traitance.
+2. Générer une seule fois la clé de chiffrement de l'application et saisir les variables d'environnement.
+3. Créer les volumes persistants et la sauvegarde avant le premier déploiement.
+4. Déployer le back, puis lancer les migrations. Aucune donnée de démonstration en production.
+5. Déployer le site étudiant, pointé sur l'adresse publique HTTPS de l'API.
+6. Importer l'annuaire, vérifier les contenus, compléter les mentions légales, retirer le filigrane « prototype ».
+7. Rejouer la recette sur l'environnement de production.
 
-1. Choisir l'hébergement (hôte Docker + reverse proxy TLS) et signer le contrat de sous-traitance.
-2. Générer une seule fois `APP_KEY`. La saisir dans les variables d'environnement de l'hébergement avec les autres : `APP_URL`, base de données, CORS, compte admin initial, identifiants visiteur.
-3. Configurer les volumes persistants (médias, journaux) et la sauvegarde de la base avant le premier déploiement.
-4. Déployer le back, puis lancer les commandes post-déploiement : `package:discover`, `filament:upgrade`, `migrate --force`, `storage:link`. Jamais `db:seed` en production.
-5. Déployer le front avec `NUXT_PUBLIC_API_BASE` pointant sur l'URL publique HTTPS de l'API.
-6. Importer l'annuaire, vérifier les contenus, compléter les mentions légales, retirer le filigrane prototype.
-7. Exécuter la recette (§ 11.2) sur l'environnement de production.
-
-Détail des commandes et des variables : [deploiement.md](deploiement.md).
-
-### 12.2 Formation des administrateurs
-
-- Guides intégrés au tableau de bord (webmaster, rédacteur) et encarts d'aide par section.
-- Session de prise en main par rôle : webmaster (fiches, contacts, médias), rédacteur (écriture, circuit de validation, prévisualisation), admin (validation des comptes, rôles, suppression).
-- Documentation technique dans les dépôts : README, déploiement, schéma de base de données, infrastructure, maintenance.
+Formation : guides intégrés au back-office, puis une session de prise en main par rôle (webmaster, rédacteur, administrateur).
 
 ---
 
-## 13. Suivi et maintenance
+## 13. Points à arrêter avec l'établissement
 
-Mises à jour, montées de version, sauvegardes, supervision et évolutions : [maintenance-evolutive-2025-2029.md](maintenance-evolutive-2025-2029.md).
-
-Maintenance de la sécurité et gestion des violations de données : [securite-rgpd.md](securite-rgpd.md).
-
----
-
-## 14. Critères de réussite
-
-| Indicateur | Cible |
-|---|---|
-| Respect des délais | Livrables remis aux échéances de la SAE |
-| Budget | Aucun coût de licence. Hébergement dans le dimensionnement prévu. |
-| Site fonctionnel | Fonctionnalités F-01 à F-16 opérationnelles, recette validée |
-| Performance | Premier affichage < 3 s en 4G. Une seule requête API par page. |
-| Accès à l'aide | Un numéro d'aide joignable en 3 interactions maximum depuis l'accueil |
-| Autonomie du personnel | Webmaster et rédacteur capables de publier sans intervention technique |
-| Sécurité | Aucun accès non autorisé au back-office, aucun secret dans les journaux |
-| Qualité | Tests, lint et typecheck au vert sur les deux dépôts |
-| Satisfaction | Retours positifs des étudiants et du personnel testeurs |
-
----
-
-## 15. Décisions
-
-| Date | Décision | Alternatives écartées | Raison |
-|---|---|---|---|
-| 2026-07 | Rôles portés par une colonne contrainte + Policies | Spatie Permission + Filament Shield | Rôles fixes, aucune dépendance. Voir [schema_bd.md](schema_bd.md#sur-le-point-6). |
-| 2026-07 | Coordonnées des contacts stockées (`latitude`, `longitude`) | Géocodage à la volée côté front | Une requête Nominatim à la saisie plutôt qu'à chaque affichage. |
-| 2026-09-28 | Police Cabin pour le titrage et le corps | Syne | Commit `9c4a46a` du dépôt front. |
-| 2026-10 | Abandon de Dokploy, hébergement non arrêté | Dokploy | Décision de l'équipe. Les images Docker restent portables. |
-
-## 16. Questions ouvertes
-
-1. Quel hébergeur et quelle offre (hôte Docker, reverse proxy TLS, sauvegardes) l'établissement retient-il ?
-2. Qui porte la maintenance après la fin de la SAE, avec quel temps alloué ?
-3. Quand la mise en ligne est-elle prévue ?
+1. Hébergeur et offre retenus (hôte Docker, reverse proxy, sauvegardes).
+2. Porteur de la maintenance après la SAE et temps alloué.
+3. Date de mise en ligne.

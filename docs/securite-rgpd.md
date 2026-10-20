@@ -1,29 +1,14 @@
 # Documentation sécurité et RGPD — Safe Campus
 
-Statut : brouillon (v1.1, 20/10/2026)
-
 | Élément | Valeur |
 |---|---|
-| Projet | Safe Campus — SAE501 |
-| Version | 1.1 — remplace la v1.0 du 07/10/2026 (PDF) |
+| Projet | Safe Campus — SAE501, Université de la Nouvelle-Calédonie |
+| Date | 20/10/2026 |
 | Périmètre | Site étudiant (Nuxt 4), API et back-office (Laravel 13 / Filament 3), base PostgreSQL 17, images Docker de production |
-| Documents liés | [Cahier des charges techniques](cahier-des-charges-techniques.md) · [Schéma de base de données](schema_bd.md) · [Déploiement](deploiement.md) · [Maintenance évolutive](maintenance-evolutive-2025-2029.md) |
 
-Ce fichier est la source de vérité. Les exports PDF sont générés à partir de lui.
-
-**Changements depuis la v1.0**
-- Dokploy est retiré : l'hébergeur n'est pas désigné.
-- Le conteneur front tourne en root, contrairement à ce qu'affirmait le § 8.
-- Les mesures S-10 à S-14 sont ajoutées. Elles ont été constatées dans le code le 20/10/2026.
-- Les polices chargées depuis Google Fonts sont Cabin et Bebas Neue.
-
-Plan :
-- Partie A, sécurité : § 1 à 10.
-- Partie B, RGPD : § 11 à 18.
+Le document comprend deux parties : la sécurité (sections 1 à 10), puis la protection des données personnelles (sections 11 à 18).
 
 ---
-
-# Partie A — Sécurité
 
 ## 1. Objet et périmètre
 
@@ -54,7 +39,7 @@ Le projet prend comme référentiel le RGPD (règlement UE 2016/679) et la loi I
 | Composant | Exposition | Protection |
 |---|---|---|
 | Site étudiant (Nuxt, SSR) | Public, HTTPS | Page de connexion visiteur obligatoire |
-| API REST (`/api`) | Public, HTTPS | Lecture seule de contenus publiés. Seule route en écriture : `POST /api/login`. Les routes de lecture ne vérifient pas encore le jeton (S-01). |
+| API REST (`/api`) | Public, HTTPS | Lecture seule de contenus publiés. Seule route en écriture : `POST /api/login`. Les routes de lecture ne vérifient pas encore le jeton. |
 | Back-office (`/admin`) | Public, HTTPS | Authentification individuelle, rôles, limitation des tentatives |
 | Base PostgreSQL | Réseau Docker interne uniquement | Aucun port publié en production |
 | Fichiers médias | Public (lien symbolique `storage`) | Ne contient que des contenus destinés à être publiés |
@@ -93,7 +78,7 @@ Le projet prend comme référentiel le RGPD (règlement UE 2016/679) et la loi I
 
 ### 4.1 Accès visiteur au site étudiant
 
-- Toutes les pages, sauf `/login`, sont protégées par un middleware global (`app/middleware/auth.global.ts`). Sans jeton, l'utilisateur est redirigé vers `/login`, puis vers la page demandée après connexion.
+- Toutes les pages, sauf `/login`, sont protégées par un middleware global. Sans jeton, l'utilisateur est redirigé vers `/login`, puis vers la page demandée après connexion.
 - Le mot de passe est partagé. Le compte visiteur n'est pas nominatif. Ses identifiants sont définis dans la configuration serveur (`VISITEUR_EMAIL` / `VISITEUR_PASSWORD`), jamais dans le code.
 - `POST /api/login` renvoie un jeton Sanctum (Bearer). Le front le stocke dans le cookie `sc_token` (`SameSite=Lax`).
 - Le compte visiteur ne peut pas accéder au back-office : `canAccessPanel()` n'accepte que `webmaster`, `redacteur` et `admin`.
@@ -108,8 +93,6 @@ Le projet prend comme référentiel le RGPD (règlement UE 2016/679) et la loi I
 - Premier administrateur créé à la migration (`ADMIN_EMAIL` / `ADMIN_PASSWORD`). En production, la migration échoue si son mot de passe ne respecte pas la politique ci-dessous.
 
 ### 4.3 Politique de mots de passe
-
-Définie par `Password::defaults()` dans `AppServiceProvider`.
 
 | Règle | Valeur |
 |---|---|
@@ -147,13 +130,13 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 ### 6.1 En transit
 
 - HTTPS de bout en bout : le certificat TLS et le reverse proxy sont à fournir par l'hébergement retenu. Les conteneurs ne parlent que HTTP.
-- CORS : la variable `CORS_ALLOWED_ORIGINS` est transmise au conteneur, mais aucun fichier `config/cors.php` ne la lit. Toutes les origines sont donc acceptées (S-09).
+- Requêtes inter-domaines : la liste des domaines autorisés est transmise au conteneur, mais l'application ne la lit pas. Toutes les origines sont donc acceptées.
 
 ### 6.2 Au repos
 
 - Base PostgreSQL accessible uniquement depuis le conteneur back. Utilisateur dédié sans droits superuser, mot de passe aléatoire d'au moins 20 caractères.
 - `APP_KEY` générée une seule fois, conservée dans les variables d'environnement de l'hébergement, jamais régénérée.
-- Les secrets sont stockés uniquement dans les variables d'environnement. Les fichiers `.env` sont exclus de Git et des images Docker (`.dockerignore`).
+- Les secrets sont stockés uniquement dans les variables d'environnement. Les fichiers `.env` sont exclus de Git et des images Docker.
 
 ### 6.3 Sécurité applicative
 
@@ -173,7 +156,7 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 | Caractéristique | Valeur |
 |---|---|
-| Canal | `audit`, distinct de `laravel.log` (`config/logging.php`) |
+| Canal | `audit`, distinct du journal applicatif |
 | Fichiers | `storage/logs/audit-AAAA-MM-JJ.log`, un par jour |
 | Format | JSON, une entrée par ligne, horodatage UTC |
 | Conservation | 365 jours, purge automatique |
@@ -185,20 +168,18 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 > Les rattachements entre éléments (par exemple histoire ↔ sous-thème, média ↔ sous-thème) ne déclenchent pas d'événement de modèle. Ils ne sont donc pas tracés.
 
-> Sans volume persistant sur `storage/logs`, chaque redéploiement efface le journal (S-06).
+> Sans volume persistant pour les journaux, chaque redéploiement efface le journal.
 
 ---
 
 ## 8. Infrastructure et déploiement
 
 - Les images de production sont séparées des images de développement. Elles ne contiennent ni Xdebug, ni Adminer, ni dépendances de développement. L'image front ne contient que le build `.output/`, sans code source.
-- Le conteneur back tourne avec un utilisateur non root (`scback`). Le conteneur front tourne en root (S-12).
+- Le conteneur back tourne avec un utilisateur non administrateur. Le conteneur du site étudiant tourne encore en administrateur.
 - Le réseau Docker de production (`scback_prod`) est séparé de celui de développement (`scback`).
 - Les commandes post-déploiement excluent tout jeu de données de démonstration : `db:seed` est interdit en production.
 - Une sauvegarde de la base est obligatoire avant toute migration en production.
-- Volumes persistants à créer pour `storage/app` (médias) et `storage/logs` (audit) : sans eux, un redéploiement efface les médias et les journaux (S-06).
-
-Procédure : [deploiement.md](deploiement.md).
+- Volumes persistants à créer pour les médias et les journaux : sans eux, un redéploiement les efface.
 
 ---
 
@@ -212,34 +193,32 @@ Procédure : [deploiement.md](deploiement.md).
 | Changement du mot de passe visiteur et révocation des jetons émis | À chaque rentrée universitaire, et dès qu'une fuite est suspectée |
 | Rotation des secrets (BD, compte admin initial) | Annuelle, ou après le départ d'un administrateur |
 | Test de restauration d'une sauvegarde | Trimestrielle |
-| Montées de version majeures | Selon le calendrier de [maintenance-evolutive-2025-2029.md](maintenance-evolutive-2025-2029.md) |
+| Montées de version majeures | Selon le calendrier de fin de support des composants |
 
 ---
 
 ## 10. Mesures complémentaires à mettre en œuvre
 
-État vérifié dans le code le 20/10/2026 : aucune de ces mesures n'est réalisée.
+État constaté le 20/10/2026 : aucune de ces mesures n'est réalisée.
 
-| ID | Mesure | Constat dans le code | Priorité |
-|---|---|---|---|
-| S-01 | Protéger les routes de lecture de l'API par le jeton visiteur (middleware `auth:sanctum`). La protection ne doit pas reposer uniquement sur le front. Côté front, envoyer le jeton en `Authorization: Bearer`. | `routes/api.php` : les trois `GET` sont publics. Le front n'envoie pas le jeton. | Haute |
-| S-02 | Limiter le nombre d'appels à `POST /api/login` (middleware `throttle`) contre le bruteforce du mot de passe partagé | Aucun `throttle` sur la route | Haute |
-| S-03 | Donner une durée de vie aux jetons Sanctum et purger les jetons expirés | `config/sanctum.php` : `'expiration' => null` | Haute |
-| S-04 | Ajouter l'attribut `Secure` au cookie `sc_token` en production | `useAuth.ts` : seul `sameSite: 'lax'` est défini | Moyenne |
-| S-05 | Ajouter les en-têtes de sécurité HTTP : HSTS, Content-Security-Policy, X-Content-Type-Options, Referrer-Policy | Aucun en-tête défini, ni back ni front | Moyenne |
-| S-06 | Créer les volumes persistants (`storage/app`, `storage/logs`) et la sauvegarde automatisée (`pg_dump` quotidien, stockage hors serveur) | Seul le volume PostgreSQL existe dans `docker-compose.prod.yml` | Haute |
-| S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
-| S-08 | Héberger les polices localement au lieu de Google Fonts (voir § 15) | `nuxt.config.ts` charge Cabin et Bebas Neue depuis `fonts.googleapis.com` | Moyenne |
-| S-09 | Publier `config/cors.php` pour limiter les origines autorisées à `CORS_ALLOWED_ORIGINS` | Fichier absent : toutes les origines sont acceptées | Moyenne |
-| S-10 | Transmettre `VISITEUR_EMAIL` et `VISITEUR_PASSWORD` au conteneur de production | Présents dans `.env.production.example`, absents du bloc `environment:` de `docker-compose.prod.yml`. La migration `seed_visiteur` lève une exception sans mot de passe : le premier `migrate --force` échoue. | Haute (bloquant) |
-| S-11 | Remplacer `php artisan serve` par un serveur de production (PHP-FPM + nginx, ou FrankenPHP) | `Dockerfile.prod` : `CMD php artisan serve`, serveur de développement mono-processus | Haute |
-| S-12 | Faire tourner le conteneur front avec un utilisateur non root (`USER node`) | `docker/Dockerfile.prod` du front : aucune instruction `USER` | Moyenne |
-| S-13 | Activer `SESSION_SECURE_COOKIE=true` en production (cookie de session du back-office) | Variable absente de `docker-compose.prod.yml` : le cookie de session part sans `Secure` | Moyenne |
-| S-14 | Épingler les versions des images de build (`composer:latest`) | `Dockerfile.prod` back : `COPY --from=composer:latest` | Basse |
+| Mesure | Constat | Priorité |
+|---|---|---|
+| Exiger le jeton visiteur sur les routes de lecture de l'API, et l'envoyer depuis le site étudiant | Les routes de lecture répondent sans jeton | Haute |
+| Limiter le nombre de tentatives sur la connexion visiteur | Aucune limitation | Haute |
+| Donner une durée de vie aux jetons d'accès et purger les jetons expirés | Durée de vie illimitée | Haute |
+| Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Seule la base dispose d'un volume | Haute |
+| Transmettre les identifiants du compte visiteur au conteneur de production | Variables absentes : le premier déploiement échoue | Haute (bloquant) |
+| Remplacer le serveur de développement par un serveur d'application de production | L'image lance `artisan serve`, mono-processus | Haute |
+| Rendre sécurisé le cookie du jeton visiteur en production | Attribut `Secure` absent | Moyenne |
+| Rendre sécurisé le cookie de session du back-office en production | Option non activée | Moyenne |
+| Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Aucun en-tête défini | Moyenne |
+| Limiter les requêtes inter-domaines au domaine du site étudiant | Toutes les origines acceptées | Moyenne |
+| Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
+| Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |
+| Exécuter le conteneur du site étudiant avec un utilisateur non administrateur | Conteneur exécuté en administrateur | Moyenne |
+| Figer les versions des images utilisées au build | Image Composer en version « latest » | Basse |
 
 ---
-
-# Partie B — RGPD
 
 ## 11. Acteurs et responsabilités
 
@@ -307,7 +286,7 @@ Aucun cookie publicitaire ou de mesure d'audience n'est déposé : aucun bandeau
 
 ### 15.1 Ressources tierces
 
-Le chargement des polices Google Fonts et des tuiles cartographiques transmet l'adresse IP du visiteur à ces services. Google est situé hors de l'Union européenne : il est recommandé d'héberger les polices sur le serveur Safe Campus (S-08). Les tuiles OpenStreetMap ne sont chargées que sur les pages contact.
+Le chargement des polices Google Fonts et des tuiles cartographiques transmet l'adresse IP du visiteur à ces services. Google est situé hors de l'Union européenne : il est recommandé d'héberger les polices sur le serveur Safe Campus. Les tuiles OpenStreetMap ne sont chargées que sur les pages contact.
 
 ---
 
@@ -318,7 +297,7 @@ Le chargement des polices Google Fonts et des tuiles cartographiques transmet l'
 | Hébergeur | Toutes les données de la plateforme | À désigner | Contrat de sous-traitance (art. 28 RGPD) |
 | OpenStreetMap Foundation | IP du navigateur, adresses de structures | Royaume-Uni (décision d'adéquation) | Politique d'usage OSM |
 | Esri | IP du navigateur (back-office) | États-Unis | Usage limité au personnel |
-| Google Fonts | IP du navigateur | États-Unis | À supprimer (S-08) |
+| Google Fonts | IP du navigateur | États-Unis | À supprimer |
 | Have I Been Pwned | Fragment de hash non réversible | International | Pas de donnée personnelle |
 
 ---
@@ -343,16 +322,16 @@ flowchart LR
 
 ## 18. Actions avant mise en production
 
-| ID | Action | Responsable |
-|---|---|---|
-| MEP-01 | Désigner le responsable de traitement et compléter les mentions légales (éditeur, hébergeur, contact, DPO) | Établissement |
-| MEP-02 | Ajouter aux CGU une section « Données personnelles » détaillant les cookies et les droits | Équipe projet |
-| MEP-03 | Inscrire les traitements au registre de l'établissement | DPO |
-| MEP-04 | Choisir l'hébergeur et signer le contrat de sous-traitance | Établissement |
-| MEP-05 | Informer les référents nommés de l'annuaire de leur présence et de leurs droits | Webmaster |
-| MEP-06 | Réaliser les mesures S-01 à S-14 (§ 10), en commençant par les priorités hautes | Équipe projet |
+| Action | Responsable |
+|---|---|
+| Désigner le responsable de traitement et compléter les mentions légales (éditeur, hébergeur, contact, DPO) | Établissement |
+| Ajouter aux CGU une section « Données personnelles » détaillant les cookies et les droits | Équipe projet |
+| Inscrire les traitements au registre de l'établissement | DPO |
+| Choisir l'hébergeur et signer le contrat de sous-traitance | Établissement |
+| Informer les référents nommés de l'annuaire de leur présence et de leurs droits | Webmaster |
+| Réaliser les mesures complémentaires de la section 10, en commençant par les priorités hautes | Équipe projet |
 
-## Questions ouvertes
+## Points à arrêter avec l'établissement
 
 1. Quel régime de protection des données s'applique en Nouvelle-Calédonie ? (à confirmer par le DPO de l'UNC)
 2. Qui est le responsable de traitement : l'UNC ou une autre entité ?

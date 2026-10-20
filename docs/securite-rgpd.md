@@ -146,7 +146,8 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 ### 6.2 Au repos
 
-- Base PostgreSQL accessible uniquement depuis le conteneur back. Utilisateur dédié sans droits superuser, mot de passe aléatoire d'au moins 20 caractères.
+- Base PostgreSQL accessible uniquement depuis le conteneur back. Mot de passe aléatoire d'au moins 20 caractères.
+- L'application se connecte avec le compte créé par l'image PostgreSQL (`POSTGRES_USER`), qui est superutilisateur (S-18).
 - `APP_KEY` générée une seule fois, conservée dans les variables d'environnement de l'hébergement, jamais régénérée.
 - Les secrets sont stockés uniquement dans les variables d'environnement. Les fichiers `.env` sont exclus de Git et des images Docker.
 
@@ -257,6 +258,7 @@ Ces préconisations servent de cahier des charges pour le choix de l'hébergeur.
 | S-13 | Rendre sécurisé le cookie de session du back-office en production | Option non activée | Moyenne |
 | S-14 | Figer les versions des images utilisées au build | Image Composer en version « latest » | Basse |
 | S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Rattachements non journalisés | Basse |
+| S-18 | Connecter l'application avec un utilisateur dédié, propriétaire de la base mais sans droits superutilisateur, créé par un script d'initialisation de PostgreSQL | L'application utilise le compte superutilisateur créé par l'image | Moyenne |
 
 ### 10.2 Limites connues du portillon visiteur
 

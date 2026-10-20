@@ -30,7 +30,7 @@
 | `APP_KEY` | généré en local | Généré **une seule fois** (`php artisan key:generate --show`), jamais régénéré. Le régénérer invalide sessions, cookies et données chiffrées existantes. |
 | `APP_URL` | `http://localhost:8000` | URL publique en HTTPS |
 | `DB_DATABASE` | `sc_back` | Nom de base spécifique |
-| `DB_USERNAME` | `sail` | Utilisateur dédié sans droits superuser |
+| `DB_USERNAME` | `sail` | Utilisateur de la base. Créé superutilisateur par l'image PostgreSQL : utilisateur dédié à prévoir (S-18). |
 | `DB_PASSWORD` | `password` | Mot de passe fort (min. 20 caractères, aléatoire) |
 | `LOG_LEVEL` | `debug` | `error` (fixé dans `docker-compose.prod.yml`) |
 | `CORS_ALLOWED_ORIGINS` / `SANCTUM_STATEFUL_DOMAINS` | `localhost:3000` | Domaine public du front. `CORS_ALLOWED_ORIGINS` n'est lu par aucun `config/cors.php` à ce jour (S-09). |

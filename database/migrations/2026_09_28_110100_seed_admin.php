@@ -11,7 +11,7 @@ use Illuminate\Validation\Rules\Password;
  * Premier compte admin, provisionne au migrate dans tous les environnements.
  * Identifiants pilotes par ADMIN_EMAIL / ADMIN_PASSWORD, lus via
  * config/admin.php : valeurs de dev dans .env.example, vraies valeurs dans
- * Dokploy en production. Le mot de passe ne sert qu'a la creation — une fois
+ * la configuration de l'hebergement en production. Le mot de passe ne sert qu'a la creation — une fois
  * le compte cree, la migration ne fait plus rien.
  *
  * Insertion via DB::table, pas via le modele/factory : une migration ne doit

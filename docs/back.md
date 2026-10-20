@@ -1,9 +1,8 @@
 # Guide développement back-end
 
-Stack : **Laravel 12** · **PHP 8.4** · **Filament 3** · **PostgreSQL 17**
+Stack : **Laravel 13** · **PHP 8.4** · **Filament 3** · **PostgreSQL 17**
 
-> **État actuel (2026-07) :** Inertia a été retiré du projet (Filament est autonome, ne dépend d'aucun asset de ce repo). L'UI principale est [Safe-Campus-front](../../Safe-Campus-front) (Nuxt standalone, repo séparé).
-> **Aucune route API n'existe encore** (`routes/api.php` absent) — le front Nuxt n'a rien à consommer pour l'instant. La route `/` renvoie un simple JSON de statut. À créer avant toute intégration front↔back réelle.
+> Filament est autonome : il ne dépend d'aucun asset de ce repo. L'UI principale est [Safe-Campus-front](../../Safe-Campus-front) (Nuxt 4 standalone, repo séparé), qui consomme `routes/api.php`. La route `/` renvoie un simple JSON de statut.
 
 ---
 
@@ -26,7 +25,7 @@ database/
 
 routes/
 ├── web.php                 Minimal — health check `/`
-├── api.php                 N'existe pas encore — à créer pour le front Nuxt
+├── api.php                 Routes JSON consommées par le front Nuxt
 └── console.php             Commandes Artisan custom
 ```
 
@@ -157,15 +156,15 @@ Scene::whereJsonContains('meta->tags', 'intro')->get();
 ## Routes
 
 ```php
-// api.php (à créer) — routes JSON pour le front Nuxt
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::apiResource('histoires', HistoireController::class);
-    Route::apiResource('histoires.scenes', SceneController::class);
-});
+// api.php — routes JSON pour le front Nuxt
+Route::post('login', [AuthController::class, 'login']);
 
-// Nommage automatique par resource :
-// histoires.index / histoires.show / histoires.store …
+Route::get('themes', [ThemeController::class, 'index']);
+Route::get('sous-themes/{sousTheme:ref}', [SousThemeController::class, 'show']);
+Route::get('histoires/{histoire:ref}', [HistoireController::class, 'show']);
 ```
+
+> Les routes de lecture sont publiques à ce jour. Les placer sous `auth:sanctum` est prévu : mesure S-01 de [securite-rgpd.md](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre). Contrats des réponses : [schema_bd.md § Consommation API](schema_bd.md#consommation-api).
 
 ---
 

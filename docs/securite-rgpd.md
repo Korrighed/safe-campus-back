@@ -192,7 +192,7 @@ Aucun hébergeur n'est retenu. Le livrable s'arrête aux images Docker de produc
 
 - Les images de production sont séparées des images de développement. Elles ne contiennent ni Xdebug, ni Adminer, ni dépendances de développement. L'image front ne contient que le build `.output/`, sans code source.
 - Les fichiers `.env` sont exclus des images (`.dockerignore`).
-- Le conteneur back tourne avec un utilisateur non administrateur. Le conteneur du site étudiant tourne encore en administrateur (S-12).
+- Les conteneurs back et site étudiant tournent avec un utilisateur non administrateur. L'image de production du site étudiant utilise `node`, fourni par l'image Node, et ne peut pas modifier son build `.output/` (S-12, corrigé).
 - L'image back sert l'application avec `php artisan serve`, serveur de développement mono-processus (S-11).
 - Le réseau Docker de production (`scback_prod`) est séparé de celui de développement (`scback`).
 - Les commandes post-déploiement excluent tout jeu de données de démonstration : `db:seed` est interdit en production.
@@ -254,7 +254,6 @@ Ces préconisations servent de cahier des charges pour le choix de l'hébergeur.
 | S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Toutes les origines acceptées | Moyenne |
 | S-10 | Adapter les images de production au lancement officiel : retirer le compte visiteur, la page de connexion et le middleware du front | Les images exigent le compte visiteur : sans ses variables, le premier déploiement échoue | Haute (au lancement officiel) |
 | S-11 | Remplacer le serveur de développement par un serveur d'application de production | L'image lance `artisan serve`, mono-processus | Haute |
-| S-12 | Exécuter le conteneur du site étudiant avec un utilisateur non administrateur : `USER node` dans `docker/Dockerfile.prod` du front, utilisateur déjà fourni par l'image Node | Conteneur exécuté en administrateur | Moyenne (correctif rapide) |
 | S-13 | Rendre sécurisé le cookie de session du back-office en production | Option non activée | Moyenne |
 | S-14 | Figer les versions des images utilisées au build | Image Composer en version « latest » | Basse |
 | S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Rattachements non journalisés | Basse |

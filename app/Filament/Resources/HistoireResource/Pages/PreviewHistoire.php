@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
 use App\Models\Contact;
@@ -24,6 +25,7 @@ class PreviewHistoire extends Page
 {
     use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use LitHistoire;
     use OuvreVerification;
 
     protected static string $resource = HistoireResource::class;
@@ -53,18 +55,6 @@ class PreviewHistoire extends Page
     public function getTitle(): string
     {
         return 'Prévisualiser : '.$this->histoire()->titre;
-    }
-
-    /**
-     * InteractsWithRecord type le record en Model : cette page ne sert que
-     * HistoireResource.
-     */
-    private function histoire(): Histoire
-    {
-        /** @var Histoire $histoire */
-        $histoire = $this->getRecord();
-
-        return $histoire;
     }
 
     public function getSceneActuelle(): ?Scene

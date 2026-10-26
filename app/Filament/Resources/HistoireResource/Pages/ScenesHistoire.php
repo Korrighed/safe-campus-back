@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
 use App\Models\Histoire;
@@ -28,11 +29,14 @@ use Illuminate\Support\Str;
 
 /**
  * Page Scènes : une section par scène, modifiée sur place. Seules les confirmations de retrait et de suppression ouvrent une fenêtre.
+ *
+ * @property Form $form
  */
 class ScenesHistoire extends Page
 {
     use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use LitHistoire;
     use OuvreVerification;
 
     protected static string $resource = HistoireResource::class;
@@ -68,7 +72,7 @@ class ScenesHistoire extends Page
     {
         $this->record = $this->resolveRecord($record);
 
-        abort_unless(auth()->user()?->can('view', $this->getRecord()), 403);
+        abort_unless(auth()->user()?->can('view', $this->histoire()), 403);
 
         $this->form->fill();
     }
@@ -95,7 +99,7 @@ class ScenesHistoire extends Page
 
     public function getTitle(): string|Htmlable
     {
-        return $this->getRecord()->titre;
+        return $this->histoire()->titre;
     }
 
     public function getBreadcrumb(): string
@@ -110,12 +114,12 @@ class ScenesHistoire extends Page
     {
         $scenes = $this->scenesOrdonnees();
         $numeros = $scenes->pluck('id')->flip()->map(fn (int $index) => $index + 1);
-        $atteignables = app(VerificationHistoireService::class)->scenesAtteignables($this->getRecord());
+        $atteignables = app(VerificationHistoireService::class)->scenesAtteignables($this->histoire());
 
         return $scenes->values()->map(fn (Scene $scene, int $index) => [
             'scene' => $scene,
             'numero' => $index + 1,
-            'estDepart' => (bool) $scene->pivot->est_initiale,
+            'estDepart' => (bool) $scene->pivot->getAttribute('est_initiale'),
             'estPremiere' => $index === 0,
             'estDerniere' => $index === $scenes->count() - 1,
             'badges' => $this->badges($scene, in_array($scene->id, $atteignables, true)),
@@ -151,7 +155,7 @@ class ScenesHistoire extends Page
     public function getScenesReutilisables(): array
     {
         return Scene::query()
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->getRecord()->getKey()))
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
             ->whereHas('histoires')
             ->with('histoires:id,titre')
             ->orderBy('titre')
@@ -272,7 +276,7 @@ class ScenesHistoire extends Page
             'choix' => $scene->choix->mapWithKeys(fn (Choix $choix) => ['choix-'.$choix->id => [
                 'id' => $choix->id,
                 'text_choix' => $choix->text_choix,
-                'suite' => $choix->issue?->value ?? ($choix->next_scene_id !== null ? 'continuer' : null),
+                'suite' => $choix->issue->value ?? ($choix->next_scene_id !== null ? 'continuer' : null),
                 'next_scene_id' => $choix->next_scene_id,
             ]])->all(),
         ]);
@@ -368,7 +372,7 @@ class ScenesHistoire extends Page
     public function definirDepart(int $sceneId): void
     {
         $scene = $this->sceneDeLHistoire($sceneId);
-        $relation = $this->getRecord()->scenes();
+        $relation = $this->histoire()->scenes();
 
         DB::transaction(function () use ($relation, $scene): void {
             $relation->newPivotQuery()->update(['est_initiale' => false]);
@@ -394,7 +398,7 @@ class ScenesHistoire extends Page
 
         $scene = Scene::query()
             ->whereKey($this->sceneAReutiliser)
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->getRecord()->getKey()))
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
             ->whereHas('histoires')
             ->first();
 
@@ -420,7 +424,7 @@ class ScenesHistoire extends Page
             ->modalSubmitActionLabel('Retirer')
             ->action(function (array $arguments): void {
                 $scene = $this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0));
-                $this->getRecord()->scenes()->detach($scene->getKey());
+                $this->histoire()->scenes()->detach($scene->getKey());
 
                 Notification::make()->success()->title("« {$scene->titre} » est retirée de l'histoire.")->send();
             });
@@ -447,7 +451,7 @@ class ScenesHistoire extends Page
      */
     protected function scenesOrdonnees(): Collection
     {
-        return $this->getRecord()->scenes()
+        return $this->histoire()->scenes()
             ->with('choix.nextScene')
             ->orderBy('histoire_scene.ordre')
             ->orderBy('scenes.id')
@@ -458,12 +462,12 @@ class ScenesHistoire extends Page
     {
         $this->autoriserModification();
 
-        return $this->getRecord()->scenes()->whereKey($sceneId)->firstOrFail();
+        return $this->histoire()->scenes()->whereKey($sceneId)->firstOrFail();
     }
 
     protected function autoriserModification(): void
     {
-        abort_unless(auth()->user()?->can('update', $this->getRecord()), 403);
+        abort_unless(auth()->user()?->can('update', $this->histoire()), 403);
     }
 
     /**
@@ -472,7 +476,7 @@ class ScenesHistoire extends Page
      */
     protected function rattacher(Scene $scene): void
     {
-        $histoire = $this->getRecord();
+        $histoire = $this->histoire();
 
         $histoire->scenes()->attach($scene->getKey(), [
             'ordre' => (int) $histoire->scenes()->max('histoire_scene.ordre') + 1,
@@ -497,7 +501,7 @@ class ScenesHistoire extends Page
         }
 
         [$ids[$index], $ids[$voisin]] = [$ids[$voisin], $ids[$index]];
-        $relation = $this->getRecord()->scenes();
+        $relation = $this->histoire()->scenes();
 
         DB::transaction(function () use ($ids, $relation): void {
             foreach ($ids as $position => $id) {
@@ -540,7 +544,7 @@ class ScenesHistoire extends Page
     protected function badges(Scene $scene, bool $atteignable): array
     {
         $badges = [];
-        $estDepart = (bool) $scene->pivot->est_initiale;
+        $estDepart = (bool) $scene->pivot->getAttribute('est_initiale');
 
         if ($estDepart) {
             $badges[] = ['libelle' => 'Départ', 'couleur' => 'success'];
@@ -575,7 +579,7 @@ class ScenesHistoire extends Page
     {
         return match (true) {
             $choix->next_scene_id !== null && isset($numeros[$choix->next_scene_id]) => [
-                'suite' => 'Scène '.$numeros[$choix->next_scene_id].' — '.Str::limit($choix->nextScene?->titre ?? '', 60),
+                'suite' => 'Scène '.$numeros[$choix->next_scene_id].' — '.Str::limit($choix->nextScene->titre ?? '', 60),
                 'couleur' => 'primary',
             ],
             $choix->next_scene_id !== null => ['suite' => 'Scène hors de cette histoire', 'couleur' => 'warning'],

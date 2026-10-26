@@ -86,7 +86,7 @@ Le site étudiant et l'API de lecture sont publics par conception. En production
 
 Le prototype n'est pas déployé. Lors des événements où la plateforme est présentée, un **portillon visiteur** limite l'accès au site étudiant. Ce portillon n'est pas une authentification : il ne protège aucune donnée, l'API de lecture restant publique.
 
-- Un middleware global redirige vers `/login` toutes les pages, sauf `/login`, `/mentions-legales` et `/cgu`, tant que le cookie `sc_token` est absent. Il vérifie la présence du cookie, pas sa validité.
+- Un middleware global redirige vers `/login` toutes les pages, sauf `/login`, `/mentions-legales`, `/cgu` et `/donnees-personnelles`, tant que le cookie `sc_token` est absent. Il vérifie la présence du cookie, pas sa validité.
 - Le mot de passe est partagé. Le compte visiteur n'est pas nominatif. Ses identifiants sont définis dans la configuration serveur (`VISITEUR_EMAIL` / `VISITEUR_PASSWORD`), jamais dans le code. Le mot de passe est changé par variable d'environnement entre deux événements.
 - `POST /api/login` renvoie un jeton Sanctum. Le front le stocke dans le cookie `sc_token` (`SameSite=Lax`).
 - Le jeton n'a pas de durée de vie : le portillon n'a pas vocation à expirer pendant un événement.
@@ -174,7 +174,7 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 | Fichiers | `storage/logs/audit-AAAA-MM-JJ.log`, un par jour |
 | Format | JSON, une entrée par ligne, horodatage UTC |
 | Conservation | 365 jours, purge automatique |
-| Événements | Création, modification (avant / après) et suppression des données métier. Connexion, échec de connexion, déconnexion, inscription. Transfert d'histoires. |
+| Événements | Création, modification (avant / après) et suppression des données métier. Connexion, échec de connexion, déconnexion, inscription. Transfert d'histoires. Purge d'un compte inactif (`User.purge_inactivite`) ou ignorée faute de repreneur (`User.purge_ignoree`), auteur `console`. |
 | Contenu d'une entrée | Action, objet concerné, auteur, adresse IP, détails |
 | Exclusions | Jamais de mot de passe ni de jeton. Textes longs tronqués à 200 caractères. |
 | Fiabilité | Écrit après validation de la transaction : une action annulée n'est pas tracée |
@@ -252,12 +252,13 @@ Ces préconisations servent de cahier des charges pour le choix de l'hébergeur.
 | S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
 | S-08 | Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |
 | S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Toutes les origines acceptées | Moyenne |
-| S-10 | Adapter les images de production au lancement officiel : retirer le compte visiteur, la page de connexion et le middleware du front | Les images exigent le compte visiteur : sans ses variables, le premier déploiement échoue | Haute (au lancement officiel) |
+| S-10 | Adapter les images de production au lancement officiel : retirer le compte visiteur, la page de connexion et le middleware du front. Retirer aussi du front la ligne « portillon » et la section « cookie » de la page Données personnelles, et `/donnees-personnelles` de `PUBLIC_PATHS` | Les images exigent le compte visiteur : sans ses variables, le premier déploiement échoue | Haute (au lancement officiel) |
 | S-11 | Remplacer le serveur de développement par un serveur d'application de production | L'image lance `artisan serve`, mono-processus | Haute |
 | S-13 | Rendre sécurisé le cookie de session du back-office en production | Option non activée | Moyenne |
 | S-14 | Figer les versions des images utilisées au build | Image Composer en version « latest » | Basse |
 | S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Rattachements non journalisés | Basse |
 | S-18 | Connecter l'application avec un utilisateur dédié, propriétaire de la base mais sans droits superutilisateur, créé par un script d'initialisation de PostgreSQL | L'application utilise le compte superutilisateur créé par l'image | Moyenne |
+| S-19 | Lancer le planificateur Laravel en production (cron de l'hôte : `schedule:run` chaque minute, voir `deploiement.md`) | Aucun planificateur dans l'image : la purge des comptes inactifs à 3 ans ne s'exécute pas | Haute |
 
 ### 10.2 Limites connues du portillon visiteur
 
@@ -290,10 +291,12 @@ Ces limites sont assumées pour le prototype. Elles disparaissent en production 
 
 | Traitement | Personnes concernées | Données | Finalité | Base légale | Conservation |
 |---|---|---|---|---|---|
-| Gestion des comptes du back-office | Personnel du campus | Nom, prénom, email, téléphone, rôle, mot de passe (hash) | Administrer les contenus | Mission d'intérêt public / intérêt légitime | Durée de la fonction. Suppression par l'admin. |
+| Gestion des comptes du back-office | Personnel du campus | Nom, prénom, email, téléphone, rôle, mot de passe (hash) | Administrer les contenus | Mission d'intérêt public / intérêt légitime | Durée de la fonction. Suppression par l'admin, ou automatique après 3 ans sans connexion. |
 | Demandes d'inscription | Personnel demandeur | Idem | Valider l'accès | Mesures précontractuelles / intérêt légitime | Jusqu'à validation ou refus |
 | Annuaire des structures d'aide | Référents nommés des structures | Nom, prénom, email professionnel, adresse de permanence | Orienter les étudiants vers l'aide | Mission d'intérêt public | Tant que le référent est en poste. Effacement sur demande. |
 | Journal d'audit | Utilisateurs du back-office | Identité, action, IP, date | Sécurité, traçabilité | Intérêt légitime / obligation de sécurité | 365 jours |
+| Session du back-office | Utilisateurs du back-office | Cookie de session, identifiant, IP, navigateur (table `sessions`) | Maintenir la connexion | Intérêt légitime | 120 minutes d'inactivité (`SESSION_LIFETIME`) |
+| Services tiers du site (polices, cartes) | Visiteurs du site | IP et en-têtes HTTP transmis à Google Fonts et OpenStreetMap (§ 2.1) | Afficher polices et cartes | À confirmer par le DPO | Aucune conservation par Safe Campus |
 | Portillon visiteur (prototype) | Visiteurs des événements | Aucune donnée identifiante (compte partagé). Cookie technique. | Restreindre l'accès au prototype pendant les événements | Intérêt légitime | Durée du cookie de session navigateur |
 
 Les bases légales sont à valider par le DPO.
@@ -307,7 +310,7 @@ Les bases légales sont à valider par le DPO.
 | Minimisation | Aucun compte, formulaire ou outil de mesure d'audience pour les étudiants. Pour le personnel, seules les données utiles au contact et à l'administration sont collectées. |
 | Limitation des finalités | Les données du personnel ne servent qu'à la gestion des accès. `User` et `Contact` sont deux tables sans aucun lien. |
 | Exactitude | Contacts tenus à jour par le webmaster. Champ `actif` pour retirer immédiatement une structure du site. |
-| Limitation de la conservation | Purge automatique de l'audit à 365 jours. Suppression des comptes et des contacts nommés possible à tout moment. |
+| Limitation de la conservation | Purge automatique de l'audit à 365 jours. Purge automatique des comptes sans connexion depuis 3 ans (`comptes:purger-inactifs`, quotidienne). Suppression des comptes et des contacts nommés possible à tout moment. |
 | Intégrité et confidentialité | Mesures de la partie A (§ 4 à 10) |
 | Protection dès la conception | Pas de collecte côté étudiant. La consultation de thématiques sensibles (santé mentale, violences) ne laisse aucune trace nominative. |
 
@@ -324,6 +327,8 @@ Les bases légales sont à valider par le DPO.
 | Réclamation | Auprès du DPO de l'établissement, puis de l'autorité de contrôle compétente |
 
 **Procédure** : la demande est adressée au contact indiqué dans les mentions légales. Elle est transmise au DPO et traitée dans un délai d'un mois. L'opération réalisée dans le back-office apparaît dans le journal d'audit.
+
+**Purge des comptes inactifs** : la date de dernière connexion (`users.derniere_connexion_at`) est mise à jour à chaque connexion au back-office. Un compte sans connexion depuis 3 ans (inscription pour un compte jamais connecté) est supprimé chaque jour. Exclus : le visiteur, les admins, et les comptes auteurs d'histoires (signalés dans le journal d'audit, `User.purge_ignoree`, un admin choisit le repreneur et supprime à la main). Aucun email d'avertissement n'est envoyé avant suppression.
 
 > L'effacement d'un compte supprime la ligne en base. Les entrées déjà écrites dans le journal d'audit sont conservées jusqu'à leur purge automatique à 365 jours, au titre de l'obligation de sécurité.
 
@@ -380,7 +385,7 @@ flowchart LR
 | Action | Responsable |
 |---|---|
 | Désigner le responsable de traitement et compléter les mentions légales (éditeur, hébergeur, contact, DPO) | Établissement |
-| Ajouter aux CGU une section « Données personnelles » détaillant les cookies et les droits | Équipe projet |
+| ~~Ajouter aux CGU une section « Données personnelles »~~ Fait : page `/donnees-personnelles` du site (visiteurs, liée depuis le pied de page et les menus) et section « Données personnelles » des CGU du back-office (`/cgu#donnees-personnelles`, aussi résumée sur les pages de connexion et d'inscription). Contenu à faire valider par le DPO avant la mise en production. | Équipe projet |
 | Inscrire les traitements au registre de l'établissement | DPO |
 | Choisir l'hébergeur à partir des préconisations du § 8.1 et signer le contrat de sous-traitance | Établissement |
 | Informer les référents nommés de l'annuaire de leur présence et de leurs droits | Webmaster |

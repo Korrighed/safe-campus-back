@@ -59,13 +59,23 @@ php artisan storage:link
 
 Déploiement du front : [README de Safe-Campus-front § Déploiement](../../Safe-Campus-front/README.md#déploiement-prod). `NUXT_PUBLIC_API_BASE` doit pointer sur l'URL publique HTTPS de ce back.
 
+## Tâches planifiées
+
+`comptes:purger-inactifs` (quotidienne) supprime les comptes sans connexion depuis 3 ans (voir [securite-rgpd.md § 14](securite-rgpd.md)). Le conteneur ne lance que `artisan serve` : aucun planificateur n'y tourne. Cron de l'hôte, chaque minute :
+
+```bash
+* * * * * docker exec SC_Back_Prod php artisan schedule:run >> /dev/null 2>&1
+```
+
+Contrôle à blanc : `docker exec SC_Back_Prod php artisan comptes:purger-inactifs --simulation`.
+
 ## Logs d'audit
 
 Qui a fait quoi, quand, depuis quelle IP : canal `audit` (`config/logging.php`), distinct de `laravel.log`.
 
 - **Fichiers** : `storage/logs/audit-AAAA-MM-JJ.log`, un par jour, **365 jours** de conservation (purge automatique par Laravel).
 - **Format** : une entrée JSON par ligne (`message`, `context`, `datetime` en UTC).
-- **Contenu** : création, modification (avant/après) et suppression de tout modèle métier. Connexion, échec de connexion (email tenté), déconnexion, inscription. Transfert d'histoires à la suppression d'un rédacteur. Jamais de mot de passe ni de jeton. Textes longs tronqués à 200 caractères.
+- **Contenu** : création, modification (avant/après) et suppression de tout modèle métier. Connexion, échec de connexion (email tenté), déconnexion, inscription. Transfert d'histoires à la suppression d'un rédacteur. Purge d'un compte inactif (`User.purge_inactivite`) ou ignorée (`User.purge_ignoree`). Jamais de mot de passe ni de jeton. Textes longs tronqués à 200 caractères.
 - **Niveau** : `info`, fixe, indépendant de `LOG_LEVEL` (qui vaut `error` en production).
 - **Écrit après commit** : une action annulée (transaction en échec) n'est pas tracée.
 - **Non tracé** : les rattachements N-N (histoire ↔ sous-thèmes, médias ↔ sous-thèmes), qui ne passent pas par les événements de modèle.

@@ -5,17 +5,68 @@ namespace App\Services;
 use App\Enums\UserRole;
 use App\Models\Histoire;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Suppression d'un compte par l'admin. histoires.user_id est en
- * cascadeOnDelete : sans transfert prealable, supprimer un redacteur
- * effacerait ses histoires, leurs scenes et leurs choix.
+ * Suppression d'un compte par l'admin, ou purge automatique des comptes
+ * inactifs. histoires.user_id est en cascadeOnDelete : sans transfert
+ * prealable, supprimer un redacteur effacerait ses histoires, leurs scenes
+ * et leurs choix.
  */
 class SuppressionCompteService
 {
+    /**
+     * Duree sans connexion au-dela de laquelle un compte est purge.
+     */
+    public const INACTIVITE_ANNEES = 3;
+
     public function __construct(private readonly AuditService $audit) {}
+
+    /**
+     * Supprime les comptes sans connexion depuis INACTIVITE_ANNEES ans (un
+     * compte jamais connecte est juge sur sa date d'inscription).
+     *
+     * Jamais purges : le visiteur (compte technique) et les admins (le dernier
+     * ne doit pas disparaitre ; un admin parti se supprime a la main). Un
+     * compte qui a des histoires est ignore : le repreneur ne peut etre choisi
+     * que par un admin, sinon la cascade effacerait les histoires.
+     *
+     * @return array{supprimes: list<string>, ignores: list<string>} emails
+     */
+    public function purgerInactifs(bool $simulation = false): array
+    {
+        $comptes = User::query()
+            ->where(fn (Builder $query) => $query
+                ->whereNull('role')
+                ->orWhereNotIn('role', [UserRole::Visiteur->value, UserRole::Admin->value]))
+            ->whereRaw('COALESCE(derniere_connexion_at, created_at) < ?', [now()->subYears(self::INACTIVITE_ANNEES)])
+            ->get();
+
+        $resultat = ['supprimes' => [], 'ignores' => []];
+
+        foreach ($comptes as $compte) {
+            if ($this->nombreHistoires($compte) > 0) {
+                $resultat['ignores'][] = $compte->email;
+                $this->audit->ecrire('User.purge_ignoree', $compte, ['motif' => 'histoires_a_transferer']);
+
+                continue;
+            }
+
+            $resultat['supprimes'][] = $compte->email;
+
+            if ($simulation) {
+                continue;
+            }
+
+            // Trace avant suppression : l'observer ecrit ensuite User.supprime.
+            $this->audit->ecrire('User.purge_inactivite', $compte, ['inactivite_annees' => self::INACTIVITE_ANNEES]);
+            $compte->delete();
+        }
+
+        return $resultat;
+    }
 
     /**
      * Redacteurs pouvant reprendre les histoires du compte supprime.

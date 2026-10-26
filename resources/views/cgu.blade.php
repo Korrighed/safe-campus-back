@@ -19,6 +19,7 @@
         .italic { font-style: italic; }
         .opacity-60 { opacity: 0.6; }
         .text-xs { font-size: 0.875rem; margin-bottom: 32px; }
+        ul { margin: 0 0 10px; padding-left: 1.25rem; }
         a { color: #4260e6; }
     </style>
 </head>

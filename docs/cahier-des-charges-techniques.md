@@ -79,6 +79,8 @@ Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans co
 | Prévisualisation d'une histoire avant publication. | Scénario 14 | Conforme |
 | Inscription publique. Le compte reste inactif jusqu'à l'attribution d'un rôle par un administrateur. | Scénario 7 | Conforme |
 | Suppression d'un rédacteur avec transfert obligatoire de ses histoires. | Scénario 9 | Conforme |
+| Suppression d'un compte par un administrateur sur demande de la personne (droit à l'effacement). | Scénario 9 | Conforme |
+| Suppression automatique des comptes sans connexion depuis 3 ans (hors visiteur, administrateurs et auteurs d'histoires). | Scénario 16 | À valider en recette |
 | Guides contextuels pour le webmaster et le rédacteur, sur le tableau de bord et par section. | Revue du back-office | Conforme |
 | Journal d'audit : création, modification, suppression, connexion, échec de connexion, inscription. | Scénario 15 | Conforme |
 
@@ -163,11 +165,15 @@ stateDiagram-v2
   Actif --> SansRole : retrait du rôle, compte conservé
   SansRole --> [*] : refus de la demande ou suppression
   Actif --> [*] : suppression, repreneur exigé pour un rédacteur
+  Actif --> [*] : 3 ans sans connexion, purge automatique
+  SansRole --> [*] : 3 ans sans connexion, purge automatique
 ```
 
 Un compte sans rôle, qu'il vienne de s'inscrire ou qu'on lui ait retiré son rôle, ne peut pas se connecter. Seul un administrateur fait changer un compte d'état. Il ne peut jamais agir sur son propre compte ni sur le compte visiteur, qui reste hors de ce cycle.
 
 Garde-fou : un administrateur ne pouvant agir sur son propre compte, le dernier administrateur ne peut pas disparaître.
+
+Purge automatique : une tâche quotidienne supprime les comptes sans connexion depuis 3 ans. Un compte jamais connecté est jugé sur sa date d'inscription. Sont exclus le compte visiteur, les administrateurs et les auteurs d'histoires : ces derniers sont signalés au journal d'audit, et un administrateur choisit le repreneur avant de les supprimer.
 
 ---
 
@@ -212,6 +218,8 @@ Garde-fou : un administrateur ne pouvant agir sur son propre compte, le dernier 
 |---|---|---|
 | Aucune donnée personnelle collectée auprès des étudiants. Aucun traceur d'audience. | Inventaire des cookies | Conforme |
 | Les données d'un référent nommé de l'annuaire peuvent être effacées définitivement, en cascade. | Suppression d'un contact | Conforme |
+| Les comptes du personnel inactifs depuis 3 ans sont supprimés automatiquement. | Scénario 16 | À valider en recette |
+| Les durées de conservation et les droits sont communiqués aux personnes concernées : page « Données personnelles » du site, CGU du back-office, résumé sur les pages de connexion et d'inscription. | Scénario 17 | À valider en recette. Contenu à faire valider par le DPO |
 | Aucune ressource tierce non nécessaire chargée par le navigateur : polices hébergées sur le serveur. | Revue des requêtes réseau | Non conforme : polices chargées depuis Google |
 
 ### 5.6 Maintenabilité
@@ -442,15 +450,41 @@ flowchart LR
   E -->|Non| H["Compte supprimé"]
 ```
 
+#### Parcours 7 — Conservation des comptes : demande d'effacement et purge à 3 ans
+
+```mermaid
+flowchart LR
+  A["Un membre du personnel demande la suppression de son compte"] --> B["Administrateur : Utilisateurs > Supprimer (9)"]
+  B --> C["Compte supprimé, entrée au journal d'audit (15)"]
+  C --> D["Connexion impossible avec l'ancien compte (7)"]
+  E["Compte sans connexion depuis plus de 3 ans"] --> F["Tâche quotidienne : comptes:purger-inactifs (16)"]
+  F --> G{"Auteur d'histoires, administrateur ou visiteur ?"}
+  G -->|Non| H["Compte supprimé, User.purge_inactivite au journal (16)"]
+  G -->|Oui| I["Compte conservé, User.purge_ignoree au journal (16)"]
+  I --> B
+```
+
+#### Parcours 8 — Information sur les données personnelles
+
+```mermaid
+flowchart LR
+  A["Site étudiant : pied de page ou menu"] --> B["Page Données personnelles (17)"]
+  B --> C["Durées, cookie du prototype, services tiers, droits, contact du DPO (17)"]
+  D["Back-office : page d'inscription"] --> E["Résumé des durées dont les 3 ans d'inactivité (17)"]
+  E --> F["Lien vers les CGU, section Données personnelles (17)"]
+  G["Back-office : page de connexion"] --> H["Mention du cookie de session et du journal (17)"]
+  H --> F
+```
+
 #### Contrôles hors parcours
 
 - **(11)** Affichage sur mobile, tablette et poste de bureau : aucun défilement horizontal, navigation adaptée.
-- **(12)** Mentions légales et conditions générales d'utilisation : pages complètes, sans champ à compléter.
+- **(12)** Mentions légales, conditions générales d'utilisation et page Données personnelles : pages complètes, sans champ à compléter. La page Données personnelles est accessible sans mot de passe visiteur.
 
 ### 11.2 Critères de validation
 
 - Tests automatisés, lint et vérification de types au vert sur les deux dépôts.
-- Les six parcours et les deux contrôles validés sur Chrome, Firefox et Safari mobile.
+- Les huit parcours et les deux contrôles validés sur Chrome, Firefox et Safari mobile.
 - Aucune anomalie bloquante ou majeure ouverte.
 - Toutes les exigences d'exploitation conformes avant la mise en production.
 

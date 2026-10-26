@@ -1,0 +1,166 @@
+# CI du back.
+#
+# verif      : toujours. Lint, analyse statique, tests. Doit etre vert avant de
+#              pousser sur dev.
+# approfondi : PR vers main et push sur main. Audit des dependances, build de
+#              l'image de prod, deploiement a blanc de docker-compose.prod.yml
+#              (commandes de docs/deploiement.md), scan Trivy.
+
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verif:
+    name: verif
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      pgsql:
+        image: postgres:17
+        env:
+          POSTGRES_DB: sc_back
+          POSTGRES_USER: sail
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sail -d sc_back"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Les variables du job priment sur le .env copie depuis .env.example.
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: sc_back
+      DB_USERNAME: sail
+      DB_PASSWORD: password
+      # Exige par la migration seed_visiteur. Valeur jetable, propre a la CI.
+      VISITEUR_PASSWORD: ci-visiteur-jetable
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, gd, bcmath, intl, zip, pcntl, mbstring
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      # --no-scripts : package:discover et filament:upgrade ont besoin du .env
+      # et d'APP_KEY, crees juste apres (meme logique que Dockerfile.prod).
+      - name: Installer les dependances
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
+
+      - name: Preparer l'application
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+          php artisan package:discover --ansi
+          php artisan filament:upgrade
+
+      - name: Lint (Pint)
+        run: vendor/bin/pint --test
+
+      # Les tests tournent sur une base migree et seedee (tests/TestCase.php).
+      - name: Migrer et seeder la base
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --force
+
+      - name: Analyse statique (PHPStan)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Tests
+        run: php artisan test
+
+  approfondi:
+    name: approfondi
+    if: github.base_ref == 'main' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Audit des dependances Composer
+        run: composer audit --locked --no-interaction
+
+      # Fichier hors du depot : il ne doit pas entrer dans le contexte de build.
+      # Toutes les valeurs sont jetables.
+      - name: Variables de production factices
+        run: |
+          PROD_ENV_FILE="$RUNNER_TEMP/prod.env"
+          echo "COMPOSE=docker compose --env-file $PROD_ENV_FILE -f docker-compose.prod.yml" >> "$GITHUB_ENV"
+          {
+            echo "APP_KEY=base64:$(openssl rand -base64 32)"
+            echo "APP_URL=https://api.ci.invalid"
+            echo "DB_DATABASE=sc_back"
+            echo "DB_USERNAME=sc_ci"
+            echo "DB_PASSWORD=$(openssl rand -hex 24)"
+            echo "CORS_ALLOWED_ORIGINS=https://site.ci.invalid"
+            echo "SANCTUM_STATEFUL_DOMAINS=site.ci.invalid"
+            echo "ADMIN_EMAIL=admin@ci.invalid"
+            echo "ADMIN_PASSWORD=Ci-$(openssl rand -hex 12)-Zz!"
+            echo "VISITEUR_EMAIL=visiteur@ci.invalid"
+            echo "VISITEUR_PASSWORD=Ci-$(openssl rand -hex 12)-Vv!"
+          } > "$PROD_ENV_FILE"
+
+      - name: Build et demarrage de la stack de prod
+        run: $COMPOSE up -d --build
+
+      # Commandes post-deploiement de docs/deploiement.md, a l'identique.
+      - name: Commandes post-deploiement
+        run: |
+          $COMPOSE exec -T sc_back php artisan package:discover --ansi
+          $COMPOSE exec -T sc_back php artisan filament:upgrade
+          $COMPOSE exec -T sc_back php artisan migrate --force
+          $COMPOSE exec -T sc_back php artisan storage:link
+
+      - name: Controle HTTP
+        run: |
+          # --retry-all-errors : le proxy de port Docker peut accepter puis couper la
+          # connexion (reset) avant que le serveur ecoute. --retry-connrefused ne suffit pas.
+          curl --fail --silent --show-error --retry 15 --retry-delay 2 --retry-all-errors http://127.0.0.1:8000/up
+          curl --fail --silent --show-error http://127.0.0.1:8000/api/themes > /dev/null
+
+      - name: Scan Trivy de l'image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: safe-campus-back-sc_back-prod
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Logs en cas d'echec
+        if: failure()
+        run: $COMPOSE logs --no-color --tail=200
+
+      - name: Nettoyage
+        if: always()
+        run: $COMPOSE down -v

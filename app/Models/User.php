@@ -11,8 +11,17 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * `role` est casté en UserRole (voir casts()) ; null tant qu'un administrateur
+ * n'a pas validé l'inscription.
+ *
+ * @property UserRole|null $role
+ * @property Carbon|null $email_verified_at
+ * @property Carbon|null $derniere_connexion_at
+ */
 class User extends Authenticatable implements FilamentUser, HasName
 {
     /** @use HasFactory<UserFactory> */
@@ -67,7 +76,6 @@ class User extends Authenticatable implements FilamentUser, HasName
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        // @phpstan-ignore function.impossibleType
         return in_array($this->role, [UserRole::Webmaster, UserRole::Redacteur, UserRole::Admin], true);
     }
 

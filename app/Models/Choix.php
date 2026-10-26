@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property ChoixIssue|null $issue
+ */
 class Choix extends Model
 {
     use HasFactory;
@@ -31,6 +34,9 @@ class Choix extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Scene, $this>
+     */
     public function scene(): BelongsTo
     {
         return $this->belongsTo(Scene::class);
@@ -38,6 +44,8 @@ class Choix extends Model
 
     /**
      * Scene suivante. Null = sortie du parcours (voir `issue`).
+     *
+     * @return BelongsTo<Scene, $this>
      */
     public function nextScene(): BelongsTo
     {

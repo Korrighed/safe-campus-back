@@ -67,8 +67,8 @@ class HistoireTest extends TestCase
         $premiere->scenes()->attach($scene->id, ['ordre' => 1]);
         $seconde->scenes()->attach($scene->id, ['ordre' => 4]);
 
-        $this->assertSame(1, $premiere->scenes()->first()->pivot->ordre);
-        $this->assertSame(4, $seconde->scenes()->first()->pivot->ordre);
+        $this->assertSame(1, $premiere->scenes()->first()->pivot->getAttribute('ordre'));
+        $this->assertSame(4, $seconde->scenes()->first()->pivot->getAttribute('ordre'));
     }
 
     public function test_une_seule_scene_initiale_par_histoire(): void

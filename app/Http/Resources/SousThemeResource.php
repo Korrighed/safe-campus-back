@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\SousTheme;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -14,6 +15,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * `histoires` : ref et titre des histoires publiees seulement, de quoi activer
  * le bouton « Suivre l'histoire » ; le graphe se lit sur /api/histoires/{ref}.
+ *
+ * @mixin SousTheme
  */
 class SousThemeResource extends JsonResource
 {

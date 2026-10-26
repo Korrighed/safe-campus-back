@@ -61,7 +61,7 @@ class ContactsRelationManager extends RelationManager
                             ->numeric()
                             ->required(),
                     ])
-                    ->fillForm(fn (Contact $record): array => ['ordre' => $record->pivot->ordre])
+                    ->fillForm(fn (Contact $record): array => ['ordre' => $record->pivot->getAttribute('ordre')])
                     ->action(function (Contact $record, array $data): void {
                         $record->pivot->update(['ordre' => $data['ordre']]);
                     }),

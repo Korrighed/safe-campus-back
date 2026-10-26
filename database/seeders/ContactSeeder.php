@@ -664,8 +664,11 @@ class ContactSeeder extends Seeder
                     'site_web' => $donnees['site_web'],
                     'horaires' => $donnees['horaires'] ?? null,
                     'remarques' => $donnees['remarques'] ?? null,
+                    // Cle optionnelle (voir @var de CONTACTS) qu'aucune entree n'utilise encore.
+                    // @phpstan-ignore nullCoalesce.offset
                     'gratuit' => $donnees['gratuit'] ?? null,
                     'anonyme' => null,
+                    // @phpstan-ignore nullCoalesce.offset
                     'actif' => $donnees['actif'] ?? true,
                     'latitude' => $donnees['latitude'] ?? null,
                     'longitude' => $donnees['longitude'] ?? null,

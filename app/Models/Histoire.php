@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
+/**
+ * @property EtatHistoire $etat
+ */
 class Histoire extends Model
 {
     use HasFactory;
@@ -35,7 +38,7 @@ class Histoire extends Model
                 return;
             }
 
-            $histoire->ref = static::genererRefUnique($histoire->titre);
+            $histoire->ref = self::genererRefUnique($histoire->titre);
         });
     }
 

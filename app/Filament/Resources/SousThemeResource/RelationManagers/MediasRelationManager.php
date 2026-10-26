@@ -58,7 +58,7 @@ class MediasRelationManager extends RelationManager
                             ->numeric()
                             ->required(),
                     ])
-                    ->fillForm(fn (Media $record): array => ['ordre' => $record->pivot->ordre])
+                    ->fillForm(fn (Media $record): array => ['ordre' => $record->pivot->getAttribute('ordre')])
                     ->action(function (Media $record, array $data): void {
                         $record->pivot->update(['ordre' => $data['ordre']]);
                     }),

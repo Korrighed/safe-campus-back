@@ -145,7 +145,10 @@ class Register extends BaseRegister
 
     protected function getPasswordFormComponent(): Component
     {
-        return parent::getPasswordFormComponent()
+        /** @var TextInput $champ Le champ mot de passe de Filament est un TextInput. */
+        $champ = parent::getPasswordFormComponent();
+
+        return $champ
             ->helperText('14 caractères minimum, dont une majuscule, une minuscule et un caractère spécial.');
     }
 }

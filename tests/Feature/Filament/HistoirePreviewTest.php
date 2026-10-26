@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Filament;
 
-use App\Enums\ChoixIssue;
 use App\Enums\TelephoneType;
 use App\Enums\UserRole;
 use App\Filament\Resources\HistoireResource\Pages\PreviewHistoire;
@@ -13,6 +12,7 @@ use App\Models\Media;
 use App\Models\Scene;
 use App\Models\SousTheme;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -81,7 +81,7 @@ class HistoirePreviewTest extends TestCase
 
         Livewire::test(PreviewHistoire::class, ['record' => $histoire->getKey()])
             ->call('choisir', $choix->id)
-            ->assertSee('Sortie favorable')
+            ->assertSee('Bonne fin')
             ->assertDontSee('Contacts proposés');
     }
 
@@ -105,7 +105,7 @@ class HistoirePreviewTest extends TestCase
 
         Livewire::test(PreviewHistoire::class, ['record' => $histoire->getKey()])
             ->call('choisir', $choix->id)
-            ->assertSee('Sortie défavorable')
+            ->assertSee('Fin à risque')
             ->assertSee('SOS Écoute')
             ->assertSee('05 05');
     }
@@ -123,5 +123,20 @@ class HistoirePreviewTest extends TestCase
             ->call('choisir', $choix->id)
             ->call('recommencer')
             ->assertSee('Scène de départ');
+    }
+
+    public function test_la_preview_refuse_un_choix_d_une_autre_scene(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
+
+        $histoire = Histoire::factory()->create();
+        $scene = Scene::factory()->create();
+        $histoire->scenes()->attach($scene->id, ['est_initiale' => true]);
+        $etranger = Choix::factory()->favorable()->create();
+
+        $this->expectException(ModelNotFoundException::class);
+
+        Livewire::test(PreviewHistoire::class, ['record' => $histoire->getKey()])
+            ->call('choisir', $etranger->id);
     }
 }

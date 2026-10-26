@@ -5,6 +5,9 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Pages\Auth\Register;
+use App\Filament\Resources\HistoireResource\Pages\EditHistoire;
+use App\Filament\Resources\HistoireResource\Pages\PreviewHistoire;
+use App\Filament\Resources\HistoireResource\Pages\ScenesHistoire;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -83,6 +86,11 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 PanelsRenderHook::BODY_END,
                 fn (): ViewContract => view('filament.watermark'),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): ViewContract => view('filament.resources.histoire-resource.ouvrir-verification'),
+                scopes: [EditHistoire::class, ScenesHistoire::class, PreviewHistoire::class],
             )
             ->middleware([
                 EncryptCookies::class,

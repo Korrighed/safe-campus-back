@@ -10,8 +10,8 @@ enum ChoixIssue: string
     public function libelle(): string
     {
         return match ($this) {
-            self::Favorable => 'Favorable',
-            self::Defavorable => 'Défavorable',
+            self::Favorable => 'Bonne fin',
+            self::Defavorable => 'Fin à risque (affiche l\'aide)',
         };
     }
 }

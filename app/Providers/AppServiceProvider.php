@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Filament\Resources\ContactResource\Pages\ListContacts;
 use App\Filament\Resources\ContactResource\RelationManagers\TelephonesRelationManager;
 use App\Filament\Resources\HistoireResource\Pages\ListHistoires;
-use App\Filament\Resources\HistoireResource\RelationManagers\ScenesRelationManager;
 use App\Filament\Resources\MediaResource\Pages\ListMedia;
 use App\Filament\Resources\ThemeResource\Pages\ListThemes;
 use App\Filament\Resources\ThemeResource\RelationManagers\SousThemesRelationManager;
@@ -94,7 +93,6 @@ class AppServiceProvider extends ServiceProvider
             'média' => [ListMedia::class],
             'téléphone' => [TelephonesRelationManager::class],
             'histoire' => [ListHistoires::class],
-            'scène' => [ScenesRelationManager::class],
             'utilisateur' => [ListUsers::class],
         ];
 

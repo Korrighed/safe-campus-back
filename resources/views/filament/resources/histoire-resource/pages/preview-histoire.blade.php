@@ -41,9 +41,9 @@
         <x-filament::section>
             <x-slot name="heading">
                 @if ($choixFinal->issue?->value === 'favorable')
-                    ✅ Fin du parcours — Sortie favorable
+                    ✅ Fin du parcours — Bonne fin
                 @else
-                    ⚠️ Fin du parcours — Sortie défavorable
+                    ⚠️ Fin du parcours — Fin à risque
                 @endif
             </x-slot>
 

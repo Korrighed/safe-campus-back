@@ -288,7 +288,9 @@ avant `migrate` — le compte n'est (re)créé que s'il n'existe pas déjà.
 
 Un compte `admin` est provisionné de la même façon au `migrate` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`,
 valeurs de dev dans `.env.example` : `admin@safe-campus.nc` / `password`). Il gère uniquement les
-comptes : validation des inscriptions, attribution des rôles et suppression de comptes.
+comptes : validation des inscriptions, attribution des rôles et suppression de comptes (dont sur
+demande d'une personne). Un compte sans connexion depuis 3 ans est supprimé automatiquement par
+`php artisan comptes:purger-inactifs` (`--simulation` pour lister sans supprimer), planifiée chaque jour.
 
 Toutes les actions du back-office sont tracées dans `storage/logs/audit-AAAA-MM-JJ.log` — voir
 [docs/deploiement.md § Logs d'audit](docs/deploiement.md#logs-daudit).

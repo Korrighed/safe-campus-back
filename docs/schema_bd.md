@@ -535,6 +535,7 @@ erDiagram
         string telephone
         string password
         enum   Role
+        timestamp derniere_connexion_at
     }
 
     personal_access_tokens {
@@ -592,6 +593,10 @@ pour un compte actif.
 `Histoire.FK_User` est en suppression en cascade : supprimer un rédacteur effacerait ses histoires,
 leurs scènes et leurs choix. `SuppressionCompteService` impose donc de choisir un autre rédacteur qui
 reprend les histoires avant la suppression ; sans repreneur, rien n'est supprimé.
+
+Un compte sans connexion depuis 3 ans est supprimé automatiquement (`comptes:purger-inactifs`, sur
+`COALESCE(users.derniere_connexion_at, users.created_at)`). Ni le visiteur, ni les admins, ni un
+auteur d'histoires : ceux-là restent à traiter par un admin.
 
 Les rôles eux-mêmes sont fixes : définis dans l'enum `UserRole` et verrouillés par la contrainte
 `users_role_check`. Aucun écran ne permet d'en créer, renommer ou supprimer un — cela passe par le

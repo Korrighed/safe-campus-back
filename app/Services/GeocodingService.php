@@ -31,7 +31,7 @@ class GeocodingService
             return null;
         }
 
-        $result = $response->json(0);
+        $result = $response->json('0');
 
         if ($result === null) {
             return null;

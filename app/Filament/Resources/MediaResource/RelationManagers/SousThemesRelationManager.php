@@ -56,7 +56,7 @@ class SousThemesRelationManager extends RelationManager
                             ->numeric()
                             ->required(),
                     ])
-                    ->fillForm(fn (SousTheme $record): array => ['ordre' => $record->pivot->ordre])
+                    ->fillForm(fn (SousTheme $record): array => ['ordre' => $record->pivot->getAttribute('ordre')])
                     ->action(function (SousTheme $record, array $data): void {
                         $record->pivot->update(['ordre' => $data['ordre']]);
                     }),

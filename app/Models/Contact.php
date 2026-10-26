@@ -8,8 +8,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Str;
 
+/**
+ * @property-read Pivot $pivot Présent quand le contact est lu via une relation N-N.
+ */
 class Contact extends Model
 {
     use HasFactory;
@@ -52,7 +56,7 @@ class Contact extends Model
                 return;
             }
 
-            $contact->ref = static::genererRefUnique($contact->nom);
+            $contact->ref = self::genererRefUnique($contact->nom);
         });
     }
 

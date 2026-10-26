@@ -266,7 +266,7 @@ class ContactSeeder extends Seeder
             ],
             'sous_themes' => ['violences_sexistes', 'violences_sexuelles'],
             'horaires' => 'Lun-jeu 8h-11h30 et 13h-16h, ven 13h-15h',
-            'remarques' => "Accompagnement judiciaire et presence aux audiences, administrateur ad hoc. Peut etre contacte a tout moment, avant ou apres depot de plainte.",
+            'remarques' => 'Accompagnement judiciaire et presence aux audiences, administrateur ad hoc. Peut etre contacte a tout moment, avant ou apres depot de plainte.',
         ],
         [
             'ref' => 'sos_victimes_kone',
@@ -579,7 +579,7 @@ class ContactSeeder extends Seeder
                 ['numero' => '24 15 17', 'type' => TelephoneType::Fixe],
             ],
             'sous_themes' => ['violences_sexuelles'],
-            'remarques' => "Preservatifs gratuits, consultations gratuites de sexologie, ecoute et depistage divers, suivi de grossesse. Permanence RAINBOWLUTION (LGBTQIA+) le premier mercredi de chaque mois, 11h30-16h30, sans rendez-vous (contact via Facebook et Instagram).",
+            'remarques' => 'Preservatifs gratuits, consultations gratuites de sexologie, ecoute et depistage divers, suivi de grossesse. Permanence RAINBOWLUTION (LGBTQIA+) le premier mercredi de chaque mois, 11h30-16h30, sans rendez-vous (contact via Facebook et Instagram).',
         ],
         [
             'ref' => 'espas_cmp',
@@ -664,8 +664,11 @@ class ContactSeeder extends Seeder
                     'site_web' => $donnees['site_web'],
                     'horaires' => $donnees['horaires'] ?? null,
                     'remarques' => $donnees['remarques'] ?? null,
+                    // Cle optionnelle (voir @var de CONTACTS) qu'aucune entree n'utilise encore.
+                    // @phpstan-ignore nullCoalesce.offset
                     'gratuit' => $donnees['gratuit'] ?? null,
                     'anonyme' => null,
+                    // @phpstan-ignore nullCoalesce.offset
                     'actif' => $donnees['actif'] ?? true,
                     'latitude' => $donnees['latitude'] ?? null,
                     'longitude' => $donnees['longitude'] ?? null,

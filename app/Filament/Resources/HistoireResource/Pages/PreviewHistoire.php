@@ -5,9 +5,11 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
 use App\Models\Contact;
+use App\Models\Histoire;
 use App\Models\Scene;
 use App\Services\ContactResolutionService;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
@@ -23,6 +25,7 @@ class PreviewHistoire extends Page
 {
     use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use LitHistoire;
     use OuvreVerification;
 
     protected static string $resource = HistoireResource::class;
@@ -46,12 +49,12 @@ class PreviewHistoire extends Page
 
         abort_unless(auth()->user()?->can('view', $this->getRecord()), 403);
 
-        $this->sceneActuelleId = $this->getRecord()->sceneInitiale()?->id;
+        $this->sceneActuelleId = $this->histoire()->sceneInitiale()?->id;
     }
 
     public function getTitle(): string
     {
-        return 'Prévisualiser : '.$this->getRecord()->titre;
+        return 'Prévisualiser : '.$this->histoire()->titre;
     }
 
     public function getSceneActuelle(): ?Scene
@@ -91,7 +94,7 @@ class PreviewHistoire extends Page
 
     public function recommencer(): void
     {
-        $this->sceneActuelleId = $this->getRecord()->sceneInitiale()?->id;
+        $this->sceneActuelleId = $this->histoire()->sceneInitiale()?->id;
         $this->choixFinalId = null;
     }
 
@@ -106,6 +109,6 @@ class PreviewHistoire extends Page
             return Contact::query()->whereRaw('1 = 0')->get();
         }
 
-        return app(ContactResolutionService::class)->resoudre($this->getRecord(), $choixFinal);
+        return app(ContactResolutionService::class)->resoudre($this->histoire(), $choixFinal);
     }
 }

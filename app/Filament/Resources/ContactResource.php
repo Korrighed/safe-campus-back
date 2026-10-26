@@ -32,7 +32,7 @@ class ContactResource extends Resource
     {
         return $form
             ->schema([
-                static::sectionDivider('Identité'),
+                self::sectionDivider('Identité'),
                 Forms\Components\Toggle::make('actif')
                     ->required()
                     ->default(true),
@@ -58,7 +58,7 @@ class ContactResource extends Resource
                             ->native(false),
                     ]),
 
-                static::sectionDivider('Location'),
+                self::sectionDivider('Location'),
                 Forms\Components\Toggle::make('position_territoire')
                     ->label('Couvre tout le territoire')
                     ->helperText('Structure sans implantation ponctuelle (numero national, dispositif NC entier...). Aucune coordonnee ne sera enregistree.')
@@ -156,7 +156,7 @@ class ContactResource extends Resource
                     ->label('Carte')
                     ->visible(fn (Get $get): bool => ! $get('position_territoire')),
 
-                static::sectionDivider('Contacts'),
+                self::sectionDivider('Contacts'),
                 Forms\Components\Grid::make(2)
                     ->schema([
                         Forms\Components\TextInput::make('mail')

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Histoire;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,6 +11,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * `scenes` (et leur pivot) doit etre eager-charge : voir HistoireParcoursService.
  * Ni l'etat, ni l'auteur, ni l'ordre des scenes ne sortent : back-office uniquement.
+ *
+ * @mixin Histoire
  */
 class HistoireResource extends JsonResource
 {
@@ -18,7 +21,7 @@ class HistoireResource extends JsonResource
         return [
             'ref' => $this->ref,
             'titre' => $this->titre,
-            'scene_initiale_id' => $this->scenes->first(fn ($scene) => (bool) $scene->pivot->est_initiale)?->id,
+            'scene_initiale_id' => $this->scenes->first(fn ($scene) => (bool) $scene->pivot->getAttribute('est_initiale'))?->id,
             'scenes' => SceneResource::collection($this->scenes),
         ];
     }

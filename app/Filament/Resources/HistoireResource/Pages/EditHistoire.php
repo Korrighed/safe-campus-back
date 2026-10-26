@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\EtatHistoire;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Services\VerificationHistoireService;
 use Filament\Actions;
@@ -15,6 +16,7 @@ use Illuminate\Contracts\Support\Htmlable;
 class EditHistoire extends EditRecord
 {
     use EnTeteAvecOnglets;
+    use LitHistoire;
     use OuvreVerification;
 
     protected static string $resource = HistoireResource::class;
@@ -25,7 +27,7 @@ class EditHistoire extends EditRecord
 
     public function getTitle(): string|Htmlable
     {
-        return $this->getRecord()->titre;
+        return $this->histoire()->titre;
     }
 
     public function getBreadcrumb(): string
@@ -48,11 +50,11 @@ class EditHistoire extends EditRecord
      */
     protected function afterSave(): void
     {
-        if ($this->getRecord()->etat === EtatHistoire::Brouillon) {
+        if ($this->histoire()->etat === EtatHistoire::Brouillon) {
             return;
         }
 
-        $problemes = app(VerificationHistoireService::class)->problemes($this->getRecord());
+        $problemes = app(VerificationHistoireService::class)->problemes($this->histoire());
 
         if ($problemes === []) {
             return;

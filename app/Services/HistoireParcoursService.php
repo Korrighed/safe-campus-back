@@ -6,6 +6,9 @@ use App\Enums\ChoixIssue;
 use App\Enums\MediaType;
 use App\Models\Choix;
 use App\Models\Histoire;
+use App\Models\Media;
+use App\Models\Scene;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Prepare une histoire pour le front : le graphe complet (scenes, choix,
@@ -20,6 +23,7 @@ class HistoireParcoursService
     {
         $histoire->load([
             'scenes' => fn ($query) => $query->orderBy('histoire_scene.ordre')->orderBy('scenes.id'),
+            /** @param BelongsTo<Media, Scene> $query */
             'scenes.media' => fn ($query) => $query->actif()->where('type', MediaType::Image),
             'scenes.choix' => fn ($query) => $query->orderBy('id'),
         ]);

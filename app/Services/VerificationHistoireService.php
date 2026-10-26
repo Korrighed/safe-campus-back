@@ -50,7 +50,7 @@ class VerificationHistoireService
             [
                 'cle' => 'depart',
                 'libelle' => 'L\'histoire a une scène de départ',
-                'ok' => $scenes->contains(fn (Scene $scene) => $scene->pivot->est_initiale),
+                'ok' => $scenes->contains(fn (Scene $scene) => $scene->pivot->getAttribute('est_initiale')),
                 'details' => [],
             ],
             [

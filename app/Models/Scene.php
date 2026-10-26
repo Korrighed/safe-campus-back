@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
  * Titre est un libelle court, a usage back-office uniquement — il n'est pas
  * affiche au joueur. Sans lui, la liste des scenes et le selecteur de
  * next_scene_id n'affichent que du dialogue tronque.
+ *
+ * @property-read Pivot $pivot Présent quand la scène est lue via une histoire.
  */
 class Scene extends Model
 {
@@ -24,11 +27,17 @@ class Scene extends Model
         'media_id',
     ];
 
+    /**
+     * @return BelongsTo<SousTheme, $this>
+     */
     public function sousTheme(): BelongsTo
     {
         return $this->belongsTo(SousTheme::class);
     }
 
+    /**
+     * @return BelongsTo<Media, $this>
+     */
     public function media(): BelongsTo
     {
         return $this->belongsTo(Media::class);

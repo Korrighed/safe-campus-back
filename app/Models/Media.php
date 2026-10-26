@@ -8,8 +8,14 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property MediaType $type
+ * @property-read string|null $url Accesseur url() : URL publique du fichier.
+ * @property-read Pivot $pivot Présent quand le média est lu via une relation N-N.
+ */
 class Media extends Model
 {
     use HasFactory;

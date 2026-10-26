@@ -6,11 +6,13 @@ use App\Enums\UserRole;
 use App\Filament\Pages\Auth\Login;
 use App\Models\Theme;
 use App\Models\User;
+use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\TestHandler;
+use Monolog\Logger as MonologLogger;
 use Monolog\LogRecord;
 use Tests\TestCase;
 
@@ -26,7 +28,11 @@ class AuditLogTest extends TestCase
 
         // Canal audit redirige en memoire : rien n'est ecrit dans storage/logs.
         $this->handler = new TestHandler;
-        Log::channel('audit')->getLogger()->setHandlers([$this->handler]);
+        /** @var Logger $canal */
+        $canal = Log::channel('audit');
+        /** @var MonologLogger $monolog */
+        $monolog = $canal->getLogger();
+        $monolog->setHandlers([$this->handler]);
     }
 
     private function ligne(string $action): ?LogRecord

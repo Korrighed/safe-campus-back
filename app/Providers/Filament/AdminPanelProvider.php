@@ -47,6 +47,20 @@ class AdminPanelProvider extends PanelProvider
                     '<p class="text-sm text-gray-500 dark:text-gray-400">'
                     .'Votre compte ne sera actif qu\'après validation par un administrateur.'
                     .'</p>'
+                    .'<p class="text-sm text-gray-500 dark:text-gray-400">'
+                    .'Vos nom, prénom, email et téléphone servent à gérer les accès. Ils sont conservés pendant la durée de votre fonction, '
+                    .'et votre compte est supprimé après 3 ans sans connexion. Vous pouvez demander sa suppression à un administrateur. '
+                    .'<a href="/cgu#donnees-personnelles" target="_blank" class="underline">Détail et droits</a>.'
+                    .'</p>'
+                ),
+            )
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_AFTER,
+                fn () => new HtmlString(
+                    '<p class="text-xs text-gray-500 dark:text-gray-400 text-center">'
+                    .'La connexion dépose un cookie de session (120 min d\'inactivité) et votre adresse IP est journalisée 365 jours. '
+                    .'<a href="/cgu#donnees-personnelles" target="_blank" class="underline">Données personnelles</a>.'
+                    .'</p>'
                 ),
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

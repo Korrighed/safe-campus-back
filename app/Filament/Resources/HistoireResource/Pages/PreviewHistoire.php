@@ -4,6 +4,8 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
 use App\Models\Contact;
 use App\Models\Scene;
@@ -19,11 +21,17 @@ use Illuminate\Database\Eloquent\Collection;
  */
 class PreviewHistoire extends Page
 {
+    use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use OuvreVerification;
 
     protected static string $resource = HistoireResource::class;
 
     protected static string $view = 'filament.resources.histoire-resource.pages.preview-histoire';
+
+    protected static ?string $navigationLabel = '3. Prévisualiser';
+
+    protected static ?string $navigationIcon = 'heroicon-o-play';
 
     public ?int $sceneActuelleId = null;
 
@@ -66,7 +74,9 @@ class PreviewHistoire extends Page
 
     public function choisir(int $choixId): void
     {
-        $choix = Choix::findOrFail($choixId);
+        // Seuls les choix de la scene affichee sont jouables : l'id vient du
+        // navigateur et pourrait viser un choix d'une autre histoire.
+        $choix = Choix::query()->where('scene_id', $this->sceneActuelleId)->findOrFail($choixId);
 
         if ($choix->next_scene_id === null) {
             $this->choixFinalId = $choix->id;

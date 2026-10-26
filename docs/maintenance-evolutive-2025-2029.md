@@ -126,6 +126,11 @@ Candidates issues du périmètre reporté de la v1, des retours de tests et des 
 | Contrôle en base de la cohérence entre fin de parcours et issue d'un choix | Modèle de données | Moins de 2 heures | 2027 |
 | Partage d'une scène entre histoires avec des choix propres à chacune | Modèle de données | 2 à 3 jours | 2029 — si le besoin apparaît |
 
+### 6.1 Éléments à prendre en compte pour une v2
+
+- Contacter par mail les référents nommés dans l'annuaire, afin de les informer de leur présence sur la plateforme.
+- Mettre en place une validation par mail pour la création de comptes et pour le mot de passe perdu.
+
 ---
 
 ## 7. Sauvegarde et restauration

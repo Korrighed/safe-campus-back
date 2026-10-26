@@ -16,8 +16,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        (new ThemeSeeder())->run();
-        (new SousThemeSeeder())->run();
+        (new ThemeSeeder)->run();
+        (new SousThemeSeeder)->run();
     }
 
     public function down(): void

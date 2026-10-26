@@ -40,13 +40,13 @@ class MediaSeeder extends Seeder
             ['titre' => 'Dépliant — Consultations Jeunes Consommateurs (DECLIC)', 'description' => 'Entretiens confidentiels et gratuits, pour les moins de 25 ans et leur famille, sur la consommation de tabac, cannabis, alcool ou autres conduites addictives.', 'fichier_source' => 'declic-consultations-jeunes-consommateurs.pdf'],
         ],
         'anxiete' => [
-            ['titre' => 'Fiche pratique — Repérer et orienter une personne en détresse psychologique', 'description' => "Des repères pour ouvrir le dialogue, écouter sans juger et orienter un étudiant, un collègue ou un proche en difficulté, sans rester seul face à la situation.", 'fichier_source' => 'unc-fiche-detresse-psychologique.pdf'],
+            ['titre' => 'Fiche pratique — Repérer et orienter une personne en détresse psychologique', 'description' => 'Des repères pour ouvrir le dialogue, écouter sans juger et orienter un étudiant, un collègue ou un proche en difficulté, sans rester seul face à la situation.', 'fichier_source' => 'unc-fiche-detresse-psychologique.pdf'],
         ],
         'depression' => [
-            ['titre' => 'Fiche pratique — Repérer et orienter une personne en détresse psychologique', 'description' => "Des repères pour ouvrir le dialogue, écouter sans juger et orienter un étudiant, un collègue ou un proche en difficulté, sans rester seul face à la situation.", 'fichier_source' => 'unc-fiche-detresse-psychologique.pdf'],
+            ['titre' => 'Fiche pratique — Repérer et orienter une personne en détresse psychologique', 'description' => 'Des repères pour ouvrir le dialogue, écouter sans juger et orienter un étudiant, un collègue ou un proche en difficulté, sans rester seul face à la situation.', 'fichier_source' => 'unc-fiche-detresse-psychologique.pdf'],
         ],
         'burn_out' => [
-            ['titre' => 'Fiche pratique — Repérer et orienter une personne en détresse psychologique', 'description' => "Des repères pour ouvrir le dialogue, écouter sans juger et orienter un étudiant, un collègue ou un proche en difficulté, sans rester seul face à la situation.", 'fichier_source' => 'unc-fiche-detresse-psychologique.pdf'],
+            ['titre' => 'Fiche pratique — Repérer et orienter une personne en détresse psychologique', 'description' => 'Des repères pour ouvrir le dialogue, écouter sans juger et orienter un étudiant, un collègue ou un proche en difficulté, sans rester seul face à la situation.', 'fichier_source' => 'unc-fiche-detresse-psychologique.pdf'],
         ],
     ];
 

@@ -88,3 +88,15 @@ Parcours navigateur : aucun (pas d'impact visible).
 - Ne pas toucher `User` (nom, prénom, email restent journalisés).
 
 ## Notes d'exécution
+
+- Vérification non lancée : consigne utilisateur (aucun pint, phpstan, artisan test). À lancer en fin de lot, les trois commandes de « Vérification ».
+- Relecture manuelle du diff effectuée : syntaxe, imports triés, signatures. Aucun outil exécuté.
+- `Scene` n'a ni `ref`, ni `email`, ni `numero`. Sans masquage, `cible.libelle` vaudrait `titre`. D'où le `null` sur `libelle` pour toute classe présente dans `CHAMPS_CONTENU` (Scene et Choix).
+- `nettoyer()` : le second `array_diff_key` n'est appliqué que si `$model !== null`.
+- `updated()` : `$champs` est calculé sans modèle (contenu inclus), `$apres` avec modèle. `avant` et `apres` ne sont ajoutés que si `$apres !== []`, soit quand seul du contenu a changé.
+- Tests : quatre tests ajoutés en fin de `AuditLogTest`. Imports ajoutés : `Choix`, `Scene`, `SousTheme`.
+- Tests 2 et 3 : l'assertion porte sur le mot `confidentiel` dans tous les records, plus strict que les seules chaînes citées.
+- Test 3 : pas de `handler->clear()` après la création. L'assertion couvre donc aussi `Choix.cree`.
+- Test 4 : `assertEqualsCanonicalizing` sur `champs_modifies`, l'ordre des clés de `getChanges()` n'étant pas un contrat.
+- Tests existants d'`AuditLogTest` relus (`test_une_modification_trace_avant_et_apres`, `test_aucun_mot_de_passe_n_apparait_dans_les_logs`, etc.) : leurs assertions restent valides, aucune modification. Non exécutés.
+- Hors périmètre, non touchés : `Histoire.titre`, `User`, logs existants, `SuppressionCompteService`, `UserResource`, widgets et vues guide.

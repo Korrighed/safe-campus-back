@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Filament\Pages\Auth\Login;
+use App\Models\Choix;
+use App\Models\Scene;
+use App\Models\SousTheme;
 use App\Models\Theme;
 use App\Models\User;
 use Illuminate\Log\Logger;
@@ -164,5 +167,68 @@ class AuditLogTest extends TestCase
             ->call('authenticate');
 
         $this->assertSame($user->email, $this->ligne('auth.connexion')?->context['cible']['libelle']);
+    }
+
+    public function test_le_contenu_d_une_scene_n_est_jamais_journalise(): void
+    {
+        Scene::factory()->create(['titre' => 'Titre confidentiel', 'dialogue_text' => 'Dialogue confidentiel']);
+
+        foreach ($this->handler->getRecords() as $record) {
+            $json = json_encode($record->context);
+            $this->assertStringNotContainsString('Titre confidentiel', $json);
+            $this->assertStringNotContainsString('Dialogue confidentiel', $json);
+        }
+
+        $ligne = $this->ligne('Scene.cree');
+        $this->assertNotNull($ligne);
+        $this->assertArrayNotHasKey('libelle', $ligne->context['cible']);
+    }
+
+    public function test_modifier_un_dialogue_trace_le_nom_du_champ_sans_le_texte(): void
+    {
+        $scene = Scene::factory()->create(['titre' => 'Titre confidentiel', 'dialogue_text' => 'Dialogue confidentiel']);
+        $this->handler->clear();
+
+        $scene->update(['dialogue_text' => 'Nouveau texte confidentiel']);
+
+        $ligne = $this->ligne('Scene.modifie');
+        $this->assertNotNull($ligne);
+        $this->assertSame(['dialogue_text'], $ligne->context['champs_modifies']);
+        $this->assertArrayNotHasKey('avant', $ligne->context);
+        $this->assertArrayNotHasKey('apres', $ligne->context);
+
+        foreach ($this->handler->getRecords() as $record) {
+            $this->assertStringNotContainsString('confidentiel', json_encode($record->context));
+        }
+    }
+
+    public function test_le_texte_d_un_choix_n_est_jamais_journalise(): void
+    {
+        $choix = Choix::factory()->create(['text_choix' => 'Choix confidentiel']);
+
+        $choix->update(['text_choix' => 'Nouveau choix confidentiel']);
+
+        $ligne = $this->ligne('Choix.modifie');
+        $this->assertNotNull($ligne);
+        $this->assertSame(['text_choix'], $ligne->context['champs_modifies']);
+
+        foreach ($this->handler->getRecords() as $record) {
+            $this->assertStringNotContainsString('confidentiel', json_encode($record->context));
+        }
+    }
+
+    public function test_un_champ_non_confidentiel_d_une_scene_reste_trace(): void
+    {
+        $scene = Scene::factory()->create();
+        $sousTheme = SousTheme::factory()->create();
+        $this->handler->clear();
+
+        $scene->update(['dialogue_text' => 'Nouveau texte confidentiel', 'sous_theme_id' => $sousTheme->id]);
+
+        $ligne = $this->ligne('Scene.modifie');
+        $this->assertNotNull($ligne);
+        $this->assertSame($sousTheme->id, $ligne->context['apres']['sous_theme_id']);
+        $this->assertArrayNotHasKey('dialogue_text', $ligne->context['apres']);
+        $this->assertEqualsCanonicalizing(['dialogue_text', 'sous_theme_id'], $ligne->context['champs_modifies']);
     }
 }

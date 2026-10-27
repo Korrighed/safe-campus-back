@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Choix;
+use App\Models\Scene;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +19,18 @@ class AuditService
      * Attributs jamais ecrits dans les logs.
      */
     public const CHAMPS_SENSIBLES = ['password', 'remember_token'];
+
+    /**
+     * Contenu redige par les redacteurs : jamais ecrit dans les logs, ni en
+     * valeur ni en libelle. Seuls l'identifiant et le nom des champs
+     * modifies sont traces.
+     *
+     * @var array<class-string<Model>, list<string>>
+     */
+    public const CHAMPS_CONTENU = [
+        Scene::class => ['titre', 'dialogue_text'],
+        Choix::class => ['text_choix'],
+    ];
 
     /**
      * Au-dela, une valeur texte est tronquee : les contenus longs (articles,
@@ -38,12 +52,19 @@ class AuditService
     }
 
     /**
+     * Sans $model, les champs de contenu ne sont pas retires : l'observer s'en
+     * sert pour lister les noms des champs modifies, jamais pour ecrire leur valeur.
+     *
      * @param  array<string, mixed>  $attributs
      * @return array<string, mixed>
      */
-    public function nettoyer(array $attributs): array
+    public function nettoyer(array $attributs, ?Model $model = null): array
     {
         $attributs = array_diff_key($attributs, array_flip([...self::CHAMPS_SENSIBLES, 'created_at', 'updated_at']));
+
+        if ($model !== null) {
+            $attributs = array_diff_key($attributs, array_flip(self::CHAMPS_CONTENU[$model::class] ?? []));
+        }
 
         return array_map(fn ($valeur) => $this->abreger($valeur), $attributs);
     }
@@ -53,15 +74,18 @@ class AuditService
      */
     public function decrire(Model $model): array
     {
+        // Contenu redige : aucun libelle derive de ses attributs.
+        $masque = isset(self::CHAMPS_CONTENU[$model::class]);
+
         return array_filter([
             'type' => class_basename($model),
             'id' => $model->getKey(),
             // Libelle lisible : reste exploitable apres suppression de la ligne.
-            'libelle' => $model->getAttribute('email')
+            'libelle' => $masque ? null : ($model->getAttribute('email')
                 ?? $model->getAttribute('ref')
                 ?? $model->getAttribute('titre')
                 ?? $model->getAttribute('libelle')
-                ?? $model->getAttribute('numero'),
+                ?? $model->getAttribute('numero')),
         ], fn ($valeur) => $valeur !== null);
     }
 

@@ -115,6 +115,19 @@ class UserResourceTest extends TestCase
         $this->assertSame(UserRole::Redacteur, $user->fresh()->role);
     }
 
+    public function test_l_admin_attribue_le_role_relecteur(): void
+    {
+        $this->actingAs($this->admin());
+        $user = User::factory()->create(['role' => null]);
+
+        Livewire::test(EditUser::class, ['record' => $user->getRouteKey()])
+            ->fillForm(['role' => UserRole::Relecteur->value])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(UserRole::Relecteur, $user->fresh()->role);
+    }
+
     public function test_l_admin_nomme_un_autre_admin(): void
     {
         $this->actingAs($this->admin());

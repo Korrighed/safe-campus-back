@@ -34,7 +34,7 @@ class UserResource extends Resource
      */
     public static function rolesAttribuables(): array
     {
-        return collect([UserRole::Webmaster, UserRole::Redacteur, UserRole::Admin])
+        return collect([UserRole::Webmaster, UserRole::Redacteur, UserRole::Relecteur, UserRole::Admin])
             ->mapWithKeys(fn (UserRole $role) => [$role->value => $role->libelle()])
             ->all();
     }

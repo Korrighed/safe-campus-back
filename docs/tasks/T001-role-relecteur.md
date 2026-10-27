@@ -72,3 +72,8 @@ Parcours navigateur : aucun (pas d'impact visible hors liste des rôles de l'adm
 - Ne pas modifier de documentation (T012).
 
 ## Notes d'exécution
+
+- Migration `2026_10_28_100000` appliquée sur la base de dev (batch 3), rollback d'une étape puis re-migration OK. Contrainte vérifiée : 5 valeurs dont `relecteur`.
+- PHPStan : premier lancement en crash « PHP memory limit 128M » (limite du conteneur). Relancé avec `--memory-limit=512M` (option CLI, config inchangée) : No errors.
+- `docker compose exec -T` utilisé (shell sans TTY).
+- `SuppressionCompteService::purgerInactifs()` (T005) purge aussi les relecteurs inactifs depuis 3 ans, comme les autres rôles non admin. Non modifié.

@@ -129,7 +129,13 @@ Candidates issues du périmètre reporté de la v1, des retours de tests et des 
 ### 6.1 Éléments à prendre en compte pour une v2
 
 - Contacter par mail les référents nommés dans l'annuaire, afin de les informer de leur présence sur la plateforme.
-- Mettre en place une validation par mail pour la création de comptes et pour le mot de passe perdu.
+- Mettre en place une validation par mail pour la création de comptes et pour le mot de passe perdu : SMTP
+- Faire valider les choix des histoires par un professionnel : actuellement ce sont des histoires de démo
+- réflechir à une couleur différente par thème
+- Reprendre contact avec la présidence de L'UNC puis la DNSI afin de valider les derniers éléments 
+- Ajout du contenu vidéo pour chaque grande thématique
+
+
 
 ---
 

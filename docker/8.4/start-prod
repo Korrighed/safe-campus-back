@@ -38,7 +38,9 @@ fi
 
 if vrai DEMO_CONTENT; then
   # L'ordre compte : les histoires ont besoin du compte redacteur de demo.
-  for seeder in MediaSeeder RedacteurDemoSeeder HistoireSeeder HistoireAnxieteSeeder HistoireHarcelementSeeder; do
+  for seeder in MediaSeeder RedacteurDemoSeeder HistoireSeeder HistoireAnxieteSeeder HistoireHarcelementSeeder \
+    HistoireTabacSeeder HistoireDrogueSeeder HistoireDepressionSeeder HistoireBurnOutSeeder \
+    HistoireViolencesSexistesSeeder HistoireViolencesSexuellesSeeder; do
     tache "seeder ${seeder}" php artisan db:seed --class="${seeder}" --force
   done
 fi

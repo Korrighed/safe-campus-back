@@ -70,7 +70,7 @@ Le health check du front ne doit pas être `/healthz` (valeur proposée par Rend
 1. Écoute sur `$PORT`, sinon `$APP_PORT`, sinon 8000.
 2. Recrée `public/storage` (exclu de l'image).
 3. Si `RUN_MIGRATIONS=true` : `migrate --force`.
-4. Si `DEMO_CONTENT=true` : rejoue `MediaSeeder`, `RedacteurDemoSeeder` et les trois seeders d'histoires. Ils sont idempotents et recopient les fichiers sur le disque du conteneur.
+4. Si `DEMO_CONTENT=true` : rejoue `MediaSeeder`, `RedacteurDemoSeeder` et les neuf seeders d'histoires. Ils sont idempotents et recopient les fichiers sur le disque du conteneur.
 5. Sert l'application.
 
 Une tâche qui échoue est signalée dans les journaux (`AVERTISSEMENT`) mais n'empêche pas le serveur de démarrer.
@@ -80,7 +80,7 @@ Une tâche qui échoue est signalée dans les journaux (`AVERTISSEMENT`) mais n'
 | Sujet | Comportement |
 |---|---|
 | Propriétaire des histoires | `HistoireDemoSeeder` les rattache au compte `REDACTEUR_DEMO_EMAIL`. Mettre l'adresse d'un rédacteur **existant** : le seeder le retrouve (`firstOrCreate`) au lieu d'en recréer un. Une adresse inexistante recrée un compte à chaque démarrage. |
-| Modifications dans `/admin` | Les 3 histoires de démo (titre, état, texte, choix) retrouvent leurs valeurs du code à chaque démarrage. Elles sont en pratique en lecture seule. |
+| Modifications dans `/admin` | Les 9 histoires de démo (titre, état, texte, choix) retrouvent leurs valeurs du code à chaque démarrage. Elles sont en pratique en lecture seule. |
 | Histoires créées dans `/admin` | Conservées en base ; leurs images, stockées sur le disque éphémère, disparaissent au redémarrage. |
 | Fichiers téléversés dans `/admin` | Perdus au redémarrage (plan gratuit sans disque persistant). |
 

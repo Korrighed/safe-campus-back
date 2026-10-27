@@ -3,40 +3,19 @@
 namespace Database\Seeders;
 
 use App\Enums\ChoixIssue;
-use App\Enums\EtatHistoire;
-use App\Enums\MediaType;
-use App\Models\Choix;
-use App\Models\Histoire;
-use App\Models\Media;
-use App\Models\Scene;
-use App\Models\SousTheme;
-use App\Models\User;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
-use RuntimeException;
 
 /**
  * Histoire de demonstration « Une soiree qui derape » : 3 scenes, 9 choix,
  * un parcours favorable et un defavorable. Sert a retrouver un jeu de donnees
- * de reference apres un `migrate:fresh --seed`.
+ * de reference apres un `migrate:fresh --seed`. Fonctionnement commun dans
+ * HistoireDemoSeeder.
  *
- * Idempotent : l'histoire est cherchee par `ref`, une scene par (histoire,
- * titre), un choix par (scene, texte). Rejouer le seeder met a jour sans
- * dupliquer. Jamais en production : c'est du contenu de demo. Le compte
- * redacteur proprietaire est cree par RedacteurDemoSeeder, qui doit
- * s'executer avant.
+ * @phpstan-import-type DonneesScene from HistoireDemoSeeder
  */
-class HistoireSeeder extends Seeder
+class HistoireSeeder extends HistoireDemoSeeder
 {
-    private const REF = 'demo_soiree_qui_derape';
-
-    private const SOUS_THEME_REF = 'alcool';
-
     /**
-     * Cle = identifiant interne au seeder, sert a relier les choix aux scenes
-     * suivantes. L'ordre du tableau est l'ordre des scenes dans l'histoire.
-     *
-     * @var array<string, array{titre: string, dialogue_text: string, image: string, est_initiale?: bool, choix: list<array{text_choix: string, suivante: ?string, issue: ?ChoixIssue}>}>
+     * @var array<string, DonneesScene>
      */
     private const SCENES = [
         'debut' => [
@@ -72,99 +51,28 @@ class HistoireSeeder extends Seeder
         ],
     ];
 
-    public function run(): void
+    protected function ref(): string
     {
-        if (app()->environment('production')) {
-            return;
-        }
-
-        $redacteur = User::where('email', config('redacteur_demo.email'))->firstOrFail();
-
-        $histoire = Histoire::updateOrCreate(
-            ['ref' => self::REF],
-            [
-                'titre' => 'Une soirée qui dérape (démo)',
-                'etat' => EtatHistoire::Publie,
-                'user_id' => $redacteur->id,
-            ],
-        );
-
-        $sousTheme = SousTheme::where('ref', self::SOUS_THEME_REF)->first();
-        $histoire->sousThemes()->sync($sousTheme ? [$sousTheme->id] : []);
-
-        // Premier passage : les scenes et leur rattachement. Les choix viennent
-        // apres, une scene suivante devant exister pour etre referencee.
-        $scenes = [];
-        $rang = 1;
-
-        foreach (self::SCENES as $cle => $donnees) {
-            $scene = $histoire->scenes()->where('titre', $donnees['titre'])->first()
-                ?? Scene::create(['titre' => $donnees['titre'], 'dialogue_text' => $donnees['dialogue_text']]);
-
-            $media = $this->trouverOuCreerImage($cle, $donnees['titre'], $donnees['image']);
-
-            $scene->update(['dialogue_text' => $donnees['dialogue_text'], 'media_id' => $media->id]);
-
-            $histoire->scenes()->syncWithoutDetaching([
-                $scene->id => [
-                    'est_initiale' => $donnees['est_initiale'] ?? false,
-                    'ordre' => $rang++,
-                ],
-            ]);
-
-            $scenes[$cle] = $scene;
-        }
-
-        foreach (self::SCENES as $cle => $donnees) {
-            foreach ($donnees['choix'] as $choix) {
-                Choix::updateOrCreate(
-                    ['scene_id' => $scenes[$cle]->id, 'text_choix' => $choix['text_choix']],
-                    [
-                        'next_scene_id' => $choix['suivante'] ? $scenes[$choix['suivante']]->id : null,
-                        'issue' => $choix['issue'],
-                    ],
-                );
-            }
-        }
+        return 'demo_soiree_qui_derape';
     }
 
-    /**
-     * Idempotent via le libelle, sur le meme principe que MediaSeeder.
-     */
-    private function trouverOuCreerImage(string $cle, string $titreScene, string $nomFichier): Media
+    protected function titre(): string
     {
-        $titreCourt = str_replace('[DEMO] ', '', $titreScene);
-
-        return Media::updateOrCreate(
-            ['libelle' => $titreCourt],
-            [
-                'description' => null,
-                'chemin' => $this->copierFichierSource($cle, $nomFichier),
-                'type' => MediaType::Image,
-            ],
-        );
+        return 'Une soirée qui dérape (démo)';
     }
 
-    /**
-     * Copie idempotente vers le disque `public` : storage/app/public n'est pas
-     * commite, le fichier source vient de database/seeders/data/images/.
-     */
-    private function copierFichierSource(string $cle, string $nomFichier): string
+    protected function sousThemeRef(): string
     {
-        $cheminDisque = 'medias/image/demo-soiree-qui-derape/'.$nomFichier;
+        return 'alcool';
+    }
 
-        if (Storage::disk('public')->exists($cheminDisque)) {
-            return $cheminDisque;
-        }
+    protected function dossier(): string
+    {
+        return 'demo-soiree-qui-derape';
+    }
 
-        $source = database_path("seeders/data/images/demo-soiree-qui-derape/{$nomFichier}");
-
-        if (! is_file($source)) {
-            throw new RuntimeException("Fichier source introuvable : {$source} (HistoireSeeder, scene {$cle})");
-        }
-
-        Storage::disk('public')->put($cheminDisque, file_get_contents($source));
-
-        return $cheminDisque;
+    protected function scenes(): array
+    {
+        return self::SCENES;
     }
 }

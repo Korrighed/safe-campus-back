@@ -3,40 +3,19 @@
 namespace Database\Seeders;
 
 use App\Enums\ChoixIssue;
-use App\Enums\EtatHistoire;
-use App\Enums\MediaType;
-use App\Models\Choix;
-use App\Models\Histoire;
-use App\Models\Media;
-use App\Models\Scene;
-use App\Models\SousTheme;
-use App\Models\User;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
-use RuntimeException;
 
 /**
  * Histoire de demonstration « La veille du partiel » (sous-theme anxiete) :
  * 4 scenes, 12 choix, illustrees par des SVG animes (CSS uniquement, sans
  * script ni ressource externe, animations figees sous prefers-reduced-motion).
+ * Fonctionnement commun dans HistoireDemoSeeder.
  *
- * Meme principe que HistoireSeeder : idempotent (histoire par `ref`, scene par
- * (histoire, titre), choix par (scene, texte)), jamais en production, le
- * compte redacteur de RedacteurDemoSeeder doit exister.
+ * @phpstan-import-type DonneesScene from HistoireDemoSeeder
  */
-class HistoireAnxieteSeeder extends Seeder
+class HistoireAnxieteSeeder extends HistoireDemoSeeder
 {
-    private const REF = 'demo_veille_du_partiel';
-
-    private const SOUS_THEME_REF = 'anxiete';
-
-    private const DOSSIER = 'demo-veille-du-partiel';
-
     /**
-     * Cle = identifiant interne au seeder, sert a relier les choix aux scenes
-     * suivantes. L'ordre du tableau est l'ordre des scenes dans l'histoire.
-     *
-     * @var array<string, array{titre: string, dialogue_text: string, image: string, est_initiale?: bool, choix: list<array{text_choix: string, suivante: ?string, issue: ?ChoixIssue}>}>
+     * @var array<string, DonneesScene>
      */
     private const SCENES = [
         'veille' => [
@@ -82,101 +61,28 @@ class HistoireAnxieteSeeder extends Seeder
         ],
     ];
 
-    public function run(): void
+    protected function ref(): string
     {
-        if (app()->environment('production')) {
-            return;
-        }
-
-        $redacteur = User::where('email', config('redacteur_demo.email'))->firstOrFail();
-
-        $histoire = Histoire::updateOrCreate(
-            ['ref' => self::REF],
-            [
-                'titre' => 'La veille du partiel (démo)',
-                'etat' => EtatHistoire::Publie,
-                'user_id' => $redacteur->id,
-            ],
-        );
-
-        $sousTheme = SousTheme::where('ref', self::SOUS_THEME_REF)->first();
-        $histoire->sousThemes()->sync($sousTheme ? [$sousTheme->id] : []);
-
-        // Premier passage : les scenes et leur rattachement. Les choix viennent
-        // apres, une scene suivante devant exister pour etre referencee.
-        $scenes = [];
-        $rang = 1;
-
-        foreach (self::SCENES as $cle => $donnees) {
-            $scene = $histoire->scenes()->where('titre', $donnees['titre'])->first()
-                ?? Scene::create(['titre' => $donnees['titre'], 'dialogue_text' => $donnees['dialogue_text']]);
-
-            $media = $this->trouverOuCreerImage($cle, $donnees['titre'], $donnees['image']);
-
-            $scene->update(['dialogue_text' => $donnees['dialogue_text'], 'media_id' => $media->id]);
-
-            $histoire->scenes()->syncWithoutDetaching([
-                $scene->id => [
-                    'est_initiale' => $donnees['est_initiale'] ?? false,
-                    'ordre' => $rang++,
-                ],
-            ]);
-
-            $scenes[$cle] = $scene;
-        }
-
-        foreach (self::SCENES as $cle => $donnees) {
-            foreach ($donnees['choix'] as $choix) {
-                Choix::updateOrCreate(
-                    ['scene_id' => $scenes[$cle]->id, 'text_choix' => $choix['text_choix']],
-                    [
-                        'next_scene_id' => $choix['suivante'] ? $scenes[$choix['suivante']]->id : null,
-                        'issue' => $choix['issue'],
-                    ],
-                );
-            }
-        }
+        return 'demo_veille_du_partiel';
     }
 
-    /**
-     * Idempotent via le chemin plutot que le libelle : des libelles courts
-     * comme « Une pause » pourraient deja exister cote back-office.
-     */
-    private function trouverOuCreerImage(string $cle, string $titreScene, string $nomFichier): Media
+    protected function titre(): string
     {
-        $chemin = $this->copierFichierSource($cle, $nomFichier);
-
-        return Media::updateOrCreate(
-            ['chemin' => $chemin],
-            [
-                'libelle' => str_replace('[DEMO] ', '', $titreScene),
-                'description' => null,
-                'type' => MediaType::Image,
-            ],
-        );
+        return 'La veille du partiel (démo)';
     }
 
-    /**
-     * Copie vers le disque `public` (storage/app/public n'est pas commite),
-     * depuis database/seeders/data/images/. Le fichier est recopie des que la
-     * source change : retoucher un SVG puis rejouer le seeder suffit.
-     */
-    private function copierFichierSource(string $cle, string $nomFichier): string
+    protected function sousThemeRef(): string
     {
-        $cheminDisque = 'medias/image/'.self::DOSSIER.'/'.$nomFichier;
-        $source = database_path('seeders/data/images/'.self::DOSSIER.'/'.$nomFichier);
+        return 'anxiete';
+    }
 
-        if (! is_file($source)) {
-            throw new RuntimeException("Fichier source introuvable : {$source} (HistoireAnxieteSeeder, scene {$cle})");
-        }
+    protected function dossier(): string
+    {
+        return 'demo-veille-du-partiel';
+    }
 
-        $contenu = file_get_contents($source);
-        $disque = Storage::disk('public');
-
-        if (! $disque->exists($cheminDisque) || $disque->get($cheminDisque) !== $contenu) {
-            $disque->put($cheminDisque, $contenu);
-        }
-
-        return $cheminDisque;
+    protected function scenes(): array
+    {
+        return self::SCENES;
     }
 }

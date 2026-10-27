@@ -116,3 +116,12 @@ Parcours navigateur : connecté en rédacteur, ouvrir une histoire en brouillon,
 - Ne pas retirer ni renommer d'état dans `EtatHistoire`.
 
 ## Notes d'exécution
+
+- Vérification non lancée : consigne utilisateur (aucune commande pint, phpstan, artisan test). À lancer en fin de lot, les trois commandes de « Vérification ».
+- Point 3 confirmé dans `vendor/` (Filament 3.3.57) : `Resources\Pages\Page::shouldRegisterNavigation(array $parameters = [])`. `InteractsWithRecord::getSubNavigationParameters()` passe `['record' => Histoire]` à `HasSubNavigation::generateNavigationItems()`. Signature identique, aucune adaptation.
+- Redondance : `vendor/filament/filament/src/Resources/Pages/EditRecord.php:403` renvoie déjà `parent::shouldRegisterNavigation($parameters) && canEdit($parameters['record'])`, soit `HistoirePolicy::update`. L'onglet « 1. Infos » est donc déjà masqué pour un rédacteur sur histoire verrouillée, avant T003. L'override ajouté duplique ce contrôle. Décision à prendre : le retirer ou le garder comme garde explicite.
+- `CreateHistoire` utilise un wizard (`getSteps()`) sans champ `etat` : la règle `in` sur un record null n'est pas atteignable.
+- La règle `in` est évaluée sur l'état stocké avant `save()` (validation avant mise à jour du record).
+- AC-03 : aucune modification. `HistoireController::show` ligne 14 renvoie 404 si `etat !== Publie`. Aucun test ajouté (hors liste des quatre tests).
+- AC-04 : closure `helperText` du champ `etat` dans `form()`. Aucun test ajouté (hors liste).
+- Tests écrits, non exécutés.

@@ -4,6 +4,7 @@ namespace Tests\Feature\Filament;
 
 use App\Enums\EtatHistoire;
 use App\Enums\UserRole;
+use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\CreateHistoire;
 use App\Filament\Resources\HistoireResource\Pages\EditHistoire;
 use App\Filament\Resources\HistoireResource\Pages\ListHistoires;
@@ -161,5 +162,68 @@ class HistoireResourceTest extends TestCase
 
         $this->assertModelMissing($libre);
         $this->assertModelExists($verrouillee);
+    }
+
+    public function test_un_redacteur_n_a_que_brouillon_et_relecture(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Brouillon]);
+
+        $this->assertSame(['brouillon', 'relecture'], array_keys(HistoireResource::optionsEtat($histoire)));
+    }
+
+    public function test_un_redacteur_soumet_son_histoire_en_relecture(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Brouillon]);
+
+        Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
+            ->fillForm(['etat' => 'relecture'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(EtatHistoire::Relecture, $histoire->fresh()->etat);
+    }
+
+    public function test_un_redacteur_ne_peut_pas_forcer_la_publication(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Brouillon]);
+
+        Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
+            ->fillForm(['etat' => 'publie'])
+            ->call('save')
+            ->assertHasFormErrors(['etat']);
+
+        Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
+            ->fillForm(['etat' => 'valide'])
+            ->call('save')
+            ->assertHasFormErrors(['etat']);
+
+        $this->assertSame(EtatHistoire::Brouillon, $histoire->fresh()->etat);
+    }
+
+    public function test_un_relecteur_fait_passer_l_histoire_par_tous_les_etats(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Relecteur]));
+        $histoire = Histoire::factory()
+            ->pour(User::factory()->create(['role' => UserRole::Redacteur]))
+            ->create(['etat' => EtatHistoire::Relecture]);
+
+        Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
+            ->fillForm(['etat' => 'valide'])
+            ->call('save')
+            ->assertHasNoFormErrors()
+            ->fillForm(['etat' => 'publie'])
+            ->call('save')
+            ->assertHasNoFormErrors()
+            ->fillForm(['etat' => 'brouillon'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(EtatHistoire::Brouillon, $histoire->fresh()->etat);
     }
 }

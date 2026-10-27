@@ -3,8 +3,10 @@
 namespace App\Filament\Resources;
 
 use App\Enums\EtatHistoire;
+use App\Enums\UserRole;
 use App\Filament\Resources\HistoireResource\Pages;
 use App\Models\Histoire;
+use App\Policies\HistoirePolicy;
 use App\Services\VerificationHistoireService;
 use Filament\Actions;
 use Filament\Forms;
@@ -49,14 +51,14 @@ class HistoireResource extends Resource
                                 static::champTitre(),
                                 Forms\Components\Select::make('etat')
                                     ->label('État')
-                                    ->options(array_combine(
-                                        array_map(fn (EtatHistoire $etat) => $etat->value, EtatHistoire::cases()),
-                                        array_map(fn (EtatHistoire $etat) => $etat->libelle(), EtatHistoire::cases()),
-                                    ))
+                                    ->options(fn (?Histoire $record): array => static::optionsEtat($record))
                                     ->required()
+                                    ->in(fn (?Histoire $record): array => array_keys(static::optionsEtat($record)))
                                     ->native(false)
                                     ->live()
-                                    ->helperText('Brouillon → Relecture → Validé → Publié. Seul « Publié » est visible sur le site.')
+                                    ->helperText(fn (): string => auth()->user()?->role === UserRole::Relecteur
+                                        ? 'Brouillon → Relecture → Validé → Publié. Seul « Publié » est visible sur le site. Vous pouvez passer d\'un état à n\'importe quel autre.'
+                                        : 'Passez l\'histoire en « Relecture » quand elle est prête. Elle sera alors verrouillée : un relecteur la corrige, la publie ou vous la renvoie en brouillon.')
                                     ->hint(fn (Get $get, ?Histoire $record): ?string => self::histoireIncompleteHorsBrouillon($get('etat'), $record)
                                         ? 'Histoire incomplète — voir « Vérifier » dans le menu'
                                         : null)
@@ -87,6 +89,24 @@ class HistoireResource extends Resource
             ->preload()
             ->searchable()
             ->helperText('Rubriques où apparaîtra le bouton « Suivre l\'histoire ».');
+    }
+
+    /**
+     * Etats que l'utilisateur connecte peut poser sur cette histoire.
+     *
+     * @return array<string, string> valeur => libelle
+     */
+    public static function optionsEtat(?Histoire $histoire): array
+    {
+        $utilisateur = auth()->user();
+
+        if ($histoire === null || $utilisateur === null) {
+            return [];
+        }
+
+        return collect(app(HistoirePolicy::class)->etatsAccessibles($utilisateur, $histoire))
+            ->mapWithKeys(fn (EtatHistoire $etat): array => [$etat->value => $etat->libelle()])
+            ->all();
     }
 
     private static function histoireIncompleteHorsBrouillon(EtatHistoire|string|null $etat, ?Histoire $record): bool

@@ -190,13 +190,14 @@ class ScenesHistoire extends Page
                 Forms\Components\TextInput::make('titre')
                     ->label('Nom de la scène')
                     ->required()
-                    ->maxLength(255)
-                    ->helperText('Repère pour toi, jamais montré au joueur.'),
+                    ->maxLength(HistoireResource::TITRE_MAX)
+                    ->helperText('Repère pour toi, jamais montré au joueur. '.HistoireResource::mentionLimite(HistoireResource::TITRE_MAX)),
                 Forms\Components\Textarea::make('dialogue_text')
                     ->label('Mise en situation')
                     ->required()
                     ->rows(4)
-                    ->helperText('Le texte que lit le joueur avant de choisir.'),
+                    ->maxLength(HistoireResource::DIALOGUE_MAX)
+                    ->helperText('Le texte que lit le joueur avant de choisir. '.HistoireResource::mentionLimite(HistoireResource::DIALOGUE_MAX)),
                 Forms\Components\Section::make('Média et thème')
                     ->description(fn (Get $get): string => $this->resumeMediaEtTheme($get('media_id'), $get('sous_theme_id')))
                     ->collapsible()
@@ -235,7 +236,8 @@ class ScenesHistoire extends Page
                                     ->hiddenLabel()
                                     ->placeholder('Ce que le joueur peut répondre')
                                     ->required()
-                                    ->maxLength(255)
+                                    ->maxLength(HistoireResource::TEXTE_CHOIX_MAX)
+                                    ->helperText(HistoireResource::mentionLimite(HistoireResource::TEXTE_CHOIX_MAX))
                                     ->columnSpan(['lg' => 4]),
                                 Forms\Components\ToggleButtons::make('suite')
                                     ->label('Que se passe-t-il ensuite ?')

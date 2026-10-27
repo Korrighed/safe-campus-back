@@ -78,6 +78,45 @@ class HistoireResourceTest extends TestCase
             ->assertHasFormErrors(['premiere_scene.dialogue_text' => 'required']);
     }
 
+    public function test_le_dialogue_de_la_premiere_scene_est_limite(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
+
+        Livewire::test(CreateHistoire::class)
+            ->fillForm([
+                'titre' => 'Dialogue trop long',
+                'premiere_scene' => ['titre' => 'Arrivée', 'dialogue_text' => str_repeat('a', HistoireResource::DIALOGUE_MAX + 1)],
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['premiere_scene.dialogue_text' => 'max']);
+
+        $this->assertFalse(Histoire::where('titre', 'Dialogue trop long')->exists());
+    }
+
+    public function test_le_dialogue_de_la_premiere_scene_accepte_exactement_la_limite(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
+
+        Livewire::test(CreateHistoire::class)
+            ->fillForm([
+                'titre' => 'Dialogue à la limite',
+                'premiere_scene' => ['titre' => 'Arrivée', 'dialogue_text' => str_repeat('a', HistoireResource::DIALOGUE_MAX)],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue(Histoire::where('titre', 'Dialogue à la limite')->exists());
+    }
+
+    public function test_les_formulaires_affichent_la_limite(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
+
+        Livewire::test(CreateHistoire::class)
+            ->assertSee(HistoireResource::mentionLimite(HistoireResource::TITRE_MAX))
+            ->assertSee(HistoireResource::mentionLimite(HistoireResource::DIALOGUE_MAX));
+    }
+
     public function test_le_ref_reste_inchange_a_l_edition(): void
     {
         $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);

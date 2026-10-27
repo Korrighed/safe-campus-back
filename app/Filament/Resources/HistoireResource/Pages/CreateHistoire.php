@@ -24,7 +24,7 @@ class CreateHistoire extends CreateRecord
                 ->description('Titre et rubriques')
                 ->schema([
                     HistoireResource::champTitre()
-                        ->helperText('Visible par les joueurs une fois l\'histoire publiée.'),
+                        ->helperText('Visible par les joueurs une fois l\'histoire publiée. '.HistoireResource::mentionLimite(HistoireResource::TITRE_MAX)),
                     HistoireResource::champSousThemes(),
                 ]),
             Forms\Components\Wizard\Step::make('La première scène')
@@ -33,14 +33,15 @@ class CreateHistoire extends CreateRecord
                     Forms\Components\TextInput::make('premiere_scene.titre')
                         ->label('Nom de la scène')
                         ->required()
-                        ->maxLength(255)
+                        ->maxLength(HistoireResource::TITRE_MAX)
                         ->default('Introduction')
-                        ->helperText('Repère pour toi, jamais montré au joueur.'),
+                        ->helperText('Repère pour toi, jamais montré au joueur. '.HistoireResource::mentionLimite(HistoireResource::TITRE_MAX)),
                     Forms\Components\Textarea::make('premiere_scene.dialogue_text')
                         ->label('Mise en situation')
                         ->required()
                         ->rows(5)
-                        ->helperText('Le texte que lit le joueur en arrivant dans l\'histoire. Tu ajouteras les choix ensuite, depuis la page « 2. Scènes ».'),
+                        ->maxLength(HistoireResource::DIALOGUE_MAX)
+                        ->helperText('Le texte que lit le joueur en arrivant dans l\'histoire. Tu ajouteras les choix ensuite, depuis la page « 2. Scènes ». '.HistoireResource::mentionLimite(HistoireResource::DIALOGUE_MAX)),
                 ]),
         ];
     }

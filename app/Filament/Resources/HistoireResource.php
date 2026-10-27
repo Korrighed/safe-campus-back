@@ -34,6 +34,17 @@ class HistoireResource extends Resource
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
+    public const TITRE_MAX = 255;
+
+    public const DIALOGUE_MAX = 1000;
+
+    public const TEXTE_CHOIX_MAX = 255;
+
+    public static function mentionLimite(int $max): string
+    {
+        return "{$max} caractères maximum.";
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->visiblePar(auth()->user());
@@ -94,7 +105,8 @@ class HistoireResource extends Resource
     {
         return Forms\Components\TextInput::make('titre')
             ->required()
-            ->maxLength(255);
+            ->maxLength(self::TITRE_MAX)
+            ->helperText(self::mentionLimite(self::TITRE_MAX));
     }
 
     public static function champSousThemes(): Forms\Components\Select

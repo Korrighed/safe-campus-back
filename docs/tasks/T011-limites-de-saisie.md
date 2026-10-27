@@ -77,3 +77,9 @@ Parcours navigateur : créer une histoire, lire la limite sous chaque champ ; co
 - Pas d'autres formulaires que histoires, scènes et choix.
 
 ## Notes d'exécution
+
+- Étape 1 : `max(length(dialogue_text))` = 233, sous `DIALOGUE_MAX` (1000). AC-03 satisfait pour les dialogues. Première tentative bloquée par `app/Filament/Widgets/GuideRelecteurWidget.php:23` (ligne `</content>`), corrigée par le coordinateur, relance OK.
+- `text_choix` : aide `mentionLimite(TEXTE_CHOIX_MAX)` (défaut de l'étape 5). Placeholder inchangé. Mise en page du répéteur non vérifiée visuellement : repli possible sur le placeholder si l'aide gêne.
+- Clés `assertHasFormErrors` relatives au statePath (`dialogue_text`, `premiere_scene.dialogue_text`) : Filament préfixe `donnees.` lui-même (`vendor/filament/forms/src/Testing/TestsForms.php:108-118`). La clé `donnees.dialogue_text` de la tâche aurait donné `donnees.donnees.dialogue_text`.
+- Tests ajoutés : `HistoireResourceTest` (`test_le_dialogue_de_la_premiere_scene_est_limite`, `test_le_dialogue_de_la_premiere_scene_accepte_exactement_la_limite`, `test_les_formulaires_affichent_la_limite`) ; `HistoireScenesTest` (`test_le_dialogue_d_une_scene_est_limite`, `test_le_dialogue_d_une_scene_accepte_exactement_la_limite`).
+- Non exécuté : pint, phpstan, php artisan test (consigne utilisateur). À lancer par le verifier.

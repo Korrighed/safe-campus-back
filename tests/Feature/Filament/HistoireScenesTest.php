@@ -415,6 +415,34 @@ class HistoireScenesTest extends TestCase
         $this->assertSame('Intro', $intro->fresh()->titre);
     }
 
+    public function test_le_dialogue_d_une_scene_est_limite(): void
+    {
+        [$histoire, $intro] = $this->histoireATroisScenes();
+        $trop = str_repeat('a', HistoireResource::DIALOGUE_MAX + 1);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('modifier', $intro->id)
+            ->fillForm(['titre' => 'Intro', 'dialogue_text' => $trop])
+            ->call('enregistrer')
+            ->assertHasFormErrors(['dialogue_text' => 'max']);
+
+        $this->assertNotSame($trop, $intro->fresh()->dialogue_text);
+    }
+
+    public function test_le_dialogue_d_une_scene_accepte_exactement_la_limite(): void
+    {
+        [$histoire, $intro] = $this->histoireATroisScenes();
+        $limite = str_repeat('a', HistoireResource::DIALOGUE_MAX);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('modifier', $intro->id)
+            ->fillForm(['titre' => 'Intro', 'dialogue_text' => $limite])
+            ->call('enregistrer')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($limite, $intro->fresh()->dialogue_text);
+    }
+
     public function test_une_histoire_complete_passe_tous_les_controles(): void
     {
         $histoire = Histoire::factory()->pour($this->redacteur)->create();

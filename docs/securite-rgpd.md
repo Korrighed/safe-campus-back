@@ -188,14 +188,16 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 ## 8. Infrastructure et déploiement
 
-Aucun hébergeur n'est retenu. Le livrable s'arrête aux images Docker de production, déployables sur tout hôte Docker. Le reverse proxy, le certificat TLS, le stockage persistant et la sauvegarde sont à fournir par l'hébergement.
+Aucun hébergeur de production n'est retenu. Le livrable s'arrête aux images Docker de production, déployables sur tout hôte Docker. Le reverse proxy, le certificat TLS, le stockage persistant et la sauvegarde sont à fournir par l'hébergement.
+
+Une démo publique temporaire tourne sur Render et Neon (§ 8.2). Elle ne tient pas lieu d'hébergement de production.
 
 - Les images de production sont séparées des images de développement. Elles ne contiennent ni Xdebug, ni Adminer, ni dépendances de développement. L'image front ne contient que le build `.output/`, sans code source.
 - Les fichiers `.env` sont exclus des images (`.dockerignore`).
 - Les conteneurs back et site étudiant tournent avec un utilisateur non administrateur. L'image de production du site étudiant utilise `node`, fourni par l'image Node, et ne peut pas modifier son build `.output/` (S-12, corrigé).
 - L'image back sert l'application avec `php artisan serve`, serveur de développement mono-processus (S-11).
 - Le réseau Docker de production (`scback_prod`) est séparé de celui de développement (`scback`).
-- Les commandes post-déploiement excluent tout jeu de données de démonstration : `db:seed` est interdit en production.
+- Les commandes post-déploiement excluent tout jeu de données de démonstration : `db:seed` est interdit en production. Seule exception, la démo publique : `DEMO_CONTENT=true` autorise les seeders de démo (`config/demo.php`, faux par défaut, § 8.2).
 - Une sauvegarde de la base est obligatoire avant toute migration en production.
 - Volumes persistants à créer pour les médias et les journaux : sans eux, un redéploiement les efface (S-06).
 
@@ -216,6 +218,27 @@ Ces préconisations servent de cahier des charges pour le choix de l'hébergeur.
 | Localisation | Serveurs situés dans une zone compatible avec le régime de protection des données retenu par le DPO (§ 1.2). |
 | Contrat | Contrat de sous-traitance conforme à l'article 28 du RGPD (§ 16). |
 
+### 8.2 Démo publique (Render et Neon)
+
+Mise en ligne temporaire pour présenter le prototype. Procédure et variables : [deploiement-render.md](deploiement-render.md).
+
+| Élément | Choix | Conséquence pour la sécurité |
+|---|---|---|
+| Hébergement applicatif | Render, 2 services web gratuits, région Oregon (États-Unis) | HTTPS et reverse proxy fournis par Render. Hébergeur hors Union européenne : voir § 16. |
+| Base de données | Neon, PostgreSQL 17, région `us-west-2` | Connexion directe, `sslmode=require`. Les droits exacts du rôle `neondb_owner` n'ont pas été vérifiés : S-18 n'est pas évalué sur cette démo. |
+| Secrets | Variables d'environnement de chaque service Render, saisies par un administrateur | Aucune valeur dans git (`.env.*` ignorés par git et Docker) ni dans les images. Un gestionnaire de secrets externe (Doppler) a été évalué puis écarté : dépendance et clé d'API Render supplémentaires, sans gain pour une démo d'une semaine. |
+| Contenu | `DEMO_CONTENT=true` : annuaire de contacts, 3 histoires, documents de démonstration | Les contacts sont des structures d'aide publiques. Aucune donnée d'étudiant n'est collectée. |
+| Disque | Éphémère (plan gratuit) | Médias recréés à chaque démarrage par `docker/8.4/start-prod`. Les fichiers téléversés depuis `/admin` disparaissent au redémarrage. |
+| Histoires de démo | Rejouées à chaque démarrage | Toute modification d'une des 3 histoires dans `/admin` est écrasée au redémarrage suivant. |
+
+Limites assumées de la démo :
+
+- Pas de sauvegarde de la base en dehors de celle de Neon, pas de supervision (S-07), pas de planificateur (S-19 : la purge des comptes inactifs ne tourne pas).
+- `artisan serve` avec deux processus (`PHP_CLI_SERVER_WORKERS=2`) sur 512 Mo : mono-hôte, sans haute disponibilité (S-11).
+- Mise en veille après 15 minutes d'inactivité : premier appel suivant d'environ une minute.
+- Le portillon visiteur reste actif (prototype, § 4.1).
+- Aucun contrat de sous-traitance (art. 28) n'est signé avec Render ni Neon. La démo ne doit contenir que des données de démonstration. Les comptes du personnel créés dans `/admin` sont des comptes de test.
+
 ---
 
 ## 9. Maintenance de la sécurité
@@ -230,32 +253,35 @@ Ces préconisations servent de cahier des charges pour le choix de l'hébergeur.
 | Test de restauration d'une sauvegarde | Trimestrielle |
 | Montées de version majeures | Selon le calendrier de fin de support des composants |
 
-État des dépendances au 20/10/2026, après mise à jour dans les contraintes déclarées :
+État des dépendances au 27/10/2026 (audits rejoués par la CI, job `approfondi`, voir [ci.md](ci.md)) :
 
 | Dépôt | Outil | Vulnérabilités connues |
 |---|---|---|
-| Back | `composer audit` | Aucune |
-| Front | `npm audit` | 11 de gravité haute, toutes dans la chaîne d'outillage de Nuxt (serveur de développement, build). Correctif proposé par npm : retour à Nuxt 3, non retenu. |
+| Back | `composer audit --locked` | Aucune. Bloquant en CI. |
+| Front | `npm audit` | 7 de gravité haute et 1 basse, dans la chaîne d'outillage de Nuxt (serveur de développement, build) ; aucune critique. Les critiques bloquent la CI ; les hautes sont affichées sans bloquer. Correctif proposé par npm : retour à Nuxt 3, non retenu. |
+| Images de prod | Trivy, CRITICAL corrigeables | Aucune. Bloquant en CI. |
+
+Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 
 ---
 
 ## 10. Mesures complémentaires à mettre en œuvre
 
-État constaté dans le code le 20/10/2026 : aucune de ces mesures n'est réalisée.
+État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (back seulement), S-06, S-14. Les autres restent à faire.
 
 ### 10.1 Écarts à corriger avant la mise en production
 
 | ID | Mesure | Constat | Priorité |
 |---|---|---|---|
 | S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). À faire : en-têtes du front, CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
-| S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Seule la base dispose d'un volume | Haute |
+| S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Volumes `storage/app` et `storage/logs` créés dans `docker-compose.prod.yml`. Sauvegarde hors serveur non faite. Sur Render gratuit, le disque est éphémère (§ 8.2). | Haute |
 | S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
 | S-08 | Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |
 | S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Fait : `config/cors.php`, origines lues dans `CORS_ALLOWED_ORIGINS` | Moyenne |
 | S-10 | Adapter les images de production au lancement officiel : retirer le compte visiteur, la page de connexion et le middleware du front. Retirer aussi du front la ligne « portillon » et la section « cookie » de la page Données personnelles, et `/donnees-personnelles` de `PUBLIC_PATHS` | Les images exigent le compte visiteur : sans ses variables, le premier déploiement échoue | Haute (au lancement officiel) |
 | S-11 | Remplacer le serveur de développement par un serveur d'application de production | L'image lance `artisan serve`, mono-processus | Haute |
 | S-13 | Rendre sécurisé le cookie de session du back-office en production | Fait : `SESSION_SECURE_COOKIE=true` par défaut dans `docker-compose.prod.yml`. Avec `TRUSTED_PROXIES` renseigné, le cookie porte `secure; httponly` (vérifié sur l'image) | Moyenne |
-| S-14 | Figer les versions des images utilisées au build | Image Composer en version « latest » | Basse |
+| S-14 | Figer les versions des images utilisées au build | Image Composer encore en « latest ». Dans la CI, l'action Trivy est épinglée par commit ; les autres actions GitHub le sont par étiquette (`@v4`). | Basse |
 | S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Rattachements non journalisés | Basse |
 | S-18 | Connecter l'application avec un utilisateur dédié, propriétaire de la base mais sans droits superutilisateur, créé par un script d'initialisation de PostgreSQL | L'application utilise le compte superutilisateur créé par l'image | Moyenne |
 | S-19 | Lancer le planificateur Laravel en production (cron de l'hôte : `schedule:run` chaque minute, voir `deploiement.md`) | Aucun planificateur dans l'image : la purge des comptes inactifs à 3 ans ne s'exécute pas | Haute |
@@ -355,6 +381,9 @@ Le chargement des polices Google Fonts et des tuiles cartographiques transmet l'
 | Destinataire | Données | Localisation | Encadrement |
 |---|---|---|---|
 | Hébergeur | Toutes les données de la plateforme | À désigner | Contrat de sous-traitance (art. 28 RGPD) |
+| Render (démo publique) | Applications, journaux, variables d'environnement | États-Unis (Oregon) | Aucun contrat spécifique. Démo à données de démonstration uniquement (§ 8.2). |
+| Neon (démo publique) | Base de données de la démo | États-Unis (`us-west-2`) | Idem |
+| GitHub (dépôts publics, CI) | Code source, historique, résultats de la CI | États-Unis | Dépôts publics : aucun secret détecté dans l'historique (scan du 27/10/2026). Les noms et adresses e-mail des auteurs de commits y sont visibles. |
 | OpenStreetMap Foundation | IP du navigateur, adresses de structures | Royaume-Uni (décision d'adéquation) | Politique d'usage OSM |
 | Esri | IP du navigateur (back-office) | États-Unis | Usage limité au personnel |
 | Google Fonts | IP du navigateur | États-Unis | À supprimer (S-08) |

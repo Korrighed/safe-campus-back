@@ -77,6 +77,8 @@ Read routes are public by design. The visitor login is a prototype-only gate for
 - Toujours demander confirmation à l'utilisateur avant de merger une `feature/*` sur `dev`. Ne jamais merger de sa propre initiative.
 - Une fois une `feature/*` mergée dans `dev` et poussée sur `origin/dev`, supprimer la branche locale (`git branch -d`). Ne pas laisser de branches `feature/*` locales après clôture.
 - Jamais de `Co-Authored-By` dans les messages de commit.
+- `main` est protégée par un ruleset : PR obligatoire, checks `verif` et `approfondi` verts, pas de force-push. `dev` doit contenir `main` avant une nouvelle PR. Détails : [docs/ci.md](docs/ci.md).
+- Avant de pousser `dev` : `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` et `php artisan test` doivent passer (même contrôle que le job `verif`).
 - Format de message de commit obligatoire :
 
 ```

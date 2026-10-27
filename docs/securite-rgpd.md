@@ -90,7 +90,7 @@ Le prototype n'est pas déployé. Lors des événements où la plateforme est pr
 - Le mot de passe est partagé. Le compte visiteur n'est pas nominatif. Ses identifiants sont définis dans la configuration serveur (`VISITEUR_EMAIL` / `VISITEUR_PASSWORD`), jamais dans le code. Le mot de passe est changé par variable d'environnement entre deux événements.
 - `POST /api/login` renvoie un jeton Sanctum. Le front le stocke dans le cookie `sc_token` (`SameSite=Lax`).
 - Le jeton n'a pas de durée de vie : le portillon n'a pas vocation à expirer pendant un événement.
-- Le compte visiteur ne peut pas accéder au back-office : `canAccessPanel()` n'accepte que `webmaster`, `redacteur` et `admin`.
+- Le compte visiteur ne peut pas accéder au back-office : `canAccessPanel()` n'accepte que `webmaster`, `redacteur`, `relecteur` et `admin`.
 - En production, le compte visiteur, la page de connexion et le middleware sont retirés (S-10).
 
 Les limites connues du portillon sont listées au § 10.2.
@@ -119,20 +119,22 @@ Les limites connues du portillon sont listées au § 10.2.
 
 Chaque compte a un rôle unique. La liste des rôles est fixée par une énumération et une contrainte CHECK en base : aucun écran ne permet d'en créer. Les droits sont appliqués par une Policy Laravel par ressource. Une ressource non autorisée disparaît du menu et répond 403 si on y accède directement.
 
-| Ressource | `webmaster` | `redacteur` | `admin` | `visiteur` |
-|---|---|---|---|---|
-| Thèmes / Sous-thèmes | ✓ | — | — | — |
-| Contacts / Téléphones | ✓ | — | — | — |
-| Médias | ✓ | ✓ | — | — |
-| Histoires / Scènes / Choix | — | ✓ | — | — |
-| Utilisateurs | — | — | ✓ | — |
-| Accès au back-office | ✓ | ✓ | ✓ | ✗ |
+| Ressource | `webmaster` | `redacteur` | `relecteur` | `admin` | `visiteur` |
+|---|---|---|---|---|---|
+| Thèmes / Sous-thèmes | ✓ | — | — | — | — |
+| Contacts / Téléphones | ✓ | — | — | — | — |
+| Médias | ✓ | ✓ | — | — | — |
+| Histoires / Scènes / Choix | — | ✓ (les siennes, en brouillon) | ✓ (toutes ; pas de création d'histoire) | — | — |
+| Utilisateurs | — | — | — | ✓ | — |
+| Accès au back-office | ✓ | ✓ | ✓ | ✓ | ✗ |
 
 ### 5.1 Garde-fous
 
 - Un administrateur ne peut ni modifier ni supprimer son propre compte. Le dernier administrateur ne peut donc pas disparaître.
 - Le compte visiteur n'apparaît pas dans la liste des utilisateurs. On ne peut ni l'attribuer à quelqu'un ni le supprimer.
-- Avant de supprimer un rédacteur, il faut transférer ses histoires à un autre rédacteur. Sans repreneur, rien n'est supprimé.
+- Avant de supprimer un rédacteur, il faut transférer ses histoires à un autre rédacteur ou à un relecteur. Sans repreneur, rien n'est supprimé.
+- Un rédacteur ne voit que ses histoires, et ne modifie ni ne supprime que celles en brouillon.
+- Un rédacteur ne peut pas poser `valide` ni `publie` : la valeur est refusée côté serveur.
 - Retirer son rôle à un compte le désactive immédiatement, sans le supprimer.
 
 ---
@@ -174,13 +176,15 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 | Fichiers | `storage/logs/audit-AAAA-MM-JJ.log`, un par jour |
 | Format | JSON, une entrée par ligne, horodatage UTC |
 | Conservation | 365 jours, purge automatique |
-| Événements | Création, modification (avant / après) et suppression des données métier. Connexion, échec de connexion, déconnexion, inscription. Transfert d'histoires. Purge d'un compte inactif (`User.purge_inactivite`) ou ignorée faute de repreneur (`User.purge_ignoree`), auteur `console`. |
+| Événements | Création, modification (avant / après) et suppression des données métier. Connexion, échec de connexion, déconnexion, inscription. Transfert d'histoires. Purge d'un compte inactif (`User.purge_inactivite`) ou ignorée faute de repreneur (`User.purge_ignoree`), auteur `console`. Circuit d'une histoire : `Histoire.etat_change` (`de`, `vers`). Rattachements d'une histoire : `Histoire.scene_ajoutee` (`scene_id`, et `reutilisee` si la scène existait déjà), `Histoire.scene_retiree` (`scene_id`), `Histoire.scene_deplacee` (`scene_id`, `sens` haut ou bas), `Histoire.depart_defini` (`scene_id`), `Histoire.sous_themes_modifies` (`ajoutes`, `retires`). Accès refusés : `Histoire.acces_refuse` (`motif` : `hors_perimetre` pour un 404 ; `droit_refuse` pour un 403 de page ou d'écriture de scène, avec `capacite`). |
 | Contenu d'une entrée | Action, objet concerné, auteur, adresse IP, détails |
-| Exclusions | Jamais de mot de passe ni de jeton. Textes longs tronqués à 200 caractères. |
+| Exclusions | Jamais de mot de passe ni de jeton. Jamais le titre ni le texte d'une scène ou d'un choix : seuls l'identifiant et le nom des champs modifiés sont écrits. Autres textes longs tronqués à 200 caractères. |
+
+> Les entrées écrites avant cette règle peuvent contenir les 200 premiers caractères d'un dialogue, jusqu'à leur purge à 365 jours.
 | Fiabilité | Écrit après validation de la transaction : une action annulée n'est pas tracée |
 | Accès | Serveur uniquement |
 
-> Les rattachements entre éléments (par exemple histoire ↔ sous-thème, média ↔ sous-thème) ne déclenchent pas d'événement de modèle. Ils ne sont donc pas tracés (S-16).
+> Les rattachements des histoires (scènes, sous-thèmes) sont tracés par des événements explicites (`Histoire.scene_ajoutee`, `Histoire.sous_themes_modifies`, etc.). Les autres rattachements (média ↔ sous-thème, contact ↔ sous-thème) ne déclenchent pas d'événement de modèle : ils ne sont pas tracés (S-16).
 
 > Sans volume persistant pour les journaux, chaque redéploiement efface le journal (S-06).
 
@@ -267,7 +271,7 @@ Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 
 ## 10. Mesures complémentaires à mettre en œuvre
 
-État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (back seulement), S-06, S-14. Les autres restent à faire.
+État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (back seulement), S-06, S-14, S-16. Les autres restent à faire.
 
 ### 10.1 Écarts à corriger avant la mise en production
 
@@ -282,7 +286,7 @@ Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 | S-11 | Remplacer le serveur de développement par un serveur d'application de production | L'image lance `artisan serve`, mono-processus | Haute |
 | S-13 | Rendre sécurisé le cookie de session du back-office en production | Fait : `SESSION_SECURE_COOKIE=true` par défaut dans `docker-compose.prod.yml`. Avec `TRUSTED_PROXIES` renseigné, le cookie porte `secure; httponly` (vérifié sur l'image) | Moyenne |
 | S-14 | Figer les versions des images utilisées au build | Image Composer encore en « latest ». Dans la CI, l'action Trivy est épinglée par commit ; les autres actions GitHub le sont par étiquette (`@v4`). | Basse |
-| S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Rattachements non journalisés | Basse |
+| S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Partiellement traité : rattachements des scènes et des sous-thèmes d'une histoire tracés. Médias ↔ sous-thèmes et contacts ↔ sous-thèmes non tracés. | Basse |
 | S-18 | Connecter l'application avec un utilisateur dédié, propriétaire de la base mais sans droits superutilisateur, créé par un script d'initialisation de PostgreSQL | L'application utilise le compte superutilisateur créé par l'image | Moyenne |
 | S-19 | Lancer le planificateur Laravel en production (cron de l'hôte : `schedule:run` chaque minute, voir `deploiement.md`) | Aucun planificateur dans l'image : la purge des comptes inactifs à 3 ans ne s'exécute pas | Haute |
 

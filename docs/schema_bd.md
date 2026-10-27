@@ -437,6 +437,8 @@ erDiagram
 adressable par le front.
 
 `Etat` suit le circuit de validation éditorial : `brouillon` → `relecture` → `valide` → `publie`.
+Qui pose quel état : le rédacteur passe une histoire de `brouillon` à `relecture`, uniquement sur ses
+histoires en brouillon ; le relecteur pose tous les états. Le serveur refuse les autres valeurs.
 
 `FK_User` est l'auteur.
 
@@ -565,34 +567,48 @@ supprimer un compte à chaque retrait d'un contact de l'annuaire.
 
 ### Rôles
 
-Quatre rôles, mutuellement exclusifs, portés par la colonne `Role` sur `users`. `visiteur` est le
+Cinq rôles, mutuellement exclusifs, portés par la colonne `Role` sur `users`. `visiteur` est le
 compte technique de l'API front (`POST /api/login`), sans accès au panel.
 
-| Ressource Filament | `webmaster` | `redacteur` | `admin` |
-|---|---|---|---|
-| Thèmes / Sous-thèmes (fiches) | ✓ | ✗ | ✗ |
-| Contacts / Téléphones | ✓ | ✗ | ✗ |
-| Médias | ✓ | ✓ | ✗ |
-| Signalements | ✓ | ✗ | ✗ |
-| Histoires / Scènes / Choix | ✗ | ✓ | ✗ |
-| Utilisateurs | ✗ | ✗ | ✓ |
+| Ressource Filament | `webmaster` | `redacteur` | `relecteur` | `admin` |
+|---|---|---|---|---|
+| Thèmes / Sous-thèmes (fiches) | ✓ | ✗ | ✗ | ✗ |
+| Contacts / Téléphones | ✓ | ✗ | ✗ | ✗ |
+| Médias | ✓ | ✓ | ✗ | ✗ |
+| Signalements | ✓ | ✗ | ✗ | ✗ |
+| Histoires / Scènes / Choix | ✗ | ✓ (les siennes, en brouillon) | ✓ (toutes ; pas de création d'histoire) | ✗ |
+| Utilisateurs | ✗ | ✗ | ✗ | ✓ |
 
 L'accès au panel se décide par `canAccessPanel()` sur le modèle `User`. Le filtrage par ressource se
 fait par des Policies Laravel standard, une par ressource, lues automatiquement par Filament. Un
 rédacteur qui tente `/admin/contacts` reçoit un 403 et ne voit pas l'entrée dans le menu.
+
+L'accès d'un rédacteur est limité aux histoires dont il est l'auteur : la requête est filtrée, et une
+histoire d'autrui répond 404.
+
+Un rédacteur qui passe son histoire en relecture est renvoyé à la liste : la page Infos ne lui est plus
+accessible, sauf si un relecteur la renvoie en brouillon. Un relecteur supprime une histoire à tout
+état ; un rédacteur seulement en brouillon.
+
+**Scènes partagées.** Une scène n'est réutilisable que si toutes ses histoires sont visibles par
+l'utilisateur. Une scène partagée avec une histoire verrouillée ou d'un autre auteur n'est pas
+modifiable par un rédacteur : son bouton « Modifier » est désactivé. Supprimer une scène utilisée par
+une autre histoire est refusé, quel que soit le rôle ; elle peut seulement être retirée de l'histoire
+courante.
 
 Un utilisateur sans rôle (inscription en attente) est refusé dès la connexion.
 
 ### Administration des comptes
 
 L'admin valide les inscriptions : il ne crée pas de compte. Depuis « Utilisateurs », il attribue
-`webmaster`, `redacteur` ou `admin`, ou retire le rôle (le compte ne peut plus se connecter mais est
+`webmaster`, `redacteur`, `relecteur` ou `admin`, ou retire le rôle (le compte ne peut plus se connecter mais est
 conservé). Il peut aussi supprimer un compte : « Refuser » pour une demande en attente, « Supprimer »
 pour un compte actif.
 
-`Histoire.FK_User` est en suppression en cascade : supprimer un rédacteur effacerait ses histoires,
-leurs scènes et leurs choix. `SuppressionCompteService` impose donc de choisir un autre rédacteur qui
-reprend les histoires avant la suppression ; sans repreneur, rien n'est supprimé.
+`Histoire.FK_User` est en suppression en cascade : supprimer un rédacteur effacerait ses histoires.
+Leurs scènes et leurs choix ne sont pas effacés : les scènes restent en base, détachées de l'histoire.
+`SuppressionCompteService` impose donc de choisir un autre rédacteur ou un relecteur qui reprend les
+histoires avant la suppression ; sans repreneur, rien n'est supprimé.
 
 Un compte sans connexion depuis 3 ans est supprimé automatiquement (`comptes:purger-inactifs`, sur
 `COALESCE(users.derniere_connexion_at, users.created_at)`). Ni le visiteur, ni les admins, ni un
@@ -721,7 +737,7 @@ Déclarés dans `app/Enums`, castés via `$casts` sur les modèles. `Contact.Pro
 | `Media.Type` | `image`, `video`, `audio`, `document` |
 | `Histoire.Etat` | `brouillon`, `relecture`, `valide`, `publie` |
 | `Choix.Issue` | `favorable`, `defavorable` — `NULL` si le choix poursuit |
-| `User.Role` | `webmaster`, `redacteur`, `visiteur`, `admin` |
+| `User.Role` | `webmaster`, `redacteur`, `relecteur`, `visiteur`, `admin` |
 
 Valeurs sans accent ni majuscule. Elles servent de valeur stockée, de valeur de backed enum PHP et
 de paramètre d'URL dans les filtres Filament. L'accentuation reste au libellé affiché.
@@ -757,7 +773,7 @@ Ni l'un ni l'autre n'est installé.
 | Granularité | rôle entier | action × ressource |
 | Coût d'écriture | 1 enum, 1 policy par ressource | installation + `shield:generate` |
 
-**Retenu : colonne `Role`.** Quatre rôles fixes (`webmaster`, `redacteur`, `admin`, `visiteur`),
+**Retenu : colonne `Role`.** Cinq rôles fixes (`webmaster`, `redacteur`, `relecteur`, `admin`, `visiteur`),
 définis à l'avance, sans besoin de créer un rôle en production. Spatie et Shield répondent à un problème que le projet n'a pas. Le passage à
 Spatie reste possible plus tard sans toucher au reste du schéma : il ajoute des tables, il n'en
 modifie aucune.

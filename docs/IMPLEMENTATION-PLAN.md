@@ -36,19 +36,19 @@ flowchart LR
 
 | ID | Tâche | Story | Fichiers cibles | Dépend de | [P] | Statut |
 |---|---|---|---|---|---|---|
-| T001 | Ajouter le rôle relecteur | US-01 | `UserRole`, migration, `User`, `UserResource`, tests | — | | à faire |
-| T007 | Masquer le contenu rédigé dans l'audit | US-06 | `AuditService`, `AuditObserver`, `AuditLogTest` | — | oui | à faire |
-| T002 | Cloisonner les histoires par auteur et par état | US-02 | `Histoire`, policies, `HistoireResource`, `HistoireFactory`, tests | T001 | | à faire |
-| T005 | Autoriser le relecteur comme repreneur | US-01 | `SuppressionCompteService`, `UserResource`, `UserResourceTest` | T001 | oui | à faire |
-| T006 | Guides du tableau de bord | US-03, US-04 | widgets, vues, test | T001 | oui | à faire |
-| T003 | États accessibles selon le rôle | US-03, US-04, US-05 | `HistoireResource`, `EditHistoire`, tests | T002 | | à faire |
-| T004 | Scènes : lecture seule et partage limité | US-02 | `ScenesHistoire`, vue Blade, tests | T002 | oui | à faire |
-| T008 | Événement de changement d'état | US-06 | `HistoireObserver`, `AppServiceProvider`, tests | T007 | | à faire |
-| T009 | Événements de rattachement | US-06 | `ScenesHistoire`, `EditHistoire`, tests | T003, T004, T008 | | à faire |
-| T010 | Journaliser les accès refusés | US-06 | `HistoireResource`, pages, tests | T009 | | à faire |
-| T011 | Limites de saisie visibles | US-03 | formulaires histoire et scène | T010 | | à faire |
-| T012 | Mettre la documentation à jour | tous | `docs/*.md` | T001 à T011 | | à faire |
-| T013 | Corriger l'année du pied de page (2025 → 2026) | hors lot | `footer.blade.php` | T012 | | à faire |
+| T001 | Ajouter le rôle relecteur | US-01 | `UserRole`, migration, `User`, `UserResource`, tests | — | | fait |
+| T007 | Masquer le contenu rédigé dans l'audit | US-06 | `AuditService`, `AuditObserver`, `AuditLogTest` | — | oui | fait |
+| T002 | Cloisonner les histoires par auteur et par état | US-02 | `Histoire`, policies, `HistoireResource`, `HistoireFactory`, tests | T001 | | fait |
+| T005 | Autoriser le relecteur comme repreneur | US-01 | `SuppressionCompteService`, `UserResource`, `UserResourceTest` | T001 | oui | fait |
+| T006 | Guides du tableau de bord | US-03, US-04 | widgets, vues, test | T001 | oui | fait |
+| T003 | États accessibles selon le rôle | US-03, US-04, US-05 | `HistoireResource`, `EditHistoire`, tests | T002 | | fait |
+| T004 | Scènes : lecture seule et partage limité | US-02 | `ScenesHistoire`, vue Blade, tests | T002 | oui | fait |
+| T008 | Événement de changement d'état | US-06 | `HistoireObserver`, `AppServiceProvider`, tests | T007 | | fait |
+| T009 | Événements de rattachement | US-06 | `ScenesHistoire`, `EditHistoire`, tests | T003, T004, T008 | | fait |
+| T010 | Journaliser les accès refusés | US-06 | `HistoireResource`, pages, tests | T009 | | fait |
+| T011 | Limites de saisie visibles | US-03 | formulaires histoire et scène | T010 | | fait |
+| T012 | Mettre la documentation à jour | tous | `docs/*.md` | T001 à T011 | | fait |
+| T013 | Corriger l'année du pied de page (2025 → 2026) | hors lot | `footer.blade.php` | T012 | | fait |
 
 Fichier détaillé de chaque tâche : `docs/tasks/Txxx-slug.md`.
 
@@ -96,3 +96,18 @@ flowchart TD
 
 | Tâche | Commit | Vérifié le | Remarque |
 |---|---|---|---|
+| T001 | 28454fc | | |
+| T002 | 467d6bf | | |
+| T003 | 3ce1a05 | | |
+| T004 | d234295 | | |
+| T005 | fcf78e6 | | |
+| T006 | 8ba538f | | |
+| T007 | 17ac34c | | |
+| T008 | f78423e | | |
+| T009 | 3aa0ed4 | | |
+| T010 | 8b103ff | | |
+| T011 | cff4d9c | | |
+| T012 | voir `git log` (commit docs de clôture) | | |
+| T013 | d102d31 | | |
+
+Correctif hors tâche : `edefa74` (balise parasite dans `GuideRelecteurWidget`). Aucune tâche n'a été vérifiée par pint, phpstan ou la suite de tests : le passage de fin de lot reste à faire.

@@ -1,6 +1,6 @@
 # PRD — Rôle relecteur et cloisonnement des rédacteurs
 
-Statut : brouillon
+Statut : validé (2026-10-28)
 Sources : [schema_bd.md](schema_bd.md) § Rôles, [securite-rgpd.md](securite-rgpd.md) §§ 5 et 7, [cahier-des-charges-techniques.md](cahier-des-charges-techniques.md) § 4.2
 
 ## 1. Problème

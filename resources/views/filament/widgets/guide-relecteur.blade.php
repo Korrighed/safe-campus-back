@@ -41,7 +41,8 @@
                 <div class="prose prose-sm dark:prose-invert max-w-none">
                     <ul>
                         <li>Le champ <em>État</em> te laisse choisir librement : <em>Brouillon</em>, <em>Relecture</em>, <em>Validé</em> (approuvé), <em>Publié</em> (visible sur le site).</li>
-                        <li>Renvoie une histoire en <em>Brouillon</em> pour que son auteur la reprenne, ou pour la retirer du site. Rien n'est supprimé.</li>
+                        <li>Renvoie une histoire en <em>Brouillon</em> pour que son auteur la reprenne, ou pour la retirer du site. Elle n'est pas supprimée.</li>
+                        <li>Tu peux aussi <em>Supprimer</em> une histoire (page Infos, ou sélection dans la liste). C'est définitif pour l'histoire : ses scènes et leurs choix ne sont pas supprimés, et ne sont plus accessibles depuis le panel si aucune autre histoire ne les utilise.</li>
                     </ul>
                 </div>
             </x-filament::section>

@@ -13,6 +13,8 @@ on:
     branches: [dev, main]
   pull_request:
     branches: [dev, main]
+  # Bouton "Run workflow" de l'onglet Actions : relance la CI sans commit ni PR.
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -150,7 +152,9 @@ jobs:
           curl --fail --silent --show-error http://127.0.0.1:8000/api/themes > /dev/null
 
       - name: Scan Trivy de l'image
-        uses: aquasecurity/trivy-action@0.28.0
+        # Epingle par commit : les etiquettes sans "v" (0.x.y) ont ete supprimees apres
+        # l'incident de chaine d'approvisionnement de mars 2026 (voir les releases du depot).
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: safe-campus-back-sc_back-prod
           severity: CRITICAL

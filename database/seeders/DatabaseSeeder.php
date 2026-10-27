@@ -35,6 +35,7 @@ class DatabaseSeeder extends Seeder
             RedacteurDemoSeeder::class,
             HistoireSeeder::class,
             HistoireAnxieteSeeder::class,
+            HistoireHarcelementSeeder::class,
         ]);
     }
 }

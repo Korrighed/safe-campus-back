@@ -16,6 +16,9 @@ services:
             APP_DEBUG: 'false'
             APP_KEY: '${APP_KEY}'
             APP_URL: '${APP_URL}'
+            # Sans DB_CONNECTION, config/database.php retombe sur sqlite : pas de
+            # .env dans l'image, donc rien d'autre ne fixe la connexion.
+            DB_CONNECTION: pgsql
             DB_HOST: pgsql
             DB_DATABASE: '${DB_DATABASE}'
             DB_USERNAME: '${DB_USERNAME}'
@@ -25,6 +28,15 @@ services:
             SANCTUM_STATEFUL_DOMAINS: '${SANCTUM_STATEFUL_DOMAINS}'
             ADMIN_EMAIL: '${ADMIN_EMAIL}'
             ADMIN_PASSWORD: '${ADMIN_PASSWORD}'
+            # Portillon visiteur du prototype (S-10) : la migration seed_visiteur
+            # leve une exception sans VISITEUR_PASSWORD.
+            VISITEUR_EMAIL: '${VISITEUR_EMAIL}'
+            VISITEUR_PASSWORD: '${VISITEUR_PASSWORD}'
+        # Medias uploades et journaux (audit compris) : sans volume, chaque
+        # redeploiement les efface (S-06).
+        volumes:
+            - 'scback-storage-prod:/var/www/html/storage/app'
+            - 'scback-logs-prod:/var/www/html/storage/logs'
         depends_on:
             pgsql:
                 condition: service_healthy
@@ -84,4 +96,8 @@ networks:
 
 volumes:
     scback-pgsql-prod:
+        driver: local
+    scback-storage-prod:
+        driver: local
+    scback-logs-prod:
         driver: local

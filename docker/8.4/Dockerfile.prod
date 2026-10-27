@@ -23,6 +23,14 @@ COPY docker/8.4/php.ini /usr/local/etc/php/conf.d/99-app.ini
 # pas a chaque demarrage du conteneur.
 COPY --chown=scback:scback . .
 
+# .dockerignore exclut storage/logs et storage/framework/{views,sessions,cache/data} :
+# sans eux Blade ne peut pas compiler les vues (« Please provide a valid cache path »).
+# Les creer ici donne aussi aux volumes montes dessus (storage/app, storage/logs)
+# un proprietaire scback au premier demarrage.
+RUN mkdir -p storage/app/public storage/framework/views storage/framework/sessions \
+        storage/framework/cache/data storage/logs bootstrap/cache \
+    && chown -R scback:scback storage bootstrap/cache
+
 USER scback
 
 # --no-scripts : les scripts composer (package:discover, filament:upgrade) ont
@@ -30,6 +38,11 @@ USER scback
 # copie dans l'image). Ils tournent en commandes post-deploiement a la place,
 # avec migrate --force (voir docs/deploiement.md).
 RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+
+# Composer ne sert qu'au build : on le retire de l'image qui tourne.
+USER root
+RUN rm -f /usr/bin/composer
+USER scback
 
 EXPOSE ${APP_PORT}
 

@@ -15,9 +15,9 @@
 - Le conteneur ne parle que HTTP sur `APP_PORT`, sans nginx à l'intérieur. Le TLS est terminé par le reverse proxy de l'hébergement.
 
 > ⚠️ **À régler avant la mise en production** — voir [securite-rgpd.md § 10](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre) :
-> - S-10 : les images exigent encore le compte visiteur du prototype. `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` sont absents du bloc `environment:` de `docker-compose.prod.yml`, et la migration `seed_visiteur` lève une exception sans mot de passe : le premier `migrate --force` échoue. Le portillon visiteur (compte, page de connexion, middleware) est à retirer au lancement officiel.
+> - S-10 : les images exigent encore le compte visiteur du prototype. `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` sont passés par `docker-compose.prod.yml` à `sc_back`, mais la migration `seed_visiteur` lève une exception si `VISITEUR_PASSWORD` est vide : le premier `migrate --force` échoue. Le portillon visiteur (compte, page de connexion, middleware) est à retirer au lancement officiel.
 > - S-11 : `Dockerfile.prod` lance `php artisan serve`, serveur de développement mono-processus. À remplacer par PHP-FPM + nginx ou FrankenPHP.
-> - S-06 : volumes persistants manquants pour `storage/app` et `storage/logs` (voir [Logs d'audit](#logs-daudit)).
+> - S-06 : les volumes `scback-storage-prod` (`storage/app`) et `scback-logs-prod` (`storage/logs`) existent dans `docker-compose.prod.yml`. Il reste la sauvegarde quotidienne hors serveur (voir [Logs d'audit](#logs-daudit)).
 
 ## Variables d'environnement
 
@@ -29,6 +29,7 @@
 | `APP_DEBUG` | `true` | `false` (fixé dans `docker-compose.prod.yml`). Sinon : stacktraces et données sensibles exposées. |
 | `APP_KEY` | généré en local | Généré **une seule fois** (`php artisan key:generate --show`), jamais régénéré. Le régénérer invalide sessions, cookies et données chiffrées existantes. |
 | `APP_URL` | `http://localhost:8000` | URL publique en HTTPS |
+| `DB_CONNECTION` | `pgsql` | `pgsql` (fixé dans `docker-compose.prod.yml`). Aucun `.env` dans l'image : sans lui, Laravel retombe sur `sqlite`. |
 | `DB_DATABASE` | `sc_back` | Nom de base spécifique |
 | `DB_USERNAME` | `sail` | Utilisateur de la base. Créé superutilisateur par l'image PostgreSQL : utilisateur dédié à prévoir (S-18). |
 | `DB_PASSWORD` | `password` | Mot de passe fort (min. 20 caractères, aléatoire) |
@@ -86,4 +87,4 @@ docker exec SC_Back_Prod ls storage/logs
 docker exec SC_Back_Prod tail -f storage/logs/audit-2026-09-28.log
 ```
 
-> ⚠️ **À régler avant la mise en production** : `storage/logs` est à l'intérieur du conteneur, sans volume. Chaque redéploiement recrée le conteneur et efface les logs. Même problème pour `storage/app`, qui contient les médias uploadés. Prévoir des volumes dans `docker-compose.prod.yml`, et créer `storage/logs` dans `Dockerfile.prod`. Le dossier est exclu par `.dockerignore` : monté tel quel, il appartiendrait à root et `scback` ne pourrait plus y écrire.
+> `storage/logs` et `storage/app` (médias uploadés) sont montés sur les volumes nommés `scback-logs-prod` et `scback-storage-prod` : un redéploiement ne les efface plus. `Dockerfile.prod` crée ces dossiers et `storage/framework/*` avec le propriétaire `scback` (ils sont exclus par `.dockerignore`) ; sans cela Blade ne peut pas compiler les vues. Ces volumes ne sont pas sauvegardés : la sauvegarde hors serveur reste à mettre en place.

@@ -4,20 +4,20 @@ services:
             context: .
             dockerfile: docker/8.4/Dockerfile
             args:
+                WWWUSER: '${WWWUSER:-1000}'
                 WWWGROUP: '${WWWGROUP:-1000}'
+                APP_PORT: '${APP_PORT:-8000}'
         container_name: SC_Back
         ports:
-            - '${APP_PORT:-8000}:8000'
+            - '${APP_PORT:-8000}:${APP_PORT:-8000}'
         volumes:
             - '.:/var/www/html'
-            - '${SSH_AUTH_SOCK:-/dev/null}:/ssh-agent'
         environment:
-            WWWUSER: '${WWWUSER:-1000}'
+            APP_PORT: '${APP_PORT:-8000}'
             DB_HOST: pgsql
             DB_DATABASE: '${DB_DATABASE}'
             DB_USERNAME: '${DB_USERNAME}'
             DB_PASSWORD: '${DB_PASSWORD}'
-            SSH_AUTH_SOCK: /ssh-agent
         depends_on:
             pgsql:
                 condition: service_healthy
@@ -66,31 +66,6 @@ services:
                 reservations:
                     memory: 1G
 
-    sc_front:
-        build:
-            context: ../Safe-Campus-front
-            dockerfile: Dockerfile
-        container_name: SC_Front
-        labels:
-            - "devcontainer.metadata=[{\"remoteUser\":\"nuxt\",\"workspaceFolder\":\"/app\"}]"
-        ports:
-            - '${FRONT_PORT:-3000}:3000'
-        volumes:
-            - '../Safe-Campus-front:/app'
-            - 'sc_front_node_modules:/app/node_modules'
-        environment:
-            NODE_ENV: development
-            NUXT_PUBLIC_API_BASE: 'http://sc_back:80'
-        networks:
-            - scback
-        deploy:
-            resources:
-                limits:
-                    cpus: '2'
-                    memory: 2G
-                reservations:
-                    memory: 1G
-
     adminer:
         image: 'adminer:latest'
         container_name: SC_Adminer
@@ -111,10 +86,11 @@ services:
 
 networks:
     scback:
+        # Nom fixe : partage le reseau avec le docker-compose.yml de Safe-Campus-front,
+        # que la stack back ou front soit demarree en premier.
+        name: scback
         driver: bridge
 
 volumes:
     scback-pgsql:
-        driver: local
-    sc_front_node_modules:
         driver: local

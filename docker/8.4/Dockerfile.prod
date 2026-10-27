@@ -1,0 +1,51 @@
+FROM php:8.4-cli
+
+ARG APP_PORT=8000
+
+WORKDIR /var/www/html
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git curl zip unzip ca-certificates postgresql-client \
+        libpq-dev libpng-dev libjpeg-dev libfreetype6-dev libicu-dev libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_pgsql gd bcmath intl pcntl zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+RUN useradd -ms /bin/bash scback
+
+COPY docker/8.4/php.ini /usr/local/etc/php/conf.d/99-app.ini
+
+# Code copie dans l'image (pas de bind mount en prod) : composer install au build,
+# pas a chaque demarrage du conteneur.
+COPY --chown=scback:scback . .
+
+# .dockerignore exclut storage/logs et storage/framework/{views,sessions,cache/data} :
+# sans eux Blade ne peut pas compiler les vues (« Please provide a valid cache path »).
+# Les creer ici donne aussi aux volumes montes dessus (storage/app, storage/logs)
+# un proprietaire scback au premier demarrage.
+RUN mkdir -p storage/app/public storage/framework/views storage/framework/sessions \
+        storage/framework/cache/data storage/logs bootstrap/cache \
+    && chown -R scback:scback storage bootstrap/cache
+
+USER scback
+
+# --no-scripts : les scripts composer (package:discover, filament:upgrade) ont
+# besoin d'un .env/APP_KEY qui n'existe pas au moment du build (.env n'est jamais
+# copie dans l'image). Ils tournent en commandes post-deploiement a la place,
+# avec migrate --force (voir docs/deploiement.md).
+RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+
+# Composer ne sert qu'au build : on le retire de l'image qui tourne.
+USER root
+RUN rm -f /usr/bin/composer
+USER scback
+
+EXPOSE ${APP_PORT}
+
+# migrate/key:generate/seed tournent en commandes post-deploiement, pas ici
+# (voir docs/deploiement.md) : le conteneur ne fait que servir l'appli.
+CMD php artisan serve --host=0.0.0.0 --port="${APP_PORT:-8000}"

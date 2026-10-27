@@ -21,6 +21,20 @@ class ThemeFactory extends Factory
         return [
             'ref' => Str::slug($libelle, '_'),
             'libelle' => Str::ucfirst($libelle),
+            'libelle_court' => Str::ucfirst(fake()->unique()->word()),
+            'resume' => fake()->paragraph(),
+            'ordre' => 0,
+            'actif' => true,
         ];
+    }
+
+    /**
+     * Theme retire : reste en base, disparait du front.
+     */
+    public function inactif(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'actif' => false,
+        ]);
     }
 }

@@ -23,6 +23,7 @@ class MediaFactory extends Factory
             'libelle' => Str::ucfirst($libelle),
             'chemin' => 'medias/'.Str::slug($libelle).'.png',
             'type' => MediaType::Image,
+            'actif' => true,
         ];
     }
 
@@ -30,6 +31,16 @@ class MediaFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'type' => $type,
+        ]);
+    }
+
+    /**
+     * Media retire : reste en base, disparait du front.
+     */
+    public function inactif(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'actif' => false,
         ]);
     }
 }

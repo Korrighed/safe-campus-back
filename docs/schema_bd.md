@@ -1,8 +1,8 @@
 # Schéma de base de données — Safe Campus
 
-> **État : cible.** Aucune de ces tables n'est encore migrée. `database/migrations/` ne contient
-> que `users`, `cache`, `jobs` et `personal_access_tokens`. Ce document décrit ce qu'il faut
-> construire, pas ce qui existe.
+> **État : implémenté.** Toutes les tables décrites ici sont migrées. Les diagrammes restent
+> conceptuels : certaines colonnes (`actif`, `ordre`, `latitude` / `longitude`, `province`,
+> `description`…) ne sont listées que dans `database/migrations/`.
 
 Le schéma est découpé en trois domaines indépendants. Ils ne partagent que le socle commun et la
 taxonomie.
@@ -51,8 +51,10 @@ erDiagram
 
     User {
         int    id       PK
-        string name
+        string nom
+        string prenom
         string email
+        string telephone
         string password
         enum   Role
     }
@@ -112,12 +114,14 @@ erDiagram
         int    Theme_id PK
         string Ref
         string Libelle
+        text   Resume
     }
 
     SousTheme {
         int     SousTheme_id       PK
         string  Ref
         string  Libelle
+        text    Resume
         text    Article
         int     FK_Theme           FK
         boolean Permet_signalement
@@ -139,11 +143,12 @@ erDiagram
     }
 
     Telephone {
-        int    Tel_id     PK
-        string Numero
-        enum   Type
-        string Libelle
-        int    FK_Contact FK
+        int     Tel_id      PK
+        string  Numero
+        boolean Numero_vert
+        enum    Type
+        string  Libelle
+        int     FK_Contact  FK
     }
 
     Media {
@@ -172,6 +177,11 @@ erDiagram
         int FK_Media     FK
     }
 
+    Liaison_Theme_Media {
+        int FK_Theme FK
+        int FK_Media FK
+    }
+
     Theme     ||--o{ SousTheme                 : "contient"
     SousTheme ||--o{ Signalement               : "categorise (si Permet_signalement)"
     SousTheme ||--o{ Liaison_SousTheme_Contact : ""
@@ -179,7 +189,18 @@ erDiagram
     Contact   ||--o{ Telephone                 : "possede"
     SousTheme ||--o{ Liaison_SousTheme_Media   : ""
     Media     ||--o{ Liaison_SousTheme_Media   : ""
+    Theme     ||--o{ Liaison_Theme_Media       : ""
+    Media     ||--o{ Liaison_Theme_Media       : ""
 ```
+
+### Theme
+
+`Resume` est un texte court optionnel, présentation du thème sur l'accueil. Associé à `Liaison_Theme_Media`
+(N-N, comme `Liaison_SousTheme_Media`) : 0 à N `Media` par thème (texte, image, vidéo, logo — non
+exclusifs entre eux). Le front pioche ce qu'il affiche dans cette collection en filtrant par `Type`.
+
+Pas de table dédiée pour cette présentation : `Theme` reste l'entité, `Resume` et la relation `Media`
+sont des attributs qui l'enrichissent, pas une entité séparée — même logique que `SousTheme.Resume`.
 
 ### SousTheme
 
@@ -189,12 +210,63 @@ Nœud de taxonomie **et** page éditoriale. La fiche alcool, c'est la ligne `alc
 |---|---|
 | `Ref` | Clé stable — seeder, URL. Jamais affichée, jamais modifiée. |
 | `Libelle` | Titre affiché de la fiche et libellé dans le menu. |
-| `Article` | Contenu éditorial de la fiche. |
+| `Resume` | Teaser affiché sur la carte d'accueil. Distinct d'`Article` : payload différent, endpoint différent — voir [Consommation API](#consommation-api). |
+| `Article` | Contenu éditorial complet de la fiche, affiché sur la page détail du sous-thème. |
 | `FK_Theme` | Thème parent. |
 | `Permet_signalement` | Expose ou non le formulaire de signalement — voir plus bas. |
 
 Une seule table, donc une seule ressource Filament et un seul jeu de droits. Ni fiche orpheline, ni
 sous-thème sans fiche : les deux cas sont impossibles par construction.
+
+### Consommation API
+
+Trois endpoints publics, trois payloads distincts — pas de sur-fetch :
+
+- `GET /api/themes` — `Theme` (`ref`, `libelle`, `resume`, `medias`) avec ses `SousTheme` imbriqués
+  en version légère (`ref`, `libelle`, `resume` — pas d'`article`, pas de `contacts`). Alimente les
+  sections et les cartes de la page d'accueil.
+- `GET /api/sous-themes/{ref}` — un seul sous-thème : `ref`, `libelle`, `article`, `contacts`
+  (triés `Ordre`, filtrés `Actif`) et leurs `Telephone`, plus `histoires` (`ref`, `titre` des seules
+  histoires `publie`, triées par titre : de quoi activer le bouton « Suivre l'histoire »). Alimente
+  la page détail. Pas de `resume` : inutilisé à cet endroit.
+- `GET /api/histoires/{ref}` — le graphe complet d'une histoire, lu en **une seule requête** : le
+  front navigue ensuite de scène en scène sans nouvel appel. Alimente le lecteur d'histoire.
+
+`Article` n'est donc jamais renvoyé par `/api/themes`, `Resume` jamais par `/api/sous-themes/{ref}`.
+
+#### Contrat de `GET /api/histoires/{ref}`
+
+```json
+{ "data": {
+    "ref": "demo_soiree_qui_derape",
+    "titre": "Une soirée qui dérape (démo)",
+    "scene_initiale_id": 18,
+    "scenes": [
+      { "id": 18,
+        "dialogue_text": "…",
+        "media": { "libelle": "…", "description": null, "url": "…", "type": "image" },
+        "choix": [
+          { "id": 10, "text_choix": "…", "next_scene_id": 19, "issue": null },
+          { "id": 13, "text_choix": "…", "next_scene_id": null, "issue": "defavorable",
+            "contacts": [ { "ref": "…", "nom": "…", "telephones": [ … ] } ] }
+        ] }
+    ] } }
+```
+
+- **Publication.** Seules les histoires `Etat = publie` sont servies, les autres répondent `404`.
+- **Fin de parcours.** `next_scene_id = null` sort du parcours, qualifié par `issue`
+  (`favorable` ou `defavorable`).
+- **Contacts.** La clé `contacts` n'existe que sur un choix `defavorable`. Elle porte les contacts
+  déjà résolus par la règle de [Résolution des contacts](#choix) (contacts `Actif` et téléphones
+  `Actif`) : le front n'a rien à calculer et ne refait aucun appel. Le bloc est répété d'un choix
+  défavorable à l'autre, volontairement : les histoires sont petites.
+- **Ordre.** Les scènes sont servies triées par `Ordre` de la liaison, puis par `id`. Les choix le
+  sont par `id`. `Ordre` lui-même ne sort pas.
+- **Ce qui ne sort pas.** `Scene.Titre` (back-office), `Etat`, l'auteur, les dates.
+- **Média.** `media` vaut `null` sans image, ou si le média est inactif ou n'est pas une image.
+- **Intégrité.** La liaison fait autorité : un choix dont `FK_Next_Scene` désigne une scène non
+  rattachée à l'histoire est écarté de la réponse plutôt que de renvoyer un `next_scene_id`
+  introuvable. `scene_initiale_id` vaut `null` si l'histoire n'a pas de scène initiale.
 
 ### Contact
 
@@ -232,6 +304,10 @@ n'arbitre pas la géographie.
 
 `Libelle` distingue plusieurs numéros d'une même structure — le commissariat de Nouméa a une ligne
 psychologue et une ligne intervenant social. Sans ce champ, il faut dupliquer le contact.
+
+`Numero_vert` signale un numéro gratuit depuis un poste fixe (0800...). Booléen `false` par défaut,
+non nullable : contrairement à `Gratuit`/`Anonyme` sur `Contact`, c'est une propriété du numéro
+lui-même, toujours connue au moment de la saisie — pas de statut « inconnu » à représenter.
 
 ### Liaison_SousTheme_Contact
 
@@ -285,6 +361,7 @@ erDiagram
         int     SousTheme_id       PK
         string  Ref
         string  Libelle
+        text    Resume
         text    Article
         int     FK_Theme           FK
         boolean Permet_signalement
@@ -292,8 +369,10 @@ erDiagram
 
     User {
         int    id       PK
-        string name
+        string nom
+        string prenom
         string email
+        string telephone
         string password
         enum   Role
     }
@@ -338,6 +417,7 @@ erDiagram
         int     FK_Histoire  FK
         int     FK_Scene     FK
         boolean Est_initiale
+        int     Ordre
     }
 
     User      ||--o{ Histoire                   : "redige"
@@ -373,6 +453,10 @@ l'autre sans duplication de contenu.
 d'entrée d'une histoire et une étape intermédiaire d'une autre — un booléen sur `Scene` ne saurait
 pas le dire. Contrainte : un index unique partiel garantit **une seule** ligne `Est_initiale = true`
 par histoire.
+
+`Ordre` est porté par la **liaison** pour la même raison : une scène partagée peut avoir un rang
+différent dans chaque histoire. C'est un repère de classement pour le back-office, pas le parcours —
+celui-ci est décidé par les `Choix`. Non unique par histoire, `0` par défaut.
 
 ```sql
 CREATE UNIQUE INDEX histoire_scene_initiale_unique
@@ -423,14 +507,35 @@ présentation, traitée en front.
 Le panel `/admin` est le seul point d'entrée authentifié. Les comptes sont créés par Filament, dans
 la table `users`, indépendamment de tout contenu de l'annuaire.
 
+`Prenom` et `Telephone` sont nullables en base : obligatoires à l'inscription, mais absents des
+comptes créés avant elle. `Telephone` est stocké au format E.164 (`+687XXXXXX`).
+
+### Inscription
+
+La page de connexion propose « Pas de compte ? Inscrivez-vous » (`/admin/register`). Le formulaire
+demande prénom, nom, email, téléphone calédonien (6 chiffres, `+687` facultatif) et mot de passe.
+
+Le compte est créé **sans rôle** et l'inscrit n'est pas connecté : il reste inactif jusqu'à ce qu'un
+administrateur lui attribue un rôle. Une tentative de connexion avant validation affiche « Votre
+compte est en attente de validation par un administrateur ». Ce message n'apparaît qu'après un mot
+de passe correct, il ne révèle donc pas l'existence d'un email.
+
+Politique de mot de passe (`Password::defaults()` dans `AppServiceProvider`) : 14 à 72 caractères,
+une majuscule, une minuscule, un caractère spécial, et absent des fuites connues (Have I Been Pwned,
+k-anonymat : seuls 5 caractères du SHA-1 sortent). Le serveur doit pouvoir joindre
+`api.pwnedpasswords.com`.
+
 ```mermaid
 erDiagram
     User {
         int    id       PK
-        string name
+        string nom
+        string prenom
         string email
+        string telephone
         string password
         enum   Role
+        timestamp derniere_connexion_at
     }
 
     personal_access_tokens {
@@ -460,21 +565,51 @@ supprimer un compte à chaque retrait d'un contact de l'annuaire.
 
 ### Rôles
 
-Deux rôles métier, mutuellement exclusifs, portés par la colonne `Role` sur `users`.
+Quatre rôles, mutuellement exclusifs, portés par la colonne `Role` sur `users`. `visiteur` est le
+compte technique de l'API front (`POST /api/login`), sans accès au panel.
 
-| Ressource Filament | `webmaster` | `redacteur` |
-|---|---|---|
-| Thèmes / Sous-thèmes (fiches) | ✓ | ✗ |
-| Contacts / Téléphones | ✓ | ✗ |
-| Médias | ✓ | ✓ |
-| Signalements | ✓ | ✗ |
-| Histoires / Scènes / Choix | ✗ | ✓ |
+| Ressource Filament | `webmaster` | `redacteur` | `admin` |
+|---|---|---|---|
+| Thèmes / Sous-thèmes (fiches) | ✓ | ✗ | ✗ |
+| Contacts / Téléphones | ✓ | ✗ | ✗ |
+| Médias | ✓ | ✓ | ✗ |
+| Signalements | ✓ | ✗ | ✗ |
+| Histoires / Scènes / Choix | ✗ | ✓ | ✗ |
+| Utilisateurs | ✗ | ✗ | ✓ |
 
 L'accès au panel se décide par `canAccessPanel()` sur le modèle `User`. Le filtrage par ressource se
 fait par des Policies Laravel standard, une par ressource, lues automatiquement par Filament. Un
 rédacteur qui tente `/admin/contacts` reçoit un 403 et ne voit pas l'entrée dans le menu.
 
-Un utilisateur sans rôle est authentifié mais reçoit un 403 sur `/admin`.
+Un utilisateur sans rôle (inscription en attente) est refusé dès la connexion.
+
+### Administration des comptes
+
+L'admin valide les inscriptions : il ne crée pas de compte. Depuis « Utilisateurs », il attribue
+`webmaster`, `redacteur` ou `admin`, ou retire le rôle (le compte ne peut plus se connecter mais est
+conservé). Il peut aussi supprimer un compte : « Refuser » pour une demande en attente, « Supprimer »
+pour un compte actif.
+
+`Histoire.FK_User` est en suppression en cascade : supprimer un rédacteur effacerait ses histoires,
+leurs scènes et leurs choix. `SuppressionCompteService` impose donc de choisir un autre rédacteur qui
+reprend les histoires avant la suppression ; sans repreneur, rien n'est supprimé.
+
+Un compte sans connexion depuis 3 ans est supprimé automatiquement (`comptes:purger-inactifs`, sur
+`COALESCE(users.derniere_connexion_at, users.created_at)`). Ni le visiteur, ni les admins, ni un
+auteur d'histoires : ceux-là restent à traiter par un admin.
+
+Les rôles eux-mêmes sont fixes : définis dans l'enum `UserRole` et verrouillés par la contrainte
+`users_role_check`. Aucun écran ne permet d'en créer, renommer ou supprimer un — cela passe par le
+code et une migration.
+
+Garde-fous (`UserPolicy`) : un admin ne modifie ni ne supprime jamais son propre compte, donc le
+dernier admin ne peut pas disparaître. Le compte `visiteur` est absent de la liste, ne peut pas être
+attribué ni supprimé.
+
+Le premier admin est créé au `migrate`, dans tous les environnements, à partir de `ADMIN_EMAIL` /
+`ADMIN_PASSWORD`. En production, le mot de passe doit respecter la politique de l'inscription, sinon
+la migration échoue. Il ne sert qu'à la création : une fois le compte créé, la variable peut être
+retirée.
 
 L'alternative — Spatie Permission + Filament Shield — est écartée pour l'instant. Comparatif au
 [point 6](#sur-le-point-6).
@@ -491,16 +626,19 @@ Filament ouvre une session sur le guard `web`, Sanctum utilise le guard `sanctum
 
 ## Taxonomie
 
-| Thème (`Ref`) | Sous-thèmes (`Ref`) |
-|---|---|
-| `sante_mentale` | `detresse_psychologique`, `crise_suicidaire` |
-| `addictions` | `alcool`, `cannabis_stupefiants`, `tabac`, `jeux_ecrans` |
-| `vss` | `violences_sexuelles`, `violences_intrafamiliales` |
-| `transverse` | `urgences` |
+Source : `database/seeders/ThemeSeeder.php` et `SousThemeSeeder.php`, joués par la migration
+`2026_07_31_120000_seed_taxonomie_themes_sous_themes`.
 
-Les contacts d'urgence transverses (SAMU 15, Police 17, Pompiers 18) sont rattachés au sous-thème
-`urgences`. Pas de booléen `Affichage_permanent` sur `Contact` : deux mécanismes concurrents pour le
-même besoin créeraient de l'ambiguïté. `Liaison_SousTheme_Contact.Ordre` suffit à les faire remonter.
+| Thème (`Ref`, libellé) | Sous-thèmes (`Ref`) |
+|---|---|
+| `addictions` — Conduites addictives | `alcool`, `tabac`, `drogue` |
+| `sante_mentale` — Santé mentale | `anxiete`, `depression`, `burn_out` |
+| `vss` — Violences | `violences_sexistes`, `violences_sexuelles`, `harcelement` |
+
+Pas de sous-thème dédié aux urgences. Les contacts d'urgence (SAMU 15, Police 17, Pompiers 18,
+3114) sont rattachés directement aux sous-thèmes concernés (`ContactSeeder`). Pas de booléen
+`Affichage_permanent` sur `Contact` : deux mécanismes concurrents pour le même besoin créeraient de
+l'ambiguïté. `Liaison_SousTheme_Contact.Ordre` suffit à les faire remonter.
 
 ---
 
@@ -525,6 +663,7 @@ explicitement accessible depuis la NC, et `arretonslesviolences.gouv.fr`, portai
 | `users` | `email` | Standard Laravel |
 | `contact_sous_theme` | (`contact_id`, `sous_theme_id`) | PK composite |
 | `media_sous_theme` | (`media_id`, `sous_theme_id`) | PK composite |
+| `media_theme` | (`media_id`, `theme_id`) | PK composite |
 | `histoire_sous_theme` | (`histoire_id`, `sous_theme_id`) | PK composite |
 | `histoire_scene` | (`histoire_id`, `scene_id`) | PK composite |
 | `histoire_scene` | `histoire_id` où `est_initiale` | Index partiel — une scène initiale par histoire |
@@ -538,8 +677,8 @@ des deux modèles.
 
 | Entité MCD | Modèle | Table | Note |
 |---|---|---|---|
-| `Theme` | `Theme` | `themes` | |
-| `SousTheme` | `SousTheme` | `sous_themes` | porte aussi `article` (contenu de la fiche) |
+| `Theme` | `Theme` | `themes` | porte aussi `resume` (teaser accueil, optionnel) |
+| `SousTheme` | `SousTheme` | `sous_themes` | porte aussi `resume` (teaser accueil) et `article` (contenu de la fiche) |
 | `Contact` | `Contact` | `contacts` | |
 | `Telephone` | `Telephone` | `telephones` | |
 | `Media` | `Media` | `medias` | **`protected $table = 'medias'`** — Laravel infère `media` |
@@ -549,8 +688,9 @@ des deux modèles.
 | `Choix` | `Choix` | `choix` | **`protected $table = 'choix'`** — Laravel infère `choixes` |
 | `Liaison_SousTheme_Contact` | — | `contact_sous_theme` | pivot + colonne `ordre` |
 | `Liaison_SousTheme_Media` | — | `media_sous_theme` | pivot |
+| `Liaison_Theme_Media` | — | `media_theme` | pivot |
 | `Liaison_Histoire_SousTheme` | — | `histoire_sous_theme` | pivot |
-| `Liaison_Histoire_Scene` | — | `histoire_scene` | pivot + colonne `est_initiale` |
+| `Liaison_Histoire_Scene` | — | `histoire_scene` | pivot + colonnes `est_initiale`, `ordre` |
 
 `Media` et `Choix` sont les deux seuls cas où l'inflecteur Laravel se trompe. Vérifié en exécutant
 `Str::snake(Str::pluralStudly('Media'))` → `media` et `…('Choix')` → `choixes`. Sans `$table`
@@ -572,7 +712,8 @@ explicitement sur `sous_themes.theme_id`, `telephones.contact_id`, `signalements
 
 ## Enums
 
-Déclarés dans `app/Enums` (répertoire à créer), castés via `$casts` sur les modèles.
+Déclarés dans `app/Enums`, castés via `$casts` sur les modèles. `Contact.Province` (`p-sud`,
+`p-nord`, `p-iles`) s'y ajoute.
 
 | Enum | Valeurs |
 |---|---|
@@ -580,7 +721,7 @@ Déclarés dans `app/Enums` (répertoire à créer), castés via `$casts` sur le
 | `Media.Type` | `image`, `video`, `audio`, `document` |
 | `Histoire.Etat` | `brouillon`, `relecture`, `valide`, `publie` |
 | `Choix.Issue` | `favorable`, `defavorable` — `NULL` si le choix poursuit |
-| `User.Role` | `webmaster`, `redacteur` |
+| `User.Role` | `webmaster`, `redacteur`, `visiteur`, `admin` |
 
 Valeurs sans accent ni majuscule. Elles servent de valeur stockée, de valeur de backed enum PHP et
 de paramètre d'URL dans les filtres Filament. L'accentuation reste au libellé affiché.
@@ -592,12 +733,12 @@ de paramètre d'URL dans les filtres Filament. L'accentuation reste au libellé 
 | # | Question | Impact |
 |---|---|---|
 | 1 | **Partage de scène et sous-arbre.** Une scène partagée emporte ses `Choix`, donc tout son sous-arbre aval. Si deux histoires doivent réutiliser la même scène avec des choix différents, `Choix` a besoin d'un `FK_Histoire` et le modèle change. | Structurel, à trancher avant migration |
-| 2 | **Carte du front.** Géocodage de `Localisation` à la volée, ou colonnes `Latitude` / `Longitude` stockées ? | Deux colonnes, mais un pipeline de géocodage |
+| 2 | ~~**Carte du front.**~~ **Tranché** : colonnes `latitude` / `longitude` stockées, géocodage Nominatim à la saisie (`GeocodingService`) avec ajustement sur carte dans Filament. | — |
 | 3 | **Horaires structurés.** `Horaires` texte libre suffit pour l'affichage. Si le front doit calculer « ouvert maintenant », il faut une table `Plage_horaire` (`FK_Contact`, jour, heure début, heure fin). | Une table |
 | 4 | **Contrainte `Choix.Issue`.** Poser un CHECK `Issue IS NOT NULL ⟺ FK_Next_Scene IS NULL` ? Interdit les états incohérents, fige la règle métier. | Une contrainte |
 | 5 | **Signalement.** Champ d'état (`nouveau`, `en_cours`, `traite`, `archive`) et cible de routage. Question ouverte côté DNSI. | Bloquant pour le module |
-| 6 | **Gestion des rôles.** Colonne `Role` + Policies, ou Spatie Permission + Filament Shield. | Voir ci-dessous |
-| 7 | **Emplacement de `contact.csv`.** Versionné sous `public/data/` — donc servi en HTTP. À déplacer sous `database/seeders/data/` avant l'écriture du seeder. | À faire, pas à arbitrer |
+| 6 | ~~**Gestion des rôles.**~~ **Tranché** : colonne `Role` + Policies. | Voir ci-dessous |
+| 7 | ~~**Emplacement de `contact.csv`.**~~ **Fait** : plus aucun `contact.csv` dans le dépôt, donc plus rien servi en HTTP. | — |
 
 ### Sur le point 6
 
@@ -616,8 +757,8 @@ Ni l'un ni l'autre n'est installé.
 | Granularité | rôle entier | action × ressource |
 | Coût d'écriture | 1 enum, 1 policy par ressource | installation + `shield:generate` |
 
-**Recommandation : colonne `Role`.** Deux rôles fixes, définis à l'avance, sans besoin de créer un
-rôle en production. Spatie et Shield répondent à un problème que le projet n'a pas. Le passage à
+**Retenu : colonne `Role`.** Quatre rôles fixes (`webmaster`, `redacteur`, `admin`, `visiteur`),
+définis à l'avance, sans besoin de créer un rôle en production. Spatie et Shield répondent à un problème que le projet n'a pas. Le passage à
 Spatie reste possible plus tard sans toucher au reste du schéma : il ajoute des tables, il n'en
 modifie aucune.
 

@@ -27,6 +27,9 @@ class Signalement extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<SousTheme, $this>
+     */
     public function sousTheme(): BelongsTo
     {
         return $this->belongsTo(SousTheme::class);

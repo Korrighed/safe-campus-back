@@ -22,10 +22,22 @@ class SousThemeFactory extends Factory
         return [
             'ref' => Str::slug($libelle, '_'),
             'libelle' => Str::ucfirst($libelle),
+            'resume' => fake()->paragraph(),
             'article' => fake()->paragraphs(3, true),
             'theme_id' => Theme::factory(),
             'permet_signalement' => false,
+            'actif' => true,
         ];
+    }
+
+    /**
+     * Sous-theme retire : reste en base, disparait du front.
+     */
+    public function inactif(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'actif' => false,
+        ]);
     }
 
     /**

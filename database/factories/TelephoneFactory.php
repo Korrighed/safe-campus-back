@@ -19,9 +19,11 @@ class TelephoneFactory extends Factory
     {
         return [
             'numero' => fake()->numerify('## ## ##'),
+            'numero_vert' => false,
             'type' => fake()->randomElement(TelephoneType::cases()),
             'libelle' => null,
             'contact_id' => Contact::factory(),
+            'actif' => true,
         ];
     }
 
@@ -37,12 +39,32 @@ class TelephoneFactory extends Factory
     }
 
     /**
+     * Numero gratuit depuis un poste fixe (0800...).
+     */
+    public function numeroVert(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'numero_vert' => true,
+        ]);
+    }
+
+    /**
      * Ligne identifiee au sein d'une meme structure : psychologue, intervenant social.
      */
     public function libelle(string $libelle): static
     {
         return $this->state(fn (array $attributes) => [
             'libelle' => $libelle,
+        ]);
+    }
+
+    /**
+     * Ligne retiree : reste en base, disparait du front.
+     */
+    public function inactif(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'actif' => false,
         ]);
     }
 }

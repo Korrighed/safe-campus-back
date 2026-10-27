@@ -6,35 +6,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Laravel 13 · PHP 8.4 · Filament 3 · PostgreSQL 17
 
-> API/admin backend uniquement. L'UI applicative est [Safe-Campus-front](../Safe-Campus-front) (Nuxt 3 standalone, repo séparé). `routes/api.php` n'existe pas encore — à créer avant toute intégration réelle avec le front.
+> API/admin backend uniquement. L'UI applicative est [Safe-Campus-front](../Safe-Campus-front) (Nuxt 4 standalone, repo séparé), qui consomme `routes/api.php`.
 
-👉 Voir [README](README.md) pour l'installation, le devcontainer et les limites de ressources.
+👉 Voir [README](README.md) pour l'installation et le stack Docker, [docs/README.md](docs/README.md) pour l'index de la documentation, [docs/deploiement.md](docs/deploiement.md) pour la mise en production.
+
+> Le code s'édite sur l'hôte, les commandes s'exécutent dans le container via `docker compose exec sc_back <cmd>`.
 
 ## Commands
 
 ```bash
-# Development (runs Laravel + queue + logs concurrently)
-composer dev
-
-# Or individually
-php artisan serve
-
-# Testing
-composer test          # clears config cache then runs PHPUnit
-php artisan test --filter=TestName   # single test
-
-# Database
-php artisan migrate
-php artisan migrate:fresh --seed
-
-# Generators
-php artisan make:model Scene -mfsc   # model + migration + factory + seeder + controller
-php artisan make:request StoreSceneRequest
-
-# Docker (alternative)
 docker compose up -d
-# Then open VS Code Dev Container
+docker compose logs -f sc_back
+docker compose down
 ```
+
+L'entrypoint de `SC_Back` exécute `composer install` puis `artisan serve`. `key:generate` et `migrate` sont à lancer manuellement.
+
+Toutes les commandes PHP/Composer/Artisan s'exécutent **dans le container**, préfixées par `docker compose exec sc_back` :
+
+```bash
+docker compose exec sc_back php artisan migrate
+```
+
+> `SC_Back` sert déjà sur le port 8000. Ne pas relancer `composer dev` ni `php artisan serve` via `exec` — le bind échouera.
 
 ## Architecture
 
@@ -53,7 +47,7 @@ app/
 
 routes/
 ├── web.php             Actuellement minimal (health check `/`)
-└── api.php             N'existe pas encore — à créer pour servir le front Nuxt
+└── api.php             Routes JSON du front Nuxt (login visiteur, themes, sous-themes, histoires)
 ```
 
 Le schéma de base de données est décrit dans [docs/schema_bd.md](docs/schema_bd.md).
@@ -66,13 +60,11 @@ return HistoireResource::collection($histoires);
 return response()->json(['message' => 'created'], 201);
 ```
 
-**Routes** use resource routing with auth middleware:
+**Routes** (`routes/api.php`) bind models by `ref`, never by numeric id:
 ```php
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::apiResource('histoires', HistoireController::class);
-    Route::apiResource('histoires.scenes', SceneController::class);  // nested
-});
+Route::get('sous-themes/{sousTheme:ref}', [SousThemeController::class, 'show']);
 ```
+Read routes are public by design. The visitor login is a prototype-only gate for events, not authentication, and is removed at the official launch ([docs/securite-rgpd.md § 4.1](docs/securite-rgpd.md)).
 
 **PostgreSQL-specific patterns:**
 - Use `DB::select()` with raw CTEs for recursive scene→choice→scene graph traversal
@@ -82,6 +74,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 ## Git
 
 - Workflow git flow : `feature/*` pour le dev, merge sur `dev` en `--no-ff`. `hotfix/*` créé depuis `main`.
+- Toujours demander confirmation à l'utilisateur avant de merger une `feature/*` sur `dev`. Ne jamais merger de sa propre initiative.
+- Une fois une `feature/*` mergée dans `dev` et poussée sur `origin/dev`, supprimer la branche locale (`git branch -d`). Ne pas laisser de branches `feature/*` locales après clôture.
 - Jamais de `Co-Authored-By` dans les messages de commit.
 - Format de message de commit obligatoire :
 

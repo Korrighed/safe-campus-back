@@ -6,15 +6,26 @@ namespace App\Models;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable implements FilamentUser
+/**
+ * `role` est casté en UserRole (voir casts()) ; null tant qu'un administrateur
+ * n'a pas validé l'inscription.
+ *
+ * @property UserRole|null $role
+ * @property Carbon|null $email_verified_at
+ * @property Carbon|null $derniere_connexion_at
+ */
+class User extends Authenticatable implements FilamentUser, HasName
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -22,8 +33,10 @@ class User extends Authenticatable implements FilamentUser
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'nom',
+        'prenom',
         'email',
+        'telephone',
         'password',
         'role',
     ];
@@ -47,6 +60,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'derniere_connexion_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
@@ -54,10 +68,22 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Sanctum authentifie l'API, il ne gouverne pas l'acces au panel.
-     * Un compte sans role est authentifie mais recoit un 403 sur /admin.
+     * Allowlist explicite : le role Visiteur (auth front) ne doit jamais
+     * donner acces a /admin. L'admin entre dans le panel mais ne voit que
+     * la gestion des utilisateurs (UserPolicy). Un compte sans role (inscription en attente de
+     * validation) est refuse des la page de connexion — voir
+     * App\Filament\Pages\Auth\Login.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->role !== null;
+        return in_array($this->role, [UserRole::Webmaster, UserRole::Redacteur, UserRole::Admin], true);
+    }
+
+    /**
+     * Nom affiche par Filament (menu utilisateur) : il n'y a plus de `name`.
+     */
+    public function getFilamentName(): string
+    {
+        return trim("{$this->prenom} {$this->nom}");
     }
 }

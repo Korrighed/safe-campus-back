@@ -9,13 +9,15 @@
         "php": "^8.4",
         "filament/filament": "^3.3",
         "laravel/framework": "^13.0",
-        "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^3.0"
+        "laravel/sanctum": "^4.0"
     },
     "require-dev": {
+        "albertoarena/laravel-truss": "^1.9",
         "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.10",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",
+        "laravel/tinker": "^3.0",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^11.5.50"

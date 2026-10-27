@@ -4,15 +4,12 @@ namespace Tests\Feature\Database;
 
 use App\Models\Signalement;
 use App\Models\SousTheme;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class SignalementTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_un_signalement_se_rattache_a_un_sous_theme(): void
     {
         $sousTheme = SousTheme::factory()->avecSignalement()->create(['libelle' => 'Alcool']);

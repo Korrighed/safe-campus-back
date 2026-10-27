@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">Le matin de l'examen : des étudiants devant la porte de la salle, un rythme cardiaque qui s'emballe puis se calme</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .coeur { transform-box: fill-box; transform-origin: center; animation: coeur 12s linear infinite; }
+    @keyframes coeur {
+      0%, 6%, 12%, 18%, 24%, 30%, 36%, 42%, 52%, 64%, 78%, 92%, 100% { transform: scale(1); }
+      3%, 9%, 15%, 21%, 27%, 33%, 39%, 47%, 58%, 71%, 85% { transform: scale(1.25); }
+    }
+    .bpm { animation-duration: 12s; animation-iteration-count: infinite; }
+    .r1 { animation-name: r1; opacity: 0; } .r2 { animation-name: r2; opacity: 0; } .r3 { animation-name: r3; }
+    @keyframes r1 { 0%, 40% { opacity: 1; } 41%, 100% { opacity: 0; } }
+    @keyframes r2 { 0%, 40% { opacity: 0; } 41%, 70% { opacity: 1; } 71%, 100% { opacity: 0; } }
+    @keyframes r3 { 0%, 70% { opacity: 0; } 71%, 100% { opacity: 1; } }
+    .trace { stroke-dasharray: 1100; animation: trace 4s linear infinite; }
+    @keyframes trace { from { stroke-dashoffset: 1100; } to { stroke-dashoffset: 0; } }
+    .bulle { animation-duration: 9s; animation-iteration-count: infinite; }
+    .u1 { animation-name: u1; } .u2 { animation-name: u2; } .u3 { animation-name: u3; }
+    @keyframes u1 { 0%, 5% { opacity: 0; } 10%, 40% { opacity: 1; } 45%, 100% { opacity: 0; } }
+    @keyframes u2 { 0%, 30% { opacity: 0; } 35%, 65% { opacity: 1; } 70%, 100% { opacity: 0; } }
+    @keyframes u3 { 0%, 55% { opacity: 0; } 60%, 90% { opacity: 1; } 95%, 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .trace { stroke-dasharray: none; }
+    }
+  </style>
+
+  <!-- Couloir -->
+  <rect width="1024" height="572" fill="#e9e3d6"/>
+  <rect x="0" y="0" width="1024" height="60" fill="#f6f2ea"/>
+  <rect x="0" y="400" width="1024" height="172" fill="#b9ad98"/>
+  <rect x="0" y="396" width="1024" height="8" fill="#9d917c"/>
+  <rect x="60" y="80" width="170" height="110" rx="6" fill="#cfe3ef" stroke="#b5aa96" stroke-width="6"/>
+
+  <!-- Porte de la salle -->
+  <rect x="640" y="110" width="200" height="290" rx="4" fill="#7a5c45"/>
+  <rect x="652" y="122" width="176" height="278" fill="#8c6b52"/>
+  <circle cx="806" cy="270" r="9" fill="#e0c27a"/>
+  <rect x="664" y="150" width="152" height="54" rx="4" fill="#f9f6ef"/>
+  <text x="740" y="173" font-size="16" font-weight="700" fill="#3a2f26" text-anchor="middle">Salle B12</text>
+  <text x="740" y="194" font-size="14" fill="#5a4b3e" text-anchor="middle">Partiel · 8h00</text>
+
+  <!-- Silhouettes sans visage -->
+  <g fill="#6f7fa6">
+    <circle cx="300" cy="230" r="30"/><rect x="262" y="262" width="76" height="140" rx="30"/>
+  </g>
+  <g fill="#a3768a">
+    <circle cx="400" cy="244" r="28"/><rect x="364" y="274" width="72" height="128" rx="30"/>
+  </g>
+  <g fill="#7e9a7a">
+    <circle cx="520" cy="236" r="29"/><rect x="483" y="267" width="74" height="135" rx="30"/>
+  </g>
+  <g fill="#c48a5a">
+    <circle cx="920" cy="250" r="27"/><rect x="886" y="279" width="68" height="123" rx="28"/>
+  </g>
+
+  <!-- Bulles de revision -->
+  <g font-size="15" fill="#3a3550">
+    <g class="bulle u1">
+      <rect x="240" y="150" width="150" height="38" rx="19" fill="#fff"/>
+      <text x="258" y="174">… le chapitre 6 …</text>
+    </g>
+    <g class="bulle u2">
+      <rect x="400" y="160" width="160" height="38" rx="19" fill="#fff"/>
+      <text x="416" y="184">t'as révisé quoi ?</text>
+    </g>
+    <g class="bulle u3">
+      <rect x="840" y="168" width="160" height="38" rx="19" fill="#fff"/>
+      <text x="856" y="192">j'ai rien dormi…</text>
+    </g>
+  </g>
+
+  <!-- Moniteur cardiaque -->
+  <rect x="40" y="440" width="944" height="104" rx="14" fill="#1f2433"/>
+  <polyline class="trace" fill="none" stroke="#5fe0a8" stroke-width="3" stroke-linejoin="round"
+    points="200,494 260,494 275,494 285,470 295,516 305,456 315,494 380,494 395,494 405,470 415,516 425,456 435,494 500,494 515,494 525,470 535,516 545,456 555,494 640,494 655,494 665,476 675,508 685,466 695,494 800,494 815,494 825,482 835,504 845,474 855,494 960,494"/>
+  <path class="coeur" d="M110 476 c-14 -18 -42 -6 -36 14 c4 14 36 34 36 34 c0 0 32 -20 36 -34 c6 -20 -22 -32 -36 -14 z" fill="#e5484d"/>
+  <g font-size="22" font-weight="700" fill="#e7ebf5">
+    <text x="170" y="470" class="bpm r1">118</text>
+    <text x="170" y="470" class="bpm r2">96</text>
+    <text x="170" y="470" class="bpm r3">78</text>
+  </g>
+  <text x="170" y="526" font-size="13" fill="#9aa3bb">bpm</text>
+</svg>

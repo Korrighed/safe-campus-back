@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-if [ -n "$WWWUSER" ]; then
-    usermod -u "$WWWUSER" scback
+# Commande explicite (docker compose run) : execution directe
+if [ $# -gt 0 ]; then
+    exec "$@"
 fi
 
-gosu scback git config --global --add safe.directory /var/www/html 2>/dev/null || true
+# filet de securite : recupere vendor/ si un run precedent (ex. exec -u root) l'a pollue en root:root
+[ -d vendor ] && sudo chown -R scback:scback vendor
 
-exec gosu scback "$@"
+# composer install declenche filament:upgrade (post-autoload-dump), qui publie les assets
+COMPOSER_MEMORY_LIMIT=-1 composer install --no-interaction
+
+exec php artisan serve --host=0.0.0.0 --port="${APP_PORT:-8000}"

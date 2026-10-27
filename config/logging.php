@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -70,6 +71,20 @@ return [
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
+            'replace_placeholders' => true,
+        ],
+
+        // Qui a fait quoi, quand : un fichier par jour (audit-AAAA-MM-JJ.log),
+        // 365 jours de conservation. Niveau fixe, independant de LOG_LEVEL
+        // (error en production) : sinon aucune ligne d'audit ne serait ecrite.
+        // JSON : une entree par ligne meme si un texte contient des retours a
+        // la ligne, exploitable avec grep/jq.
+        'audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/audit.log'),
+            'level' => 'info',
+            'formatter' => JsonFormatter::class,
+            'days' => 365,
             'replace_placeholders' => true,
         ],
 

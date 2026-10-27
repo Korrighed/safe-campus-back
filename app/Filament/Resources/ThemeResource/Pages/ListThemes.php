@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Filament\Resources\ThemeResource\Pages;
+
+use App\Filament\Resources\ThemeResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+
+class ListThemes extends ListRecords
+{
+    protected static string $resource = ThemeResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\CreateAction::make(),
+        ];
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Un thème est une grande catégorie du site, par exemple « Addiction ».';
+    }
+}

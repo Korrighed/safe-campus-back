@@ -19,11 +19,14 @@ use Tests\TestCase;
 
 class HistoireScenesTest extends TestCase
 {
+    private User $redacteur;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
+        $this->redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($this->redacteur);
     }
 
     /**
@@ -33,7 +36,7 @@ class HistoireScenesTest extends TestCase
      */
     private function histoireATroisScenes(): array
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $intro = Scene::factory()->create(['titre' => 'Intro']);
         $salon = Scene::factory()->create(['titre' => 'Salon']);
         $balcon = Scene::factory()->create(['titre' => 'Balcon']);
@@ -118,7 +121,7 @@ class HistoireScenesTest extends TestCase
     public function test_une_scene_d_une_autre_histoire_est_reutilisee_en_fin_de_liste(): void
     {
         [$histoire] = $this->histoireATroisScenes();
-        $autre = Histoire::factory()->create();
+        $autre = Histoire::factory()->pour($this->redacteur)->create();
         $partagee = Scene::factory()->create(['titre' => 'Retour en bus']);
         $autre->scenes()->attach($partagee->id, ['est_initiale' => true, 'ordre' => 1]);
 
@@ -293,7 +296,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_une_nouvelle_scene_d_une_histoire_vide_devient_le_depart(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
 
         Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
             ->call('nouvelleScene')
@@ -321,7 +324,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_une_histoire_complete_passe_tous_les_controles(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $histoire->sousThemes()->attach(SousTheme::factory()->create());
         $intro = Scene::factory()->create();
         $fin = Scene::factory()->create();
@@ -335,7 +338,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_les_controles_signalent_ce_qui_manque(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $intro = Scene::factory()->create();
         $orpheline = Scene::factory()->create(['titre' => 'Orpheline']);
         $ailleurs = Scene::factory()->create();
@@ -357,7 +360,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_une_scene_sans_mise_en_situation_est_signalee(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $vide = Scene::factory()->create(['titre' => 'À écrire', 'dialogue_text' => '']);
         $histoire->scenes()->attach($vide->id, ['est_initiale' => true, 'ordre' => 1]);
 
@@ -369,7 +372,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_enregistrer_une_histoire_incomplete_hors_brouillon_avertit_sans_bloquer(): void
     {
-        $histoire = Histoire::factory()->create(['etat' => EtatHistoire::Brouillon]);
+        $histoire = Histoire::factory()->pour($this->redacteur)->create(['etat' => EtatHistoire::Brouillon]);
 
         Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
             ->fillForm(['etat' => EtatHistoire::Relecture->value])
@@ -382,7 +385,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_le_lien_verifier_ouvre_la_modale_avec_un_lien_pour_corriger(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
 
         Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
             ->dispatch('ouvrir-verification')
@@ -394,7 +397,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_verifier_apparait_dans_le_menu_dans_une_histoire(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
 
         $this->get(HistoireResource::getUrl('edit', ['record' => $histoire]))
             ->assertOk()

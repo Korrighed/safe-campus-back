@@ -11,12 +11,14 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Navigation\NavigationItem;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Pages\SubNavigationPosition;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class HistoireResource extends Resource
 {
@@ -27,6 +29,11 @@ class HistoireResource extends Resource
     protected static ?int $navigationSort = 5;
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->visiblePar(auth()->user());
+    }
 
     /**
      * Formulaire d'édition seulement : la création passe par l'assistant.
@@ -140,17 +147,38 @@ class HistoireResource extends Resource
                     ->label('Scènes')
                     ->icon('heroicon-o-film')
                     ->color('gray')
-                    ->url(fn (Histoire $record): string => static::getUrl('scenes', ['record' => $record])),
+                    ->url(fn (Histoire $record): string => static::getUrl('scenes', ['record' => $record]))
+                    ->authorize('view'),
                 Tables\Actions\Action::make('previsualiser')
                     ->label('Prévisualiser')
                     ->icon('heroicon-o-play')
                     ->color('gray')
-                    ->url(fn (Histoire $record): string => static::getUrl('preview', ['record' => $record])),
-                Tables\Actions\EditAction::make(),
+                    ->url(fn (Histoire $record): string => static::getUrl('preview', ['record' => $record]))
+                    ->authorize('view'),
+                Tables\Actions\EditAction::make()
+                    ->authorize('update'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // DeleteBulkAction ne controle pas chaque enregistrement : la policy est appliquee ici.
+                    Tables\Actions\BulkAction::make('supprimer')
+                        ->label('Supprimer la sélection')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records): void {
+                            $utilisateur = auth()->user();
+                            [$supprimables, $refusees] = $records->partition(fn (Histoire $histoire): bool => $utilisateur?->can('delete', $histoire) ?? false);
+
+                            $supprimables->each->delete();
+
+                            Notification::make()
+                                ->title($supprimables->count().' histoire(s) supprimée(s)')
+                                ->body($refusees->isNotEmpty() ? $refusees->count().' histoire(s) ne peuvent pas être supprimées dans leur état actuel.' : null)
+                                ->color($refusees->isNotEmpty() ? 'warning' : 'success')
+                                ->send();
+                        }),
                 ]),
             ]);
     }
@@ -217,7 +245,7 @@ class HistoireResource extends Resource
             return null;
         }
 
-        return $record instanceof Histoire ? $record : Histoire::find($record);
+        return $record instanceof Histoire ? $record : static::getEloquentQuery()->find($record);
     }
 
     public static function getPages(): array

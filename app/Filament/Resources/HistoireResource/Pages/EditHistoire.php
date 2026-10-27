@@ -39,7 +39,8 @@ class EditHistoire extends EditRecord
     {
         return [
             Actions\ActionGroup::make([
-                Actions\DeleteAction::make(),
+                Actions\DeleteAction::make()
+                    ->authorize('delete'),
             ]),
         ];
     }

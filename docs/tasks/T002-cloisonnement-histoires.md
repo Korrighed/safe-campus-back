@@ -254,3 +254,31 @@ Parcours navigateur : passe `qa` en fin de lot (rédacteur A et B, relecteur).
 - Ne pas modifier `MediaPolicy` ni les autres policies.
 
 ## Notes d'exécution
+
+Consigne utilisateur : aucune vérification lancée (pint, phpstan, php artisan test non exécutés). Relecture manuelle du diff uniquement. Rien n'est compilé ni testé.
+
+Constats vérifiés dans le code et dans le vendor Filament 3.3.57 :
+- `Resource::resolveRecordRouteBinding()` passe par `getEloquentQuery()` : `EditHistoire`, `ScenesHistoire`, `PreviewHistoire` renvoient 404 sur l'histoire d'un autre (AC-02) sans code supplémentaire.
+- `EditRecord::mount()` et `hydrate()` appellent `canEdit()` : une histoire en `relecture` donne 403 sur la page Infos (AC-03).
+- `ListRecords::configureCreateAction()` applique `authorize(canCreate())` à la CreateAction d'en-tête : « Nouvelle histoire » est masquée pour le relecteur sans modifier `ListHistoires` (AC-04).
+- `DeleteBulkAction` n'a aucun contrôle par enregistrement : la raison donnée à l'étape 5 est exacte.
+- `BulkAction` injecte `Illuminate\Support\Collection` par type. Le typage du closure suffit.
+- Pour `authorize('view')` sur une action de ligne, le record est injecté par `InteractsWithRecord::parseAuthorizationArguments()`. Les actions d'en-tête d'`EditHistoire` reçoivent le record par `configureAction()`.
+- Livewire `Testable` : une `HttpException` (403) est convertie en réponse (`assertForbidden`). Une `ModelNotFoundException` est relancée (`expectException` fonctionne).
+
+Écrit, non vérifié :
+- Syntaxe, imports et noms de méthodes : relecture seule, rien exécuté.
+- `test_un_relecteur_voit_toutes_les_histoires` et `test_l_auteur_est_affiche_dans_la_liste_et_dans_les_infos` : `assertCanSeeTableRecords` ne voit que la page courante de la table, sans tri explicite, sur une base seedée. Échec possible si la base dépasse une page. Pagination par défaut de Filament à confirmer.
+- phpstan : `static::getEloquentQuery()->find($record)` dans `histoireOuverte()` retourne `Model|Collection|null` sur un `Builder` non typé, incompatible avec `?Histoire`. À surveiller au lot.
+- phpstan : `auth()->user()` passé à `?User` (type `Authenticatable`). Même motif que `PreviewHistoire` ligne 50.
+- `new ScenePolicy()` écrit avec parenthèses (la tâche indique `(new ScenePolicy)`). Choix pour la règle Pint `new_with_parentheses`, non vérifiée.
+- Un commentaire d'une ligne au-dessus du `BulkAction` dans `HistoireResource::table()`, qui explique le remplacement de `DeleteBulkAction`.
+
+Risques à trancher (implémentés tels que décrits, non corrigés) :
+1. Scène partagée (Major, intégrité des données) : `ScenePolicy::update()` et `delete()` acceptent dès qu'une histoire du rédacteur contenant la scène est en `brouillon`. Si la scène est aussi dans une histoire d'un autre rédacteur en `relecture` ou `publie`, le rédacteur modifie ou supprime le contenu de cette histoire. T004 traite la page Scènes et `supprimerSceneAction`, pas la policy. Correction proposée : exiger que toutes les histoires rattachées appartiennent au rédacteur et soient en `brouillon`. Décision à prendre avant T004. Lié à TRD § 9 « Suppression d'une scène partagée refusée ».
+2. Fenêtre T002 sans T003 (Major si livré seul) : le `Select` d'état liste encore les quatre états. Un rédacteur peut poser `publie` sur sa histoire en brouillon depuis la page Infos. T003 corrige par `->in(...)`. Ne pas livrer T002 seul.
+3. UX après relecture (Minor) : après passage en `relecture` depuis la page Infos, la requête Livewire suivante renvoie 403 (`EditRecord::hydrate()` appelle `authorizeAccess()`, `getRedirectUrl()` retourne null). Conforme à la matrice, mais l'erreur apparaît au clic suivant. À traiter : redirection vers la liste après sauvegarde.
+4. `HistoirePolicy::deleteAny()` n'est branchée sur rien. Le BulkAction n'a pas `->authorize('deleteAny')`, non prévu par les étapes. Sans effet aujourd'hui : `can('delete')` filtre chaque enregistrement, et `viewAny` ferme la liste à webmaster et admin (Nit).
+
+Hors périmètre, constaté :
+- `ScenesHistoire::getScenesReutilisables()` liste les scènes de toutes les histoires, pas seulement celles du rédacteur. T004.

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">Une place vide : sur le téléphone, des messages à Sam restés sans réponse, « Vu »</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .etape { animation-duration: 12s; animation-iteration-count: infinite; animation-timing-function: ease-out; }
+    .m1 { animation-name: m1; } .m2 { animation-name: m2; } .m3 { animation-name: m3; } .vu { animation-name: vu; }
+    @keyframes m1 { 0%, 4% { opacity: 0; transform: translateY(12px); } 8%, 92% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes m2 { 0%, 20% { opacity: 0; transform: translateY(12px); } 24%, 92% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes m3 { 0%, 40% { opacity: 0; transform: translateY(12px); } 44%, 92% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes vu { 0%, 56% { opacity: 0; } 60%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4a5568"/>
+      <stop offset="1" stop-color="#6b7488"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="url(#fond)"/>
+  <circle cx="180" cy="140" r="90" fill="#ffffff" fill-opacity=".04"/>
+  <circle cx="860" cy="430" r="120" fill="#ffffff" fill-opacity=".04"/>
+
+  <!-- Telephone -->
+  <rect x="382" y="40" width="260" height="500" rx="32" fill="#0f111c"/>
+  <rect x="394" y="72" width="236" height="440" rx="12" fill="#f3f4f7"/>
+  <rect x="394" y="72" width="236" height="48" rx="12" fill="#5c677d"/>
+  <rect x="394" y="100" width="236" height="20" fill="#5c677d"/>
+  <circle cx="420" cy="96" r="14" fill="#979dac"/>
+  <text x="442" y="100" font-size="14" font-weight="700" fill="#fff">Sam</text>
+
+  <!-- Ton dernier echange avec lui -->
+  <rect x="408" y="134" width="150" height="34" rx="17" fill="#ffffff"/>
+  <text x="424" y="156" font-size="14" fill="#2d3045">jsuis juste fatigué</text>
+  <text x="512" y="190" font-size="11" fill="#a0a6b5" text-anchor="middle">il y a 3 semaines</text>
+
+  <!-- Tes messages restes sans reponse -->
+  <g class="etape m1">
+    <rect x="496" y="206" width="120" height="34" rx="17" fill="#5c677d"/>
+    <text x="512" y="228" font-size="14" fill="#fff">t'étais où ?</text>
+  </g>
+  <g class="etape m2">
+    <rect x="440" y="252" width="176" height="34" rx="17" fill="#5c677d"/>
+    <text x="456" y="274" font-size="14" fill="#fff">je t'envoie le cours ?</text>
+  </g>
+  <g class="etape m3">
+    <rect x="540" y="298" width="76" height="34" rx="17" fill="#5c677d"/>
+    <text x="556" y="320" font-size="14" fill="#fff">ça va ?</text>
+  </g>
+  <g class="etape vu">
+    <text x="616" y="350" font-size="11" fill="#7d8597" text-anchor="end">Vu</text>
+  </g>
+
+  <!-- Barre de saisie -->
+  <rect x="404" y="476" width="216" height="28" rx="14" fill="#ffffff" stroke="#dcdfe6"/>
+  <text x="418" y="495" font-size="12" fill="#a0a6b5">Écrire un message…</text>
+</svg>

@@ -36,6 +36,12 @@ class DatabaseSeeder extends Seeder
             HistoireSeeder::class,
             HistoireAnxieteSeeder::class,
             HistoireHarcelementSeeder::class,
+            HistoireTabacSeeder::class,
+            HistoireDrogueSeeder::class,
+            HistoireDepressionSeeder::class,
+            HistoireBurnOutSeeder::class,
+            HistoireViolencesSexistesSeeder::class,
+            HistoireViolencesSexuellesSeeder::class,
         ]);
     }
 }

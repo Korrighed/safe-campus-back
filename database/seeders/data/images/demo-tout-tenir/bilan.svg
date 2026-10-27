@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">Faire le tri : une liste où certaines tâches se barrent, et une batterie qui se recharge lentement</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .niveau { transform-box: fill-box; transform-origin: bottom; animation: charge 10s ease-in-out infinite; }
+    @keyframes charge { 0% { transform: scaleY(.12); fill: #e63946; } 40% { fill: #f4a261; } 85%, 100% { transform: scaleY(1); fill: #52b788; } }
+    .eclair { animation: eclair 1.6s ease-in-out infinite; }
+    @keyframes eclair { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+    .barre { stroke-dasharray: 260; stroke-dashoffset: 260; animation: barre 10s ease-in-out infinite; }
+    .b2 { animation-delay: 1.5s; }
+    @keyframes barre { 0%, 20% { stroke-dashoffset: 260; } 35%, 90% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 260; } }
+    .coche { animation: coche 10s ease-in-out infinite; opacity: 0; }
+    @keyframes coche { 0%, 40% { opacity: 0; } 50%, 90% { opacity: 1; } 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .niveau { transform: scaleY(.7); fill: #52b788; }
+      .barre { stroke-dashoffset: 0; }
+      .coche { opacity: 1; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9f5db"/>
+      <stop offset="1" stop-color="#cfe1b9"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="url(#fond)"/>
+
+  <!-- Feuille de tri -->
+  <g transform="rotate(-2 330 290)">
+    <rect x="100" y="70" width="460" height="440" rx="10" fill="#fffdf7"/>
+    <text x="140" y="124" font-size="26" font-weight="700" fill="#344e41">Ce qui compte vraiment</text>
+    <g font-size="20" fill="#344e41">
+      <rect x="140" y="160" width="22" height="22" rx="4" fill="none" stroke="#344e41" stroke-width="2"/>
+      <text x="176" y="179">Cours et partiels</text>
+      <rect x="140" y="220" width="22" height="22" rx="4" fill="none" stroke="#344e41" stroke-width="2"/>
+      <text x="176" y="239">Job : les heures prévues</text>
+      <rect x="140" y="280" width="22" height="22" rx="4" fill="none" stroke="#344e41" stroke-width="2"/>
+      <text x="176" y="299">Remplacements du samedi</text>
+      <rect x="140" y="340" width="22" height="22" rx="4" fill="none" stroke="#344e41" stroke-width="2"/>
+      <text x="176" y="359">Trésorerie de l'asso</text>
+      <rect x="140" y="400" width="22" height="22" rx="4" fill="none" stroke="#344e41" stroke-width="2"/>
+      <text x="176" y="419">Une soirée pour moi</text>
+    </g>
+    <g fill="none" stroke="#52b788" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" class="coche">
+      <path d="M144 170 l7 7 l12 -14"/>
+      <path d="M144 230 l7 7 l12 -14"/>
+      <path d="M144 410 l7 7 l12 -14"/>
+    </g>
+    <g stroke="#e63946" stroke-width="4" stroke-linecap="round">
+      <line class="barre" x1="172" y1="292" x2="432" y2="292"/>
+      <line class="barre b2" x1="172" y1="352" x2="432" y2="352"/>
+    </g>
+  </g>
+
+  <!-- Batterie -->
+  <g transform="translate(700 110)">
+    <rect x="50" y="0" width="60" height="24" rx="6" fill="#344e41"/>
+    <rect x="0" y="20" width="160" height="330" rx="22" fill="none" stroke="#344e41" stroke-width="10"/>
+    <rect class="niveau" x="16" y="36" width="128" height="298" rx="12" fill="#52b788"/>
+    <path class="eclair" d="M92 110 l-36 90 h30 l-14 70 l44 -100 h-32 l16 -60 z" fill="#fffdf7"/>
+  </g>
+</svg>

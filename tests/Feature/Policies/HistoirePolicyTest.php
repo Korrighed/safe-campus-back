@@ -5,6 +5,7 @@ namespace Tests\Feature\Policies;
 use App\Enums\EtatHistoire;
 use App\Enums\UserRole;
 use App\Models\Histoire;
+use App\Models\Scene;
 use App\Models\User;
 use App\Policies\HistoirePolicy;
 use Tests\TestCase;
@@ -68,5 +69,20 @@ class HistoirePolicyTest extends TestCase
         $this->assertSame(EtatHistoire::cases(), $policy->etatsAccessibles($relecteur, $brouillon));
         $this->assertSame([EtatHistoire::Brouillon, EtatHistoire::Relecture], $policy->etatsAccessibles($redacteur, $brouillon));
         $this->assertSame([], $policy->etatsAccessibles($redacteur, $relecture));
+    }
+
+    public function test_un_redacteur_ne_modifie_pas_une_scene_partagee_avec_l_histoire_d_un_autre(): void
+    {
+        $redacteurA = User::factory()->create(['role' => UserRole::Redacteur]);
+        $redacteurB = User::factory()->create(['role' => UserRole::Redacteur]);
+        $relecteur = User::factory()->create(['role' => UserRole::Relecteur]);
+        $histoireA = Histoire::factory()->pour($redacteurA)->create(['etat' => EtatHistoire::Brouillon]);
+        $histoireB = Histoire::factory()->pour($redacteurB)->create(['etat' => EtatHistoire::Relecture]);
+        $scene = Scene::factory()->create();
+        $histoireA->scenes()->attach($scene->id, ['est_initiale' => true, 'ordre' => 1]);
+        $histoireB->scenes()->attach($scene->id, ['est_initiale' => true, 'ordre' => 1]);
+
+        $this->assertFalse($redacteurA->can('update', $scene));
+        $this->assertTrue($relecteur->can('update', $scene));
     }
 }

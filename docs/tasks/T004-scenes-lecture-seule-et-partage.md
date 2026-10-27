@@ -110,3 +110,16 @@ Parcours navigateur : rédacteur A, histoire en relecture, page « 2. Scènes »
 - Ne pas changer la mise en page de la page au-delà du bandeau.
 
 ## Notes d'exécution
+
+- Étapes 0 à 6 écrites. Étape 7 (vérification) non lancée : consigne utilisateur, vérification au lot.
+- Étape 0 : `ScenePolicy::update` appelle `modifiablePar()` (privée). `use App\Models\Histoire` ajouté.
+- Étapes 1 à 4 : `peutModifier()`, refus de suppression d'une scène partagée, `with`/`whereHas` de réutilisation (voir décisions ci-dessous). Le bloc « Comment écrire ton histoire » n'est pas modifié.
+- Décisions de l'orchestrateur appliquées (aucune vérification exécutée) :
+  - Q1 : pas de masquage du bloc « Comment écrire ton histoire ». Le test de lecture seule utilise `assertDontSeeHtml('wire:click="nouvelleScene"')` et `assertDontSeeHtml('wire:click="modifier(')`, avec `assertSee('Lecture seule')`.
+  - Q2 (1) : `modifier()` contrôle `can('update', $scene)` après `sceneDeLHistoire()`. `enregistrer()` contrôle `$estNouvelle || can('update', $scene)` dans la transaction, avant toute écriture. `supprimerSceneAction()` refuse d'abord si `! can('delete', $scene)` (notification « Cette scène ne peut pas être supprimée. »), puis applique le contrôle « utilisée par une autre histoire ». `getSections()` expose `modifiable` ; le bouton « Modifier » est désactivé si `! modifiable`, avec le tooltip « Cette scène est aussi utilisée par une histoire verrouillée ou d'un autre auteur ».
+  - Q2 (2) : `getScenesReutilisables()` et `reutiliser()` ajoutent `whereDoesntHave('histoires', whereNotIn(visiblePar))` : une scène n'est réutilisable que si toutes ses histoires sont visibles. `with('histoires:id,titre')` d'origine remis ; les `whereHas`/`with` `visiblePar` précédents retirés (redondants).
+  - Tests : `test_les_scenes_d_un_autre_auteur_ne_sont_pas_proposees` et `test_un_relecteur_reutilise_la_scene_d_un_autre_auteur` portent sur une scène aussi rattachée à une histoire de A. Ajoutés : `test_modifier_une_scene_partagee_avec_une_histoire_en_relecture_est_refuse` (403) et `test_une_scene_partagee_avec_une_histoire_verrouillee_n_est_pas_modifiable` (clé `modifiable` via `instance()->getSections()`).
+- Non couverts par un test : refus de `enregistrer()` sur scène existante non modifiable, refus de suppression par `can('delete')`.
+- Réserve : `visible` ne veut pas dire `modifiable`. Une scène visible de A mais verrouillée par une autre histoire de A peut être rattachée à une autre histoire de A ; elle reste non modifiable.
+- N+1 : `getSections()` appelle `can('update', $scene)` pour chaque scène, donc une requête par scène (`modifiablePar()`). Acceptable pour une histoire de quelques scènes ; à optimiser si besoin.
+- Mineur : si `sceneEnEdition` n'est pas nul quand l'histoire passe hors brouillon (changement dans un autre onglet), le formulaire d'édition reste affiché (`scenes-histoire-edition`, non gardé). L'enregistrement répond 403.

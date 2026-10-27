@@ -107,8 +107,13 @@ class ScenesHistoire extends Page
         return 'Scènes';
     }
 
+    public function peutModifier(): bool
+    {
+        return auth()->user()?->can('update', $this->histoire()) ?? false;
+    }
+
     /**
-     * @return list<array{scene: Scene, numero: int, estDepart: bool, estPremiere: bool, estDerniere: bool, badges: list<array{libelle: string, couleur: string}>, lignes: list<array{texte: string, suite: string, couleur: string}>}>
+     * @return list<array{scene: Scene, numero: int, estDepart: bool, estPremiere: bool, estDerniere: bool, modifiable: bool, badges: list<array{libelle: string, couleur: string}>, lignes: list<array{texte: string, suite: string, couleur: string}>}>
      */
     public function getSections(): array
     {
@@ -122,7 +127,8 @@ class ScenesHistoire extends Page
             'estDepart' => (bool) $scene->pivot->getAttribute('est_initiale'),
             'estPremiere' => $index === 0,
             'estDerniere' => $index === $scenes->count() - 1,
-            'badges' => $this->badges($scene, in_array($scene->id, $atteignables, true)),
+            'modifiable' => auth()->user()?->can('update', $scene) ?? false,
+            'badges' =>$this->badges($scene, in_array($scene->id, $atteignables, true)),
             'lignes' => $scene->choix
                 ->map(fn (Choix $choix) => ['texte' => $choix->text_choix, ...$this->suite($choix, $numeros->all())])
                 ->all(),
@@ -157,6 +163,7 @@ class ScenesHistoire extends Page
         return Scene::query()
             ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
             ->whereHas('histoires')
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereNotIn('histoires.id', Histoire::query()->visiblePar(auth()->user())->select('histoires.id')))
             ->with('histoires:id,titre')
             ->orderBy('titre')
             ->get()
@@ -267,6 +274,7 @@ class ScenesHistoire extends Page
         }
 
         $scene = $this->sceneDeLHistoire($sceneId);
+        abort_unless(auth()->user()?->can('update', $scene), 403);
 
         $this->form->fill([
             'titre' => $scene->titre,
@@ -316,6 +324,7 @@ class ScenesHistoire extends Page
 
         $scene = DB::transaction(function () use ($donnees, $estNouvelle): Scene {
             $scene = $estNouvelle ? new Scene : $this->sceneDeLHistoire($this->sceneEnEdition);
+            abort_unless($estNouvelle || auth()->user()?->can('update', $scene), 403);
 
             $scene->fill(Arr::only($donnees, ['titre', 'dialogue_text', 'media_id', 'sous_theme_id']))->save();
 
@@ -400,6 +409,7 @@ class ScenesHistoire extends Page
             ->whereKey($this->sceneAReutiliser)
             ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
             ->whereHas('histoires')
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereNotIn('histoires.id', Histoire::query()->visiblePar(auth()->user())->select('histoires.id')))
             ->first();
 
         if ($scene === null) {
@@ -436,10 +446,31 @@ class ScenesHistoire extends Page
             ->requiresConfirmation()
             ->color('danger')
             ->modalHeading(fn (array $arguments): string => 'Supprimer « '.$this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0))->titre.' » ?')
-            ->modalDescription('La scène et ses choix seront supprimés définitivement, y compris dans les autres histoires qui la réutilisent.')
+            ->modalDescription('La scène et ses choix seront supprimés définitivement.')
             ->modalSubmitActionLabel('Supprimer')
             ->action(function (array $arguments): void {
                 $scene = $this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0));
+
+                if (! auth()->user()?->can('delete', $scene)) {
+                    Notification::make()
+                        ->warning()
+                        ->title('Cette scène ne peut pas être supprimée.')
+                        ->body('Elle est utilisée par une histoire que vous ne pouvez pas modifier.')
+                        ->send();
+
+                    return;
+                }
+
+                if ($scene->histoires()->whereKeyNot($this->histoire()->getKey())->exists()) {
+                    Notification::make()
+                        ->warning()
+                        ->title('Cette scène est utilisée par une autre histoire.')
+                        ->body('Retirez-la de cette histoire plutôt que de la supprimer.')
+                        ->send();
+
+                    return;
+                }
+
                 $scene->delete();
 
                 Notification::make()->success()->title("« {$scene->titre} » est supprimée.")->send();

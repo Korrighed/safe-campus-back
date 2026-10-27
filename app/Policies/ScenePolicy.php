@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Enums\EtatHistoire;
 use App\Enums\UserRole;
+use App\Models\Histoire;
 use App\Models\Scene;
 use App\Models\User;
 
@@ -32,11 +33,7 @@ class ScenePolicy
     public function update(User $user, Scene $scene): bool
     {
         return $this->estRelecteur($user)
-            || ($this->estRedacteur($user)
-                && $scene->histoires()
-                    ->where('histoires.user_id', $user->id)
-                    ->where('histoires.etat', EtatHistoire::Brouillon->value)
-                    ->exists());
+            || ($this->estRedacteur($user) && $this->modifiablePar($user, $scene));
     }
 
     public function delete(User $user, Scene $scene): bool
@@ -52,5 +49,14 @@ class ScenePolicy
     private function estRelecteur(User $user): bool
     {
         return $user->role === UserRole::Relecteur;
+    }
+
+    private function modifiablePar(User $user, Scene $scene): bool
+    {
+        $histoires = $scene->histoires()->get(['histoires.id', 'histoires.user_id', 'histoires.etat']);
+
+        return $histoires->isNotEmpty()
+            && $histoires->every(fn (Histoire $histoire): bool => (int) $histoire->user_id === (int) $user->id
+                && $histoire->etat === EtatHistoire::Brouillon);
     }
 }

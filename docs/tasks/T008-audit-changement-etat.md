@@ -92,3 +92,12 @@ Parcours navigateur : aucun (pas d'impact visible).
 - Ne pas modifier `AuditObserver`.
 
 ## Notes d'exécution
+
+- Vérification non lancée : consigne utilisateur (aucun pint, phpstan, artisan test). À lancer en fin de lot, les trois commandes de « Vérification ».
+- Relecture manuelle du diff effectuée : syntaxe, imports triés, signatures. Aucun outil exécuté.
+- Fichiers : `app/Observers/HistoireObserver.php` créé ; `app/Providers/AppServiceProvider.php` (import, `Histoire::observe(HistoireObserver::class)` après la boucle, docblock) ; `tests/Feature/AuditHistoireTest.php` créé.
+- Test ajouté hors étapes : `test_une_publication_depuis_la_relecture_est_tracee_avec_son_auteur` (relecture vers publie, email et rôle). Les étapes ne prévoient que brouillon vers relecture, or AC-01 parle de publication.
+- `json()` n'est appelé par aucun test de T008 : prévu pour T009 et T010. Il n'échappe ni les accents ni les slashes, pour que les recherches de texte restent fiables. `JSON_THROW_ON_ERROR` évite un `false` silencieux.
+- `Histoire.etat` est NOT NULL (migration `create_histoires_table`, défaut `brouillon`) : `->etat->value` sans garde est sûr.
+- Non modifiés : `AuditObserver`, `AuditService`, `AuditLogTest`.
+- `docs/tasks/T012-documentation.md` apparaît modifié dans `git status` avant mon intervention. Non touché.

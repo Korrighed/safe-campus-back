@@ -45,3 +45,12 @@ Parcours navigateur : ouvrir n'importe quelle page du back-office, lire le pied 
 - Les documents de `docs/` (dates d'audit, historiques) ne sont pas modifiés.
 
 ## Notes d'exécution
+
+- Exécutant : executor, 2026-10-28.
+- Modifié : `resources/views/filament/footer.blade.php` ligne 5, `© 2025 Université de Nouvelle-Calédonie` remplacé par `© 2026 Université de Nouvelle-Calédonie`. Rien d'autre dans la ligne.
+- Rendu : `app/Providers/Filament/AdminPanelProvider.php` lignes 83-84 rend `view('filament.footer')` sur `PanelsRenderHook::FOOTER`. Le fichier modifié est bien celui affiché sur les pages du back-office.
+- AC-02 : `grep -rn "2025" resources/ app/ lang/` retourne vide. Contrôle croisé : `find` + `grep` sur les 122 fichiers de ces dossiers, 0 occurrence.
+- AC-01 : vérifié statiquement (ligne 5 lit « © 2026 Université de Nouvelle-Calédonie »). Parcours navigateur non effectué (pas de serveur lancé, consigne de l'exécutant). À faire par l'utilisateur.
+- Aucune autre occurrence de « 2025 » trouvée : rien à signaler.
+- Technique : le Bash tool ne résout pas le chemin Windows du dépôt ; le grep a été lancé via `wsl.exe -d Ubuntu-24.04`. Commande et résultat inchangés.
+- Non modifié : `Statut` de la tâche (reste « à faire », à mettre à jour par l'orchestrateur), aucun commit, aucun push.

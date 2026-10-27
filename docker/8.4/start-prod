@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Point d'entree de l'image de production.
+#
+# - Ecoute sur $PORT (impose par Render), sinon $APP_PORT, sinon 8000.
+# - Recree public/storage : le lien est exclu de l'image (.dockerignore).
+# - RUN_MIGRATIONS=true : lance `migrate --force` avant de servir.
+# - DEMO_CONTENT=true : rejoue les seeders de demo (documents, compte redacteur,
+#   histoires). Leurs fichiers vont sur le disque du conteneur, ephemere sur
+#   Render gratuit : il faut les recreer a chaque demarrage. Ils sont idempotents.
+#
+# Une tache qui echoue est signalee mais n'empeche pas le serveur de demarrer :
+# un site sans medias vaut mieux qu'un site hors ligne.
+
+set -uo pipefail
+cd "$(dirname "$0")/../.."
+
+vrai() {
+  case "${!1:-}" in
+    1 | true | TRUE | True | yes | on) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+tache() {
+  local libelle="$1"
+  shift
+  echo "[start-prod] ${libelle}"
+  if ! "$@"; then
+    echo "[start-prod] AVERTISSEMENT : echec de « ${libelle} », le serveur demarre quand meme" >&2
+  fi
+}
+
+[ -L public/storage ] || tache "lien public/storage" php artisan storage:link
+
+if vrai RUN_MIGRATIONS; then
+  tache "migrations" php artisan migrate --force
+fi
+
+if vrai DEMO_CONTENT; then
+  # L'ordre compte : les histoires ont besoin du compte redacteur de demo.
+  for seeder in MediaSeeder RedacteurDemoSeeder HistoireSeeder HistoireAnxieteSeeder HistoireHarcelementSeeder; do
+    tache "seeder ${seeder}" php artisan db:seed --class="${seeder}" --force
+  done
+fi
+
+exec php artisan serve --host=0.0.0.0 --port="${PORT:-${APP_PORT:-8000}}"

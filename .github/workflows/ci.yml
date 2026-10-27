@@ -131,25 +131,59 @@ jobs:
             echo "ADMIN_PASSWORD=Ci-$(openssl rand -hex 12)-Zz!"
             echo "VISITEUR_EMAIL=visiteur@ci.invalid"
             echo "VISITEUR_PASSWORD=Ci-$(openssl rand -hex 12)-Vv!"
+            # Chemin de demarrage d'un hebergeur sans commande post-deploiement ni
+            # disque persistant (Render gratuit) : docker/8.4/start-prod migre et
+            # rejoue les seeders de demo au demarrage.
+            echo "RUN_MIGRATIONS=true"
+            echo "DEMO_CONTENT=true"
+            echo "REDACTEUR_DEMO_EMAIL=redacteur-demo@ci.invalid"
+            echo "REDACTEUR_DEMO_PASSWORD=Ci-$(openssl rand -hex 12)-Rr!"
           } > "$PROD_ENV_FILE"
 
       - name: Build et demarrage de la stack de prod
         run: $COMPOSE up -d --build
 
-      # Commandes post-deploiement de docs/deploiement.md, a l'identique.
+      # Le demarrage inclut migrations et seeders : on attend le serveur avant
+      # toute autre commande, pour ne pas lancer un second `migrate` en parallele.
+      - name: Attente du demarrage
+        run: |
+          # --retry-all-errors : le proxy de port Docker peut accepter puis couper la
+          # connexion (reset) avant que le serveur ecoute. --retry-connrefused ne suffit pas.
+          curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-all-errors http://127.0.0.1:8000/up > /dev/null
+
+      # Commandes post-deploiement de docs/deploiement.md. migrate et storage:link
+      # sont deja faits par start-prod : ils doivent rester sans effet.
       - name: Commandes post-deploiement
         run: |
           $COMPOSE exec -T sc_back php artisan package:discover --ansi
           $COMPOSE exec -T sc_back php artisan filament:upgrade
           $COMPOSE exec -T sc_back php artisan migrate --force
-          $COMPOSE exec -T sc_back php artisan storage:link
+          $COMPOSE exec -T sc_back sh -c '[ -L public/storage ] || php artisan storage:link'
 
       - name: Controle HTTP
         run: |
-          # --retry-all-errors : le proxy de port Docker peut accepter puis couper la
-          # connexion (reset) avant que le serveur ecoute. --retry-connrefused ne suffit pas.
-          curl --fail --silent --show-error --retry 15 --retry-delay 2 --retry-all-errors http://127.0.0.1:8000/up
+          curl --fail --silent --show-error http://127.0.0.1:8000/up > /dev/null
           curl --fail --silent --show-error http://127.0.0.1:8000/api/themes > /dev/null
+
+      # Les fichiers de media sont servis sous /storage. APP_URL vaut ici un nom
+      # fictif : on ne garde que le chemin des URL renvoyees par l'API.
+      - name: Medias de demo servis par le back
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          from urllib.parse import urlparse
+          base = "http://127.0.0.1:8000"
+          def get_json(path):
+              with urllib.request.urlopen(base + path, timeout=60) as r:
+                  return json.load(r)["data"]
+          urls = [s["media"]["url"] for s in get_json("/api/histoires/demo_soiree_qui_derape")["scenes"] if s.get("media")]
+          urls += [d["url"] for d in get_json("/api/sous-themes/alcool")["documents"] if d.get("url")]
+          assert urls, "aucun media renvoye par l'API"
+          for url in urls:
+              with urllib.request.urlopen(base + urlparse(url).path, timeout=60) as r:
+                  assert r.status == 200, f"{url} -> {r.status}"
+          print(f"{len(urls)} fichier(s) de media servis en HTTP 200")
+          PY
 
       - name: Scan Trivy de l'image
         # Epingle par commit : les etiquettes sans "v" (0.x.y) ont ete supprimees apres

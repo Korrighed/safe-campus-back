@@ -73,6 +73,8 @@ Déploiement du front : [README de Safe-Campus-front § Déploiement](../../Safe
 
 Contrôle à blanc : `docker exec SC_Back_Prod php artisan comptes:purger-inactifs --simulation`.
 
+Commande manuelle, non planifiée : `scenes:purger-orphelines [--simulation]` supprime les scènes sans histoire créées il y a plus de 24 heures, avec leurs choix. À lancer à la main uniquement. Contrôle à blanc : `docker exec SC_Back_Prod php artisan scenes:purger-orphelines --simulation`.
+
 ## Logs d'audit
 
 Qui a fait quoi, quand, depuis quelle IP : canal `audit` (`config/logging.php`), distinct de `laravel.log`.

@@ -481,6 +481,12 @@ sélecteur Filament.
 Sans lui, la liste des scènes et le sélecteur de `FK_Next_Scene` n'affichent que du dialogue tronqué,
 et le rédacteur ne peut pas relier ses scènes entre elles. Même raison que `Media.Libelle`.
 
+**Suppression d'une histoire.** Ses scènes sont supprimées avec elle si aucune autre histoire ne les
+utilise (hooks `deleting` / `deleted` du modèle `Histoire`, service `NettoyageScenesService`). Leurs
+choix partent avec elles (`choix.scene_id` en cascade). Une scène encore utilisée reste : un choix
+qui la mène vers une scène supprimée perd sa cible, `FK_Next_Scene` passe à `NULL`. Les scènes déjà
+orphelines en base sont supprimées par `scenes:purger-orphelines` (voir [deploiement.md](deploiement.md)).
+
 ### Choix
 
 `FK_Next_Scene` est **nullable**. `NULL` signifie sortie du parcours.
@@ -606,7 +612,9 @@ conservé). Il peut aussi supprimer un compte : « Refuser » pour une demande e
 pour un compte actif.
 
 `Histoire.FK_User` est en suppression en cascade : supprimer un rédacteur effacerait ses histoires.
-Leurs scènes et leurs choix ne sont pas effacés : les scènes restent en base, détachées de l'histoire.
+Cette cascade SQL ne passe pas par le modèle `Histoire` : elle ne déclenche ni la suppression des scènes
+exclusives, ni le hook du § Scene et partage. Leurs scènes et leurs choix restent en base, détachées de
+l'histoire, jusqu'à `scenes:purger-orphelines`.
 `SuppressionCompteService` impose donc de choisir un autre rédacteur ou un relecteur qui reprend les
 histoires avant la suppression ; sans repreneur, rien n'est supprimé.
 

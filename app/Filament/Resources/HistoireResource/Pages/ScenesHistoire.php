@@ -12,6 +12,7 @@ use App\Models\Histoire;
 use App\Models\Media;
 use App\Models\Scene;
 use App\Models\SousTheme;
+use App\Services\AuditService;
 use App\Services\VerificationHistoireService;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -360,6 +361,10 @@ class ScenesHistoire extends Page
             return $scene;
         });
 
+        if ($estNouvelle) {
+            $this->tracer('Histoire.scene_ajoutee', ['scene_id' => $scene->getKey()]);
+        }
+
         $this->sceneEnEdition = null;
         $this->form->fill();
 
@@ -387,6 +392,8 @@ class ScenesHistoire extends Page
             $relation->newPivotQuery()->update(['est_initiale' => false]);
             $relation->updateExistingPivot($scene->getKey(), ['est_initiale' => true]);
         });
+
+        $this->tracer('Histoire.depart_defini', ['scene_id' => $scene->getKey()]);
 
         Notification::make()->success()->title("« {$scene->titre} » est maintenant la scène de départ.")->send();
     }
@@ -419,6 +426,7 @@ class ScenesHistoire extends Page
         }
 
         $this->rattacher($scene);
+        $this->tracer('Histoire.scene_ajoutee', ['scene_id' => $scene->getKey(), 'reutilisee' => true]);
         $this->reutilisationOuverte = false;
         $this->sceneAReutiliser = null;
 
@@ -435,6 +443,7 @@ class ScenesHistoire extends Page
             ->action(function (array $arguments): void {
                 $scene = $this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0));
                 $this->histoire()->scenes()->detach($scene->getKey());
+                $this->tracer('Histoire.scene_retiree', ['scene_id' => $scene->getKey()]);
 
                 Notification::make()->success()->title("« {$scene->titre} » est retirée de l'histoire.")->send();
             });
@@ -502,6 +511,17 @@ class ScenesHistoire extends Page
     }
 
     /**
+     * Evenement d'audit sur l'histoire ouverte. Identifiants uniquement :
+     * jamais le titre ni le texte d'une scene.
+     *
+     * @param  array<string, mixed>  $details
+     */
+    protected function tracer(string $action, array $details): void
+    {
+        app(AuditService::class)->ecrire($action, $this->histoire(), $details);
+    }
+
+    /**
      * Rattache une scene en fin de liste ; elle devient le depart si
      * l'histoire n'en a pas.
      */
@@ -539,6 +559,8 @@ class ScenesHistoire extends Page
                 $relation->updateExistingPivot($id, ['ordre' => $position + 1]);
             }
         });
+
+        $this->tracer('Histoire.scene_deplacee', ['scene_id' => $sceneId, 'sens' => $sens < 0 ? 'haut' : 'bas']);
     }
 
     /**

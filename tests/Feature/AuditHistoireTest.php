@@ -4,10 +4,15 @@ namespace Tests\Feature;
 
 use App\Enums\EtatHistoire;
 use App\Enums\UserRole;
+use App\Filament\Resources\HistoireResource\Pages\EditHistoire;
+use App\Filament\Resources\HistoireResource\Pages\ScenesHistoire;
 use App\Models\Histoire;
+use App\Models\Scene;
+use App\Models\SousTheme;
 use App\Models\User;
 use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\Log;
+use Livewire\Livewire;
 use Monolog\Handler\TestHandler;
 use Monolog\Logger as MonologLogger;
 use Monolog\LogRecord;
@@ -125,5 +130,132 @@ class AuditHistoireTest extends TestCase
         $ligne = $this->ligne('Histoire.modifie');
         $this->assertNotNull($ligne);
         $this->assertSame('relecture', $ligne->context['apres']['etat']);
+    }
+
+    /**
+     * Histoire de $nombre scenes, la premiere en depart.
+     *
+     * @return array{0: Histoire, 1: list<Scene>}
+     */
+    private function histoireAvecScenes(User $auteur, int $nombre): array
+    {
+        $histoire = Histoire::factory()->pour($auteur)->create();
+        $scenes = [];
+
+        foreach (range(1, $nombre) as $ordre) {
+            $scene = Scene::factory()->create();
+            $histoire->scenes()->attach($scene->id, ['est_initiale' => $ordre === 1, 'ordre' => $ordre]);
+            $scenes[] = $scene;
+        }
+
+        return [$histoire, $scenes];
+    }
+
+    public function test_ajouter_une_scene_est_trace(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create();
+        $this->handler->clear();
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('nouvelleScene')
+            ->fillForm(['titre' => 'Titre secret', 'dialogue_text' => 'Texte secret'])
+            ->call('enregistrer')
+            ->assertHasNoFormErrors();
+
+        $ligne = $this->ligne('Histoire.scene_ajoutee');
+        $this->assertNotNull($ligne);
+        $this->assertSame($histoire->scenes()->sole()->id, $ligne->context['scene_id']);
+        $this->assertStringNotContainsString('Titre secret', $this->json());
+        $this->assertStringNotContainsString('Texte secret', $this->json());
+    }
+
+    public function test_reutiliser_une_scene_est_trace(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create();
+        $autre = Histoire::factory()->pour($redacteur)->create();
+        $partagee = Scene::factory()->create();
+        $autre->scenes()->attach($partagee->id, ['est_initiale' => true, 'ordre' => 1]);
+        $this->handler->clear();
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->set('reutilisationOuverte', true)
+            ->set('sceneAReutiliser', $partagee->id)
+            ->call('reutiliser');
+
+        $ligne = $this->ligne('Histoire.scene_ajoutee');
+        $this->assertNotNull($ligne);
+        $this->assertSame($partagee->id, $ligne->context['scene_id']);
+        $this->assertTrue($ligne->context['reutilisee']);
+    }
+
+    public function test_retirer_une_scene_est_trace(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        [$histoire, $scenes] = $this->histoireAvecScenes($redacteur, 1);
+        $this->handler->clear();
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->callAction('retirerScene', arguments: ['scene' => $scenes[0]->id]);
+
+        $ligne = $this->ligne('Histoire.scene_retiree');
+        $this->assertNotNull($ligne);
+        $this->assertSame($scenes[0]->id, $ligne->context['scene_id']);
+    }
+
+    public function test_definir_le_depart_est_trace(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        [$histoire, $scenes] = $this->histoireAvecScenes($redacteur, 2);
+        $this->handler->clear();
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('definirDepart', $scenes[1]->id);
+
+        $ligne = $this->ligne('Histoire.depart_defini');
+        $this->assertNotNull($ligne);
+        $this->assertSame($scenes[1]->id, $ligne->context['scene_id']);
+    }
+
+    public function test_deplacer_une_scene_est_trace(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        [$histoire, $scenes] = $this->histoireAvecScenes($redacteur, 2);
+        $this->handler->clear();
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('descendre', $scenes[0]->id);
+
+        $ligne = $this->ligne('Histoire.scene_deplacee');
+        $this->assertNotNull($ligne);
+        $this->assertSame($scenes[0]->id, $ligne->context['scene_id']);
+        $this->assertSame('bas', $ligne->context['sens']);
+    }
+
+    public function test_modifier_les_sous_themes_est_trace(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Brouillon]);
+        $a = SousTheme::factory()->create();
+        $b = SousTheme::factory()->create();
+        $this->handler->clear();
+
+        Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
+            ->fillForm(['sousThemes' => [$a->id]])
+            ->call('save')
+            ->fillForm(['sousThemes' => [$b->id]])
+            ->call('save');
+
+        $lignes = $this->lignes('Histoire.sous_themes_modifies');
+        $this->assertCount(2, $lignes);
+        $this->assertSame([$b->id], $lignes[1]->context['ajoutes']);
+        $this->assertSame([$a->id], $lignes[1]->context['retires']);
     }
 }

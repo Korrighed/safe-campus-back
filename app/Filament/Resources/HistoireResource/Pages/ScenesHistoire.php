@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\JournaliseLesRefus;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
@@ -37,6 +38,7 @@ class ScenesHistoire extends Page
 {
     use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use JournaliseLesRefus;
     use LitHistoire;
     use OuvreVerification;
 
@@ -73,7 +75,10 @@ class ScenesHistoire extends Page
     {
         $this->record = $this->resolveRecord($record);
 
-        abort_unless(auth()->user()?->can('view', $this->histoire()), 403);
+        if (! auth()->user()?->can('view', $this->histoire())) {
+            $this->journaliserRefus('view');
+            abort(403);
+        }
 
         $this->form->fill();
     }
@@ -129,7 +134,7 @@ class ScenesHistoire extends Page
             'estPremiere' => $index === 0,
             'estDerniere' => $index === $scenes->count() - 1,
             'modifiable' => auth()->user()?->can('update', $scene) ?? false,
-            'badges' =>$this->badges($scene, in_array($scene->id, $atteignables, true)),
+            'badges' => $this->badges($scene, in_array($scene->id, $atteignables, true)),
             'lignes' => $scene->choix
                 ->map(fn (Choix $choix) => ['texte' => $choix->text_choix, ...$this->suite($choix, $numeros->all())])
                 ->all(),
@@ -275,7 +280,11 @@ class ScenesHistoire extends Page
         }
 
         $scene = $this->sceneDeLHistoire($sceneId);
-        abort_unless(auth()->user()?->can('update', $scene), 403);
+
+        if (! auth()->user()?->can('update', $scene)) {
+            $this->journaliserRefus('update');
+            abort(403);
+        }
 
         $this->form->fill([
             'titre' => $scene->titre,
@@ -325,7 +334,11 @@ class ScenesHistoire extends Page
 
         $scene = DB::transaction(function () use ($donnees, $estNouvelle): Scene {
             $scene = $estNouvelle ? new Scene : $this->sceneDeLHistoire($this->sceneEnEdition);
-            abort_unless($estNouvelle || auth()->user()?->can('update', $scene), 403);
+
+            if (! $estNouvelle && ! auth()->user()?->can('update', $scene)) {
+                $this->journaliserRefus('update');
+                abort(403);
+            }
 
             $scene->fill(Arr::only($donnees, ['titre', 'dialogue_text', 'media_id', 'sous_theme_id']))->save();
 
@@ -507,7 +520,10 @@ class ScenesHistoire extends Page
 
     protected function autoriserModification(): void
     {
-        abort_unless(auth()->user()?->can('update', $this->histoire()), 403);
+        if (! auth()->user()?->can('update', $this->histoire())) {
+            $this->journaliserRefus('update');
+            abort(403);
+        }
     }
 
     /**

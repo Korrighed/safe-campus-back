@@ -182,7 +182,8 @@ class HistoireResourceTest extends TestCase
         Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
             ->fillForm(['etat' => 'relecture'])
             ->call('save')
-            ->assertHasNoFormErrors();
+            ->assertHasNoFormErrors()
+            ->assertRedirect(HistoireResource::getUrl('index'));
 
         $this->assertSame(EtatHistoire::Relecture, $histoire->fresh()->etat);
     }

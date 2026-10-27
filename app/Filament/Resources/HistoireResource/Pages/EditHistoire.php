@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\EtatHistoire;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\JournaliseLesRefus;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Services\AuditService;
@@ -14,10 +15,12 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class EditHistoire extends EditRecord
 {
     use EnTeteAvecOnglets;
+    use JournaliseLesRefus;
     use LitHistoire;
     use OuvreVerification;
 
@@ -52,6 +55,33 @@ class EditHistoire extends EditRecord
                     ->authorize('delete'),
             ]),
         ];
+    }
+
+    /**
+     * Page Infos refusée (histoire verrouillée, droit absent) : tracée avant la 403.
+     * Appelée par mount(), hydrate() et save() de EditRecord.
+     */
+    protected function authorizeAccess(): void
+    {
+        try {
+            parent::authorizeAccess();
+        } catch (HttpException $exception) {
+            $this->journaliserRefus('update');
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Un redacteur qui passe son histoire en relecture la verrouille : la page
+     * n'est plus accessible, on le renvoie a la liste au lieu de lui laisser
+     * un formulaire dont la prochaine requete repondrait 403.
+     */
+    protected function getRedirectUrl(): ?string
+    {
+        return auth()->user()?->can('update', $this->histoire())
+            ? null
+            : HistoireResource::getUrl('index');
     }
 
     /**

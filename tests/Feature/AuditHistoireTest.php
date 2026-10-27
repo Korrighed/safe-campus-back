@@ -10,6 +10,7 @@ use App\Models\Histoire;
 use App\Models\Scene;
 use App\Models\SousTheme;
 use App\Models\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\Log;
 use Livewire\Livewire;
@@ -257,5 +258,70 @@ class AuditHistoireTest extends TestCase
         $this->assertCount(2, $lignes);
         $this->assertSame([$b->id], $lignes[1]->context['ajoutes']);
         $this->assertSame([$a->id], $lignes[1]->context['retires']);
+    }
+
+    public function test_ouvrir_l_histoire_d_un_autre_auteur_est_trace(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
+        $histoireDeB = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
+        $this->handler->clear();
+
+        try {
+            Livewire::test(EditHistoire::class, ['record' => $histoireDeB->getKey()]);
+        } catch (ModelNotFoundException) {
+            // Attendu : hors perimetre = 404. La trace doit exister malgre l'exception.
+        }
+
+        $ligne = $this->ligne('Histoire.acces_refuse');
+        $this->assertNotNull($ligne);
+        $this->assertSame('hors_perimetre', $ligne->context['motif']);
+        $this->assertSame($histoireDeB->id, $ligne->context['cible']['id']);
+    }
+
+    public function test_une_page_infos_verrouillee_est_tracee(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Relecture]);
+        $this->handler->clear();
+
+        Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
+            ->assertForbidden();
+
+        $ligne = $this->ligne('Histoire.acces_refuse');
+        $this->assertNotNull($ligne);
+        $this->assertSame('droit_refuse', $ligne->context['motif']);
+        $this->assertSame('update', $ligne->context['capacite']);
+    }
+
+    public function test_une_ecriture_de_scene_refusee_est_tracee(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Relecture]);
+        $this->handler->clear();
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('nouvelleScene')
+            ->assertForbidden();
+
+        $ligne = $this->ligne('Histoire.acces_refuse');
+        $this->assertNotNull($ligne);
+        $this->assertSame('update', $ligne->context['capacite']);
+    }
+
+    public function test_un_acces_autorise_ne_produit_pas_d_evenement(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $histoire = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Brouillon]);
+        $this->handler->clear();
+
+        Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
+            ->assertSuccessful();
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->assertSuccessful();
+
+        $this->assertSame([], $this->lignes('Histoire.acces_refuse'));
     }
 }

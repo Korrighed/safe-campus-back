@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\JournaliseLesRefus;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
@@ -25,6 +26,7 @@ class PreviewHistoire extends Page
 {
     use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use JournaliseLesRefus;
     use LitHistoire;
     use OuvreVerification;
 
@@ -47,7 +49,10 @@ class PreviewHistoire extends Page
         // mount(). resolveRecord() la remplace ici par le vrai modele.
         $this->record = $this->resolveRecord($record);
 
-        abort_unless(auth()->user()?->can('view', $this->getRecord()), 403);
+        if (! auth()->user()?->can('view', $this->getRecord())) {
+            $this->journaliserRefus('view');
+            abort(403);
+        }
 
         $this->sceneActuelleId = $this->histoire()->sceneInitiale()?->id;
     }

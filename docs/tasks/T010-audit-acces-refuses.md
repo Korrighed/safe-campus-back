@@ -133,3 +133,37 @@ Parcours navigateur : aucun (pas d'impact visible).
 - Ne pas journaliser les contrôles d'affichage (boutons masqués) : seulement les pages et les actions refusées.
 
 ## Notes d'exécution
+
+Vérifié dans `vendor/` (lecture seule, aucune commande lancée) :
+
+1. `Resource::resolveRecordRouteBinding(int | string $key): ?Model` (`vendor/filament/filament/src/Resources/Resource.php:188`). Seul appelant : `InteractsWithRecord::resolveRecord()` (`.../Pages/Concerns/InteractsWithRecord.php:28`). Route key de `Histoire` = `id` (pas de `getRouteKeyName()` surchargé) : `whereKey($key)` équivaut au `resolveRouteBindingQuery()` du parent.
+2. `EditRecord::authorizeAccess(): void`, `protected` (`.../Pages/EditRecord.php:82`). Appelée par `mount()` (l. 75), `hydrate()` (l. 89) et `save()` (l. 141). Une requête refusée produit une seule trace : le 403 arrête la requête.
+3. Livewire en test : `RequestBroker` garde les `HttpException` et `AuthorizationException` en réponse (`withoutExceptionHandling`, `RequestBroker.php:28`), donc `assertForbidden()` fonctionne. `ModelNotFoundException` est relancée : d'où le `try/catch` d'AC-01. Même comportement attendu par `expectException(ModelNotFoundException::class)` dans `HistoireScenesTest` (l. 144).
+4. `SubsequentRender` (`SubsequentRender.php:42`) renvoie un état sans snapshot si la réponse n'est pas 200 : `call(...)->assertForbidden()` fonctionne.
+
+Écrit :
+
+- `Concerns/JournaliseLesRefus.php` créé. Trait `journaliserRefus(string $capacite)`, identique au brief.
+- `HistoireResource::resolveRecordRouteBinding()` : trace `hors_perimetre` uniquement si le parent renvoie null et que l'histoire existe. La réponse (404) ne change pas.
+- `EditHistoire::authorizeAccess()` : trace `droit_refuse` / `update`, puis relance l'exception d'origine.
+- `ScenesHistoire` : `mount()` (`view`), `autoriserModification()` (`update`), `modifier()` (garde de scène, `update`), `enregistrer()` (garde de scène, `update`). Les gardes `abort_unless` deviennent `if (...) { journaliserRefus; abort(403); }`.
+- `PreviewHistoire::mount()` (`view`).
+- `enregistrer()` : la garde passe de `abort_unless($estNouvelle || can(...))` à `if (! $estNouvelle && ! can(...))`. Même condition. La trace est écrite dans la fermeture `DB::transaction` : le canal `audit` n'est pas transactionnel, donc la trace reste en cas de rollback. Aucune écriture base n'a lieu avant la garde.
+- Tests : `test_ouvrir_l_histoire_d_un_autre_auteur_est_trace`, `test_une_page_infos_verrouillee_est_tracee`, `test_une_ecriture_de_scene_refusee_est_tracee`, `test_un_acces_autorise_ne_produit_pas_d_evenement`. Le dernier ouvre `EditHistoire` et `ScenesHistoire` (`assertSuccessful`), pas seulement `EditHistoire`.
+
+Écarts :
+
+- `ScenesHistoire.php` l. 132 : `'badges' =>$this->badges(` corrigé en `'badges' => $this->badges(`. Signalé au T009, bloque `pint --test` sur un fichier modifié. Une ligne, hors étapes.
+- `Histoire.acces_refuse` sur les 403 d'écriture de scène : ajout demandé par l'utilisateur. Le TRD (T-12) ne mentionne que les 403 de page. Doc non mise à jour (consigne `docs/`).
+- Garde `view` de `mount()` (`ScenesHistoire`, `PreviewHistoire`) : en pratique inatteignable, `visiblePar()` filtre avant. Conservée pour suivre le brief.
+
+Non couvert (refus d'action sans 403, décision requise) :
+
+- `ScenesHistoire::supprimerSceneAction()` : refus par notification, aucune trace.
+- Action groupée « Supprimer la sélection » (`HistoireResource::table()`) : refus par `partition()` et notification, aucune trace.
+
+Point d'attention :
+
+- `EditRecord::getRedirectUrl()` renvoie null (`EditRecord.php:398`) : après un passage en `Relecture` depuis « Infos », le rédacteur reste sur la page. Sa requête Livewire suivante lève `droit_refuse` via `hydrate()`. Le refus est réel, mais il découle du changement d'état, pas d'une tentative. Décision possible : redirection après passage en relecture (hors T010).
+
+Vérification : non lancée (consigne utilisateur). Lot à lancer une fois : `pint --test`, `phpstan analyse`, `php artisan test --filter="Histoire|AuditLogTest"`. AC-04 dépend de cette exécution. Relecture des imports et des signatures faite à la main.

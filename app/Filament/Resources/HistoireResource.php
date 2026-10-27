@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Filament\Resources\HistoireResource\Pages;
 use App\Models\Histoire;
 use App\Policies\HistoirePolicy;
+use App\Services\AuditService;
 use App\Services\VerificationHistoireService;
 use Filament\Actions;
 use Filament\Forms;
@@ -20,6 +21,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class HistoireResource extends Resource
@@ -35,6 +37,21 @@ class HistoireResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->visiblePar(auth()->user());
+    }
+
+    /**
+     * Une histoire hors du périmètre de l'utilisateur reste un 404 (son
+     * existence n'est pas révélée), mais la tentative est tracée.
+     */
+    public static function resolveRecordRouteBinding(int|string $key): ?Model
+    {
+        $histoire = parent::resolveRecordRouteBinding($key);
+
+        if ($histoire === null && auth()->check() && $existante = Histoire::query()->whereKey($key)->first()) {
+            app(AuditService::class)->ecrire('Histoire.acces_refuse', $existante, ['motif' => 'hors_perimetre']);
+        }
+
+        return $histoire;
     }
 
     /**

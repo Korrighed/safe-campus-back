@@ -23,7 +23,6 @@ L'objectif est de distribuer des comptes rédacteur à des élèves volontaires.
 - Pas de notification ni de commentaire de relecture entre rédacteur et relecteur.
 - Pas de nouvel état : le circuit à quatre états reste tel quel.
 - Pas de filtre de contenu sur les autres modèles que les histoires, les scènes et les choix.
-- Les comptes `User` (nom, prénom, email, téléphone) restent journalisés comme aujourd'hui.
 
 ## 4. Utilisateurs
 
@@ -65,7 +64,7 @@ L'objectif est de distribuer des comptes rédacteur à des élèves volontaires.
 | ID | Catégorie | Exigence mesurable |
 |---|---|---|
 | NF-01 | Sécurité | Toute règle d'accès est appliquée côté serveur (policy, requête filtrée, validation `in`). Masquer un bouton ne suffit jamais. |
-| NF-02 | Vie privée | Aucun titre de scène, dialogue de scène ni texte de choix dans le canal `audit`. Seuls l'identifiant et le nom des champs modifiés sont écrits. |
+| NF-02 | Vie privée | Aucun titre de scène, dialogue de scène ni texte de choix dans le canal `audit`. Seuls l'identifiant et le nom des champs modifiés sont écrits. Aucune donnée personnelle de compte (e-mail, nom, prénom, téléphone) : identifiant seulement. |
 | NF-03 | Traçabilité | Changement d'état, rattachement de scène, retrait, déplacement, départ défini, sous-thèmes modifiés et accès refusé produisent chacun un événement `audit`. |
 | NF-04 | Compatibilité | Aucun changement du contrat de l'API publique ni du front. |
 

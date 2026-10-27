@@ -11,7 +11,8 @@ use Illuminate\Support\Str;
 
 /**
  * Ecrit une ligne dans le canal `audit` (storage/logs/audit-AAAA-MM-JJ.log) :
- * qui, quoi, sur quoi, quand, depuis quelle IP. Jamais de secret.
+ * qui (identifiant et role de l'auteur), quoi, sur quoi, quand, depuis quelle
+ * IP. Jamais de secret, jamais de donnee personnelle de compte.
  */
 class AuditService
 {
@@ -30,6 +31,16 @@ class AuditService
     public const CHAMPS_CONTENU = [
         Scene::class => ['titre', 'dialogue_text'],
         Choix::class => ['text_choix'],
+    ];
+
+    /**
+     * Donnees personnelles d'un compte : jamais ecrites dans les logs, ni en
+     * valeur ni en libelle. Un compte est designe par son identifiant.
+     *
+     * @var array<class-string<Model>, list<string>>
+     */
+    public const CHAMPS_PERSONNELS = [
+        User::class => ['nom', 'prenom', 'email', 'telephone'],
     ];
 
     /**
@@ -52,7 +63,7 @@ class AuditService
     }
 
     /**
-     * Sans $model, les champs de contenu ne sont pas retires : l'observer s'en
+     * Sans $model, les champs masques ne sont pas retires : l'observer s'en
      * sert pour lister les noms des champs modifies, jamais pour ecrire leur valeur.
      *
      * @param  array<string, mixed>  $attributs
@@ -63,7 +74,7 @@ class AuditService
         $attributs = array_diff_key($attributs, array_flip([...self::CHAMPS_SENSIBLES, 'created_at', 'updated_at']));
 
         if ($model !== null) {
-            $attributs = array_diff_key($attributs, array_flip(self::CHAMPS_CONTENU[$model::class] ?? []));
+            $attributs = array_diff_key($attributs, array_flip($this->champsMasques($model)));
         }
 
         return array_map(fn ($valeur) => $this->abreger($valeur), $attributs);
@@ -74,8 +85,8 @@ class AuditService
      */
     public function decrire(Model $model): array
     {
-        // Contenu redige : aucun libelle derive de ses attributs.
-        $masque = isset(self::CHAMPS_CONTENU[$model::class]);
+        // Contenu redige ou donnee personnelle de compte : aucun libelle derive de ses attributs.
+        $masque = $this->champsMasques($model) !== [];
 
         return array_filter([
             'type' => class_basename($model),
@@ -90,6 +101,18 @@ class AuditService
     }
 
     /**
+     * Champs jamais ecrits, ni en valeur ni en libelle, pour ce modele.
+     *
+     * @return list<string>
+     */
+    private function champsMasques(Model $model): array
+    {
+        return array_merge(self::CHAMPS_CONTENU[$model::class] ?? [], self::CHAMPS_PERSONNELS[$model::class] ?? []);
+    }
+
+    /**
+     * Auteur d'une action : un identifiant et un role, jamais l'e-mail ni le nom.
+     *
      * @return array<string, mixed>|string
      */
     private function auteur(): array|string
@@ -100,7 +123,7 @@ class AuditService
             return app()->runningInConsole() ? 'console' : 'anonyme';
         }
 
-        return ['id' => $user->id, 'email' => $user->email, 'role' => $user->role?->value];
+        return ['id' => $user->id, 'role' => $user->role?->value];
     }
 
     private function abreger(mixed $valeur): mixed

@@ -70,7 +70,7 @@ Aucune.
 | T-06 | Pages Scènes et Aperçu : un rédacteur sur une histoire verrouillée voit sans pouvoir modifier. Les boutons d'écriture sont masqués. Les actions restent protégées par `update`. | F-03 | Test : action refusée, boutons absents. |
 | T-07 | Réutilisation de scènes filtrée par `visiblePar`. Suppression d'une scène rattachée à une autre histoire refusée. | F-07, F-08 | Tests. |
 | T-08 | `SuppressionCompteService` accepte un relecteur comme repreneur. | F-09 | `UserResourceTest`. |
-| T-09 | `AuditService` ne journalise jamais `Scene.titre`, `Scene.dialogue_text`, `Choix.text_choix`. Il écrit `champs_modifies` (noms) à la place. `decrire()` n'écrit aucun libellé pour une scène. | NF-02 | `AuditLogTest` : le texte ne figure nulle part dans le JSON. |
+| T-09 | `AuditService` ne journalise jamais `Scene.titre`, `Scene.dialogue_text`, `Choix.text_choix`. Il écrit `champs_modifies` (noms) à la place. `decrire()` n'écrit aucun libellé pour une scène. Aucune donnée personnelle de compte (e-mail, nom, prénom, téléphone) : identifiant seulement. | NF-02 | `AuditLogTest` : le texte ne figure nulle part dans le JSON. |
 | T-10 | `Histoire.etat_change` avec `de` et `vers`, écrit après commit. | NF-03 | `AuditLogTest`. |
 | T-11 | Événements `Histoire.scene_ajoutee`, `scene_retiree`, `scene_deplacee`, `depart_defini`, `sous_themes_modifies`, `Histoire.suppression_groupee` (`supprimees`, `refusees`). Identifiants uniquement. | NF-03 | Tests Livewire + `AuditLogTest`. |
 | T-12 | Événement `Histoire.acces_refuse` (identifiant de l'histoire, motif) sur 404 hors périmètre (motif `hors_perimetre`) et sur 403 de page ou d'écriture de scène (motif `droit_refuse`, champ `capacite`). | NF-03 | Tests. |
@@ -145,7 +145,7 @@ Matrice des droits (pour un rédacteur, « ses histoires » = celles dont il est
 |---|---|---|---|
 | Logs déjà écrits contenant des extraits de dialogues (200 premiers caractères). | Moyenne | Faible | Expirent à 365 jours. Purge manuelle possible sur le serveur si exigée. |
 | Rattachements N-N des autres modèles (S-16) non tracés. | Basse | Moyen | Hors lot. Seuls ceux des histoires sont couverts. |
-| `User` journalise nom, prénom, email, téléphone. | Moyenne | Faible | Hors lot. |
+| `Contact` : e-mail et téléphone peuvent encore apparaître dans les valeurs journalisées. | Moyenne | Faible | Hors lot. |
 
 ## 11. Questions ouvertes
 

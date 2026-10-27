@@ -32,7 +32,7 @@
         supprimé automatiquement.
     </li>
     <li>
-        Journal d'audit (identité, action, adresse IP, date) : 365 jours, y compris après la
+        Journal d'audit (identifiant du compte, action, adresse IP, date) : 365 jours, y compris après la
         suppression du compte, au titre de la sécurité.
     </li>
     <li>Session de connexion : cookie de session, expirée après 120 minutes d'inactivité.</li>

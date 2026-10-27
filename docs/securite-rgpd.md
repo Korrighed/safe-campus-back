@@ -177,12 +177,14 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 | Format | JSON, une entrée par ligne, horodatage UTC |
 | Conservation | 365 jours, purge automatique |
 | Événements | Création, modification (avant / après) et suppression des données métier. Connexion, échec de connexion, déconnexion, inscription. Transfert d'histoires. Purge d'un compte inactif (`User.purge_inactivite`) ou ignorée faute de repreneur (`User.purge_ignoree`), auteur `console`. Circuit d'une histoire : `Histoire.etat_change` (`de`, `vers`). Rattachements d'une histoire : `Histoire.scene_ajoutee` (`scene_id`, et `reutilisee` si la scène existait déjà), `Histoire.scene_retiree` (`scene_id`), `Histoire.scene_deplacee` (`scene_id`, `sens` haut ou bas), `Histoire.depart_defini` (`scene_id`), `Histoire.sous_themes_modifies` (`ajoutes`, `retires`). Accès refusés : `Histoire.acces_refuse` (`motif` : `hors_perimetre` pour un 404 ; `droit_refuse` pour un 403 de page ou d'écriture de scène, avec `capacite`). Suppression groupée d'histoires : `Histoire.suppression_groupee` (`supprimees`, `refusees` : identifiants seulement). |
-| Contenu d'une entrée | Action, objet concerné, auteur, adresse IP, détails |
-| Exclusions | Jamais de mot de passe ni de jeton. Jamais le titre ni le texte d'une scène ou d'un choix : seuls l'identifiant et le nom des champs modifiés sont écrits. Autres textes longs tronqués à 200 caractères. |
-
-> Les entrées écrites avant cette règle peuvent contenir les 200 premiers caractères d'un dialogue, jusqu'à leur purge à 365 jours.
+| Contenu d'une entrée | Action, objet concerné, auteur (identifiant et rôle), adresse IP, détails |
+| Exclusions | Jamais de mot de passe ni de jeton. Jamais le titre ni le texte d'une scène ou d'un choix : seuls l'identifiant et le nom des champs modifiés sont écrits. Autres textes longs tronqués à 200 caractères. Jamais d'adresse e-mail, de nom, de prénom ni de téléphone de compte : un compte est désigné par son identifiant. Échec de connexion (`auth.echec`) : jamais l'adresse saisie ; `compte_id` seulement si le compte existe, et `compte_connu`. |
 | Fiabilité | Écrit après validation de la transaction : une action annulée n'est pas tracée |
 | Accès | Serveur uniquement |
+
+> Les entrées écrites avant cette règle peuvent contenir les 200 premiers caractères d'un dialogue, et des adresses e-mail (comptes et adresses saisies à la connexion), jusqu'à leur purge à 365 jours. Une adresse saisie par erreur peut même contenir un mot de passe.
+
+> Limite connue : les e-mails et téléphones des contacts de l'annuaire peuvent encore apparaître dans les valeurs journalisées. À traiter séparément.
 
 > Les rattachements des histoires (scènes, sous-thèmes) sont tracés par des événements explicites (`Histoire.scene_ajoutee`, `Histoire.sous_themes_modifies`, etc.). Les autres rattachements (média ↔ sous-thème, contact ↔ sous-thème) ne déclenchent pas d'événement de modèle : ils ne sont pas tracés (S-16).
 
@@ -324,7 +326,7 @@ Ces limites sont assumées pour le prototype. Elles disparaissent en production 
 | Gestion des comptes du back-office | Personnel du campus | Nom, prénom, email, téléphone, rôle, mot de passe (hash) | Administrer les contenus | Mission d'intérêt public / intérêt légitime | Durée de la fonction. Suppression par l'admin, ou automatique après 3 ans sans connexion. |
 | Demandes d'inscription | Personnel demandeur | Idem | Valider l'accès | Mesures précontractuelles / intérêt légitime | Jusqu'à validation ou refus |
 | Annuaire des structures d'aide | Référents nommés des structures | Nom, prénom, email professionnel, adresse de permanence | Orienter les étudiants vers l'aide | Mission d'intérêt public | Tant que le référent est en poste. Effacement sur demande. |
-| Journal d'audit | Utilisateurs du back-office | Identité, action, IP, date | Sécurité, traçabilité | Intérêt légitime / obligation de sécurité | 365 jours |
+| Journal d'audit | Utilisateurs du back-office | Identifiant du compte, rôle, action, IP, date | Sécurité, traçabilité | Intérêt légitime / obligation de sécurité | 365 jours |
 | Session du back-office | Utilisateurs du back-office | Cookie de session, identifiant, IP, navigateur (table `sessions`) | Maintenir la connexion | Intérêt légitime | 120 minutes d'inactivité (`SESSION_LIFETIME`) |
 | Services tiers du site (polices, cartes) | Visiteurs du site | IP et en-têtes HTTP transmis à Google Fonts et OpenStreetMap (§ 2.1) | Afficher polices et cartes | À confirmer par le DPO | Aucune conservation par Safe Campus |
 | Portillon visiteur (prototype) | Visiteurs des événements | Aucune donnée identifiante (compte partagé). Cookie technique. | Restreindre l'accès au prototype pendant les événements | Intérêt légitime | Durée du cookie de session navigateur |

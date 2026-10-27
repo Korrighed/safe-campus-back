@@ -104,7 +104,7 @@ class AuditHistoireTest extends TestCase
         $this->assertNotNull($ligne);
         $this->assertSame('relecture', $ligne->context['de']);
         $this->assertSame('publie', $ligne->context['vers']);
-        $this->assertSame($relecteur->email, $ligne->context['auteur']['email']);
+        $this->assertSame($relecteur->id, $ligne->context['auteur']['id']);
         $this->assertSame('relecteur', $ligne->context['auteur']['role']);
     }
 

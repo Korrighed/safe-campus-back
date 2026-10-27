@@ -72,7 +72,7 @@ Aucune.
 | T-08 | `SuppressionCompteService` accepte un relecteur comme repreneur. | F-09 | `UserResourceTest`. |
 | T-09 | `AuditService` ne journalise jamais `Scene.titre`, `Scene.dialogue_text`, `Choix.text_choix`. Il écrit `champs_modifies` (noms) à la place. `decrire()` n'écrit aucun libellé pour une scène. | NF-02 | `AuditLogTest` : le texte ne figure nulle part dans le JSON. |
 | T-10 | `Histoire.etat_change` avec `de` et `vers`, écrit après commit. | NF-03 | `AuditLogTest`. |
-| T-11 | Événements `Histoire.scene_ajoutee`, `scene_retiree`, `scene_deplacee`, `depart_defini`, `sous_themes_modifies`. Identifiants uniquement. | NF-03 | Tests Livewire + `AuditLogTest`. |
+| T-11 | Événements `Histoire.scene_ajoutee`, `scene_retiree`, `scene_deplacee`, `depart_defini`, `sous_themes_modifies`, `Histoire.suppression_groupee` (`supprimees`, `refusees`). Identifiants uniquement. | NF-03 | Tests Livewire + `AuditLogTest`. |
 | T-12 | Événement `Histoire.acces_refuse` (identifiant de l'histoire, motif) sur 404 hors périmètre (motif `hors_perimetre`) et sur 403 de page ou d'écriture de scène (motif `droit_refuse`, champ `capacite`). | NF-03 | Tests. |
 | T-13 | Limite et mention du maximum sur `dialogue_text` (1 000), `titre` (255), `text_choix` (255). | F-11 | Test de validation. |
 

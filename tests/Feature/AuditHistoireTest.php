@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\EtatHistoire;
 use App\Enums\UserRole;
 use App\Filament\Resources\HistoireResource\Pages\EditHistoire;
+use App\Filament\Resources\HistoireResource\Pages\ListHistoires;
 use App\Filament\Resources\HistoireResource\Pages\ScenesHistoire;
 use App\Models\Histoire;
 use App\Models\Scene;
@@ -323,5 +324,47 @@ class AuditHistoireTest extends TestCase
             ->assertSuccessful();
 
         $this->assertSame([], $this->lignes('Histoire.acces_refuse'));
+    }
+
+    public function test_une_suppression_groupee_est_tracee_avec_les_supprimees_et_les_refusees(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $brouillon = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Brouillon]);
+        $relecture = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Relecture]);
+        $this->handler->clear();
+
+        Livewire::test(ListHistoires::class)
+            ->callTableBulkAction('supprimer', [$brouillon, $relecture]);
+
+        $ligne = $this->ligne('Histoire.suppression_groupee');
+        $this->assertNotNull($ligne);
+        $this->assertSame([$brouillon->id], $ligne->context['supprimees']);
+        $this->assertSame([$relecture->id], $ligne->context['refusees']);
+        $this->assertSame('redacteur', $ligne->context['auteur']['role']);
+
+        $supprimees = $this->lignes('Histoire.supprime');
+        $this->assertCount(1, $supprimees);
+        $this->assertSame($brouillon->id, $supprimees[0]->context['cible']['id']);
+    }
+
+    public function test_une_suppression_groupee_ne_contient_aucun_titre(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $brouillon = Histoire::factory()->pour($redacteur)->create(['titre' => 'Titre distinctif brouillon', 'etat' => EtatHistoire::Brouillon]);
+        $relecture = Histoire::factory()->pour($redacteur)->create(['titre' => 'Titre distinctif relecture', 'etat' => EtatHistoire::Relecture]);
+        $this->handler->clear();
+
+        Livewire::test(ListHistoires::class)
+            ->callTableBulkAction('supprimer', [$brouillon, $relecture]);
+
+        $ligne = $this->ligne('Histoire.suppression_groupee');
+        $this->assertNotNull($ligne);
+
+        // Seule la ligne groupee : json() concatene toutes les lignes, dont Histoire.supprime (titre non masque, TRD § 7).
+        $contenu = json_encode($ligne->context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $this->assertStringNotContainsString('Titre distinctif brouillon', $contenu);
+        $this->assertStringNotContainsString('Titre distinctif relecture', $contenu);
     }
 }

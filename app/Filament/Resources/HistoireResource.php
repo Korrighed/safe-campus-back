@@ -222,6 +222,11 @@ class HistoireResource extends Resource
 
                             $supprimables->each->delete();
 
+                            app(AuditService::class)->ecrire('Histoire.suppression_groupee', null, [
+                                'supprimees' => $supprimables->values()->modelKeys(),
+                                'refusees' => $refusees->values()->modelKeys(),
+                            ]);
+
                             Notification::make()
                                 ->title($supprimables->count().' histoire(s) supprimée(s)')
                                 ->body($refusees->isNotEmpty() ? $refusees->count().' histoire(s) ne peuvent pas être supprimées dans leur état actuel.' : null)

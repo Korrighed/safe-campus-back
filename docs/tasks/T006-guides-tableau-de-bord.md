@@ -65,3 +65,10 @@ Parcours navigateur : tableau de bord en relecteur puis en rédacteur : guide af
 - Ne pas toucher aux autres puces du guide rédacteur.
 
 ## Notes d'exécution
+
+- Créés : `app/Filament/Widgets/GuideRelecteurWidget.php` (copie de `GuideRedacteurWidget`, `canView()` sur `UserRole::Relecteur`), `resources/views/filament/widgets/guide-relecteur.blade.php` (section englobante, sous-sections Relire / Corriger / Faire avancer, lien « Ouvrir la page Histoires »), `tests/Feature/Filament/GuideWidgetsTest.php` (3 tests).
+- Modifié : `resources/views/filament/widgets/guide-redacteur.blade.php` : deux puces de « Histoires » réécrites, rien d'autre.
+- Écart volontaire à l'étape 2 : « La page <em>Vérifier</em> » écrit « L'entrée <em>Vérifier</em> du menu ». Raison : dans `HistoireResource::getNavigationItems()`, « Vérifier » est un `NavigationItem` (url `#verifier`) qui ouvre une modale (`OuvreVerification`, `actionVerifier()`), pas une page. Le guide rédacteur dit déjà « l'entrée Vérifier ». Retour au libellé littéral : une ligne dans `guide-relecteur.blade.php`.
+- Vérifications non exécutées : consigne utilisateur (pint, phpstan, `artisan test` reportés au lot de fin). Relecture manuelle du diff : syntaxe PHP, imports triés, `new` sans parenthèses, directives Blade `@php`/`@endphp`.
+- Point de vigilance hors périmètre : `HistoirePolicy::delete()` délègue à `update()`, donc le relecteur peut supprimer une histoire via l'action groupée « Supprimer la sélection » (`HistoireResource`, bulk action). La phrase « Rien n'est supprimé » du guide relecteur ne vaut que pour le renvoi en Brouillon. Texte imposé par la tâche : non modifié.
+- AC-02 : la puce « … avant publication » (sous-section Vérifier et prévisualiser du guide rédacteur) est conservée, conformément à « Ne pas toucher aux autres puces ». Elle ne décrit pas une publication autonome.

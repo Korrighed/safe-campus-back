@@ -26,6 +26,12 @@ services:
             LOG_LEVEL: error
             CORS_ALLOWED_ORIGINS: '${CORS_ALLOWED_ORIGINS}'
             SANCTUM_STATEFUL_DOMAINS: '${SANCTUM_STATEFUL_DOMAINS}'
+            # HTTPS termine par le reverse proxy de l'hebergeur : le cookie de
+            # session ne doit circuler qu'en HTTPS (S-13), et Laravel doit croire
+            # le proxy sur le schema et l'IP client. `*` n'est sur que si le port
+            # du conteneur n'est joignable que par le proxy.
+            SESSION_SECURE_COOKIE: '${SESSION_SECURE_COOKIE:-true}'
+            TRUSTED_PROXIES: '${TRUSTED_PROXIES:-}'
             ADMIN_EMAIL: '${ADMIN_EMAIL}'
             ADMIN_PASSWORD: '${ADMIN_PASSWORD}'
             # Portillon visiteur du prototype (S-10) : la migration seed_visiteur

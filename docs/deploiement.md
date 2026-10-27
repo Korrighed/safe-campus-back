@@ -34,10 +34,12 @@
 | `DB_USERNAME` | `sail` | Utilisateur de la base. Créé superutilisateur par l'image PostgreSQL : utilisateur dédié à prévoir (S-18). |
 | `DB_PASSWORD` | `password` | Mot de passe fort (min. 20 caractères, aléatoire) |
 | `LOG_LEVEL` | `debug` | `error` (fixé dans `docker-compose.prod.yml`) |
-| `CORS_ALLOWED_ORIGINS` / `SANCTUM_STATEFUL_DOMAINS` | `localhost:3000` | Domaine public du front. `CORS_ALLOWED_ORIGINS` n'est lu par aucun `config/cors.php` à ce jour (S-09). |
+| `SANCTUM_STATEFUL_DOMAINS` | `localhost:3000,localhost` | Domaine public du front, sans schéma. |
 | `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` | `visiteur@safe-campus.nc` / valeur du `.env` | Portillon visiteur du prototype, créé au premier `migrate`. Mot de passe changé entre deux événements. Sans objet après le lancement officiel (S-10). |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | `admin@safe-campus.nc` / `password` | Premier compte admin, créé au premier `migrate`. Mot de passe fort obligatoire (14 caractères, majuscule, minuscule, caractère spécial), sinon la migration échoue. Peut être retiré une fois le compte créé. |
-| `SESSION_SECURE_COOKIE` | — | `true`. Absente de `docker-compose.prod.yml` à ce jour (S-13). |
+| `SESSION_SECURE_COOKIE` | — | `true` par défaut dans `docker-compose.prod.yml` (S-13). À mettre à `false` seulement pour tester l'image en HTTP sur localhost : le cookie de `/admin` ne passerait pas. |
+| `TRUSTED_PROXIES` | vide | `*` quand le conteneur n'est joignable que par le reverse proxy de l'hébergeur ; sinon IP/CIDR du proxy. Vide par défaut : derrière un proxy TLS, Laravel génère alors des URL `http://` (assets de `/admin` cassés), l'IP du proxy remplace l'IP client dans le journal d'audit, et la limite de débit de `/api/login` s'applique à tous les visiteurs ensemble. |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Origines complètes du front (schéma + hôte), séparées par des virgules. Lue par `config/cors.php`. |
 
 ## Commandes post-déploiement
 

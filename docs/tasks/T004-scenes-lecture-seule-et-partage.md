@@ -25,8 +25,25 @@ La page « 2. Scènes » d'une histoire verrouillée s'affiche sans bouton d'éc
 | `app/Filament/Resources/HistoireResource/Pages/ScenesHistoire.php` | modifier | `peutModifier()`, filtre de réutilisation, refus de suppression partagée. |
 | `resources/views/filament/resources/histoire-resource/pages/scenes-histoire.blade.php` | modifier | Boutons d'écriture conditionnés, bandeau de lecture seule. |
 | `tests/Feature/Filament/HistoireScenesTest.php` | modifier | Cinq tests. |
+| `app/Policies/ScenePolicy.php` | modifier | `update` et `delete` : toutes les histoires de la scène doivent être au rédacteur et en brouillon. |
+| `tests/Feature/Policies/HistoirePolicyTest.php` | modifier | Un test sur la scène partagée. |
 
 ## Étapes
+
+0. `ScenePolicy.php` (constat de T002 : la règle actuelle accepte la scène dès qu'UNE histoire du rédacteur en brouillon la contient, même si elle est aussi dans l'histoire verrouillée d'un autre auteur). Pour un rédacteur, `update` (et donc `delete`) exige que la scène soit rattachée à au moins une histoire ET que toutes ses histoires soient à lui et en brouillon. Remplacer le bloc rédacteur de `update()` par un appel à une méthode privée :
+
+```php
+    private function modifiablePar(User $user, Scene $scene): bool
+    {
+        $histoires = $scene->histoires()->get(['histoires.id', 'histoires.user_id', 'histoires.etat']);
+
+        return $histoires->isNotEmpty()
+            && $histoires->every(fn (Histoire $histoire): bool => (int) $histoire->user_id === (int) $user->id
+                && $histoire->etat === EtatHistoire::Brouillon);
+    }
+```
+
+   `update()` devient `return $this->estRelecteur($user) || ($this->estRedacteur($user) && $this->modifiablePar($user, $scene));`. Importer `App\Models\Histoire`. Dans `HistoirePolicyTest`, ajouter `test_un_redacteur_ne_modifie_pas_une_scene_partagee_avec_l_histoire_d_un_autre` : scène rattachée à une histoire de A (brouillon) et à une histoire de B ; `update` pour A est faux ; pour un relecteur, vrai.
 
 1. Dans `ScenesHistoire.php`, ajouter :
 

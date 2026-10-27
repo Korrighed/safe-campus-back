@@ -30,7 +30,7 @@ flowchart LR
 - Phase 1 : T001 (rôle) et T007 (masquage du contenu en log).
 - Phase 2 : T002 à T006 (droits, états, scènes, repreneur, guides).
 - Phase 3 : T008 à T010 (événements d'audit).
-- Phase 4 : T011 (limites de saisie, bloquée), T012 (documentation).
+- Phase 4 : T011 (limites de saisie, bloquée), T012 (documentation), T013 (année du pied de page, en dernier).
 
 ## 4. Tâches
 
@@ -48,10 +48,11 @@ flowchart LR
 | T010 | Journaliser les accès refusés | US-06 | `HistoireResource`, pages, tests | T009 | | à faire |
 | T011 | Limites de saisie visibles | US-03 | formulaires histoire et scène | T010 | | bloquée (question PRD § 10) |
 | T012 | Mettre la documentation à jour | tous | `docs/*.md` | T001 à T011 | | à faire |
+| T013 | Corriger l'année du pied de page (2025 → 2026) | hors lot | `footer.blade.php` | T012 | | à faire |
 
 Fichier détaillé de chaque tâche : `docs/tasks/Txxx-slug.md`.
 
-L'ordre d'exécution conseillé : T001, T007, T002, T005, T006, T003, T004, T008, T009, T010, T011, T012. Le `[P]` signale l'absence de fichier commun avec les tâches de la même vague. L'exécution reste séquentielle (une tâche, un commit, un arrêt).
+L'ordre d'exécution conseillé : T001, T007, T002, T005, T006, T003, T004, T008, T009, T010, T011, T012, T013. Les vérifications (pint, phpstan avec `--memory-limit=512M`, suite de tests) sont lancées une seule fois après la dernière tâche. Le `[P]` signale l'absence de fichier commun avec les tâches de la même vague. L'exécution reste séquentielle (une tâche, un commit, un arrêt).
 
 ## 5. Graphe de dépendances
 

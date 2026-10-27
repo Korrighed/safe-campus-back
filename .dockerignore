@@ -3,7 +3,11 @@ public/storage
 .env
 .env.backup
 .env.production
+# Aucun fichier d'environnement ne doit entrer dans l'image : les secrets
+# arrivent par les variables d'environnement de l'hebergeur.
+.env.*
 !.env.example
+!.env.production.example
 vendor
 node_modules
 # Manifestes generes par un composer install de dev : ils referencent des

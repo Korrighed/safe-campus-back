@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">La veille du partiel : un bureau la nuit, un téléphone qui se couvre de notifications</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .carte, .badge { animation-duration: 10s; animation-iteration-count: infinite; animation-timing-function: ease-out; }
+    .c1 { animation-name: c1; } .c2 { animation-name: c2; } .c3 { animation-name: c3; }
+    .c4 { animation-name: c4; } .c5 { animation-name: c5; }
+    .b1 { animation-name: b1; opacity: 0; } .b2 { animation-name: b2; opacity: 0; }
+    .b3 { animation-name: b3; opacity: 0; } .b4 { animation-name: b4; opacity: 0; }
+    .b5 { animation-name: b5; }
+    @keyframes c1 { 0%, 4% { opacity: 0; transform: translateY(14px); } 9%, 88% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; } }
+    @keyframes c2 { 0%, 16% { opacity: 0; transform: translateY(14px); } 21%, 88% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; } }
+    @keyframes c3 { 0%, 28% { opacity: 0; transform: translateY(14px); } 33%, 88% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; } }
+    @keyframes c4 { 0%, 40% { opacity: 0; transform: translateY(14px); } 45%, 88% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; } }
+    @keyframes c5 { 0%, 52% { opacity: 0; transform: translateY(14px); } 57%, 88% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; } }
+    @keyframes b1 { 0%, 4% { opacity: 0; } 5%, 16% { opacity: 1; } 17%, 100% { opacity: 0; } }
+    @keyframes b2 { 0%, 16% { opacity: 0; } 17%, 28% { opacity: 1; } 29%, 100% { opacity: 0; } }
+    @keyframes b3 { 0%, 28% { opacity: 0; } 29%, 40% { opacity: 1; } 41%, 100% { opacity: 0; } }
+    @keyframes b4 { 0%, 40% { opacity: 0; } 41%, 52% { opacity: 1; } 53%, 100% { opacity: 0; } }
+    @keyframes b5 { 0%, 52% { opacity: 0; } 53%, 92% { opacity: 1; } 96%, 100% { opacity: 0; } }
+    .telephone { animation: vibre 10s infinite; }
+    @keyframes vibre {
+      0%, 4%, 10%, 16%, 22%, 28%, 34%, 40%, 46%, 52%, 58%, 100% { transform: translateX(0); }
+      6%, 18%, 30%, 42%, 54% { transform: translateX(-3px); }
+      8%, 20%, 32%, 44%, 56% { transform: translateX(3px); }
+    }
+    .aiguille { transform-box: view-box; transform-origin: 880px 120px; animation: tourne 8s linear infinite; }
+    .trotteuse { transform-box: view-box; transform-origin: 880px 120px; animation: tourne 2s linear infinite; }
+    @keyframes tourne { to { transform: rotate(360deg); } }
+    .halo { animation: halo 4s ease-in-out infinite alternate; }
+    @keyframes halo { from { opacity: .55; } to { opacity: .8; } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+  <defs>
+    <radialGradient id="lumiere" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffd98a" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#ffd98a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#151c35"/>
+      <stop offset="1" stop-color="#232c4d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mur et fenetre -->
+  <rect width="1024" height="572" fill="url(#mur)"/>
+  <rect x="60" y="60" width="230" height="200" rx="6" fill="#0b1026" stroke="#3a4570" stroke-width="8"/>
+  <line x1="175" y1="60" x2="175" y2="260" stroke="#3a4570" stroke-width="6"/>
+  <line x1="60" y1="160" x2="290" y2="160" stroke="#3a4570" stroke-width="6"/>
+  <circle cx="240" cy="105" r="22" fill="#e8e6d9"/>
+  <circle cx="250" cy="98" r="20" fill="#0b1026"/>
+  <circle cx="100" cy="95" r="2" fill="#fff"/><circle cx="140" cy="200" r="1.5" fill="#fff"/>
+  <circle cx="220" cy="215" r="2" fill="#fff"/><circle cx="120" cy="140" r="1.5" fill="#fff"/>
+
+  <!-- Horloge -->
+  <circle cx="880" cy="120" r="54" fill="#f2efe6" stroke="#3a4570" stroke-width="6"/>
+  <line x1="880" y1="120" x2="880" y2="82" stroke="#1d2340" stroke-width="5" stroke-linecap="round" class="aiguille"/>
+  <line x1="880" y1="120" x2="904" y2="132" stroke="#1d2340" stroke-width="6" stroke-linecap="round"/>
+  <line x1="880" y1="120" x2="880" y2="76" stroke="#d9534f" stroke-width="2" class="trotteuse"/>
+  <circle cx="880" cy="120" r="4" fill="#1d2340"/>
+
+  <!-- Lampe et halo -->
+  <ellipse cx="830" cy="360" rx="240" ry="160" fill="url(#lumiere)" class="halo"/>
+  <path d="M790 300 L870 300 L850 250 L810 250 Z" fill="#f0b74a"/>
+  <rect x="826" y="300" width="8" height="125" fill="#8a6d3b"/>
+  <ellipse cx="830" cy="428" rx="40" ry="8" fill="#8a6d3b"/>
+
+  <!-- Bureau -->
+  <rect x="0" y="425" width="1024" height="147" fill="#4a3a30"/>
+  <rect x="0" y="425" width="1024" height="10" fill="#5e4a3d"/>
+
+  <!-- Cahier ouvert et feuilles -->
+  <path d="M110 470 L330 455 L340 520 L120 540 Z" fill="#f4f1e8"/>
+  <line x1="135" y1="478" x2="320" y2="466" stroke="#9fb2d8" stroke-width="3"/>
+  <line x1="138" y1="494" x2="322" y2="482" stroke="#9fb2d8" stroke-width="3"/>
+  <line x1="141" y1="510" x2="325" y2="498" stroke="#9fb2d8" stroke-width="3"/>
+  <line x1="144" y1="526" x2="270" y2="517" stroke="#9fb2d8" stroke-width="3"/>
+  <rect x="700" y="455" width="90" height="56" rx="4" fill="#c84b4b" transform="rotate(-6 745 483)"/>
+  <rect x="706" y="440" width="96" height="20" rx="3" fill="#3f7cac" transform="rotate(-3 754 450)"/>
+
+  <!-- Mug -->
+  <rect x="660" y="385" width="46" height="46" rx="6" fill="#e9e4d8"/>
+  <path d="M706 395 q18 0 18 16 q0 16 -18 16" fill="none" stroke="#e9e4d8" stroke-width="6"/>
+
+  <!-- Telephone -->
+  <g class="telephone">
+    <rect x="400" y="90" width="224" height="400" rx="28" fill="#10131f"/>
+    <rect x="412" y="122" width="200" height="340" rx="10" fill="#1f2a4a"/>
+    <text x="428" y="112" font-size="13" fill="#c9d1e8">23:04</text>
+    <rect x="490" y="102" width="44" height="8" rx="4" fill="#2a3150"/>
+
+    <g class="carte c1">
+      <rect x="422" y="134" width="180" height="56" rx="10" fill="#f5f6fa"/>
+      <text x="434" y="156" font-size="12" font-weight="700" fill="#1d2340">Groupe promo</text>
+      <text x="434" y="176" font-size="13" fill="#3a405c">Vous avez tout revu ?</text>
+    </g>
+    <g class="carte c2">
+      <rect x="422" y="198" width="180" height="56" rx="10" fill="#f5f6fa"/>
+      <text x="434" y="220" font-size="12" font-weight="700" fill="#1d2340">Léa</text>
+      <text x="434" y="240" font-size="13" fill="#3a405c">J'ai fait 40 fiches !</text>
+    </g>
+    <g class="carte c3">
+      <rect x="422" y="262" width="180" height="56" rx="10" fill="#f5f6fa"/>
+      <text x="434" y="284" font-size="12" font-weight="700" fill="#1d2340">Groupe promo</text>
+      <text x="434" y="304" font-size="13" fill="#3a405c">Le chapitre 6 tombe sûr</text>
+    </g>
+    <g class="carte c4">
+      <rect x="422" y="326" width="180" height="56" rx="10" fill="#f5f6fa"/>
+      <text x="434" y="348" font-size="12" font-weight="700" fill="#1d2340">Maman</text>
+      <text x="434" y="368" font-size="13" fill="#3a405c">Tu dors bien ce soir ?</text>
+    </g>
+    <g class="carte c5">
+      <rect x="422" y="390" width="180" height="56" rx="10" fill="#ffe3e0"/>
+      <text x="434" y="412" font-size="12" font-weight="700" fill="#a12c2c">Rappel</text>
+      <text x="434" y="432" font-size="13" fill="#5c2a2a">Partiel demain · 8h00</text>
+    </g>
+
+    <circle cx="616" cy="98" r="20" fill="#d9534f"/>
+    <g font-size="18" font-weight="700" fill="#fff" text-anchor="middle">
+      <text x="616" y="104" class="badge b1">1</text>
+      <text x="616" y="104" class="badge b2">2</text>
+      <text x="616" y="104" class="badge b3">3</text>
+      <text x="616" y="104" class="badge b4">4</text>
+      <text x="616" y="104" class="badge b5">5</text>
+    </g>
+  </g>
+</svg>

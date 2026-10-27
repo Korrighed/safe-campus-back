@@ -4,6 +4,11 @@
 .qodo
 .env.backup
 .env.production
+# Tout fichier d'environnement local ou de deploiement (.env.local, .env.staging...)
+# reste hors du depot ; seuls les exemples sans valeur reelle sont suivis.
+.env.*
+!.env.example
+!.env.production.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet

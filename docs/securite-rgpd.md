@@ -142,7 +142,7 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 ### 6.1 En transit
 
 - HTTPS de bout en bout : le certificat TLS et le reverse proxy sont à fournir par l'hébergement retenu. Les conteneurs ne parlent que HTTP.
-- Requêtes inter-domaines : la liste des domaines autorisés est transmise au conteneur, mais l'application ne la lit pas. Toutes les origines sont donc acceptées (S-09).
+- Requêtes inter-domaines : `config/cors.php` limite l'API (`api/*`) aux origines de `CORS_ALLOWED_ORIGINS`, sans cookies cross-origin (S-09).
 
 ### 6.2 Au repos
 
@@ -247,14 +247,14 @@ Ces préconisations servent de cahier des charges pour le choix de l'hébergeur.
 
 | ID | Mesure | Constat | Priorité |
 |---|---|---|---|
-| S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Aucun en-tête défini, ni back ni front | Moyenne |
+| S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). À faire : en-têtes du front, CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
 | S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Seule la base dispose d'un volume | Haute |
 | S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
 | S-08 | Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |
-| S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Toutes les origines acceptées | Moyenne |
+| S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Fait : `config/cors.php`, origines lues dans `CORS_ALLOWED_ORIGINS` | Moyenne |
 | S-10 | Adapter les images de production au lancement officiel : retirer le compte visiteur, la page de connexion et le middleware du front. Retirer aussi du front la ligne « portillon » et la section « cookie » de la page Données personnelles, et `/donnees-personnelles` de `PUBLIC_PATHS` | Les images exigent le compte visiteur : sans ses variables, le premier déploiement échoue | Haute (au lancement officiel) |
 | S-11 | Remplacer le serveur de développement par un serveur d'application de production | L'image lance `artisan serve`, mono-processus | Haute |
-| S-13 | Rendre sécurisé le cookie de session du back-office en production | Option non activée | Moyenne |
+| S-13 | Rendre sécurisé le cookie de session du back-office en production | Fait : `SESSION_SECURE_COOKIE=true` par défaut dans `docker-compose.prod.yml`. Avec `TRUSTED_PROXIES` renseigné, le cookie porte `secure; httponly` (vérifié sur l'image) | Moyenne |
 | S-14 | Figer les versions des images utilisées au build | Image Composer en version « latest » | Basse |
 | S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Rattachements non journalisés | Basse |
 | S-18 | Connecter l'application avec un utilisateur dédié, propriétaire de la base mais sans droits superutilisateur, créé par un script d'initialisation de PostgreSQL | L'application utilise le compte superutilisateur créé par l'image | Moyenne |
@@ -267,7 +267,7 @@ Ces limites sont assumées pour le prototype. Elles disparaissent en production 
 | ID | Limite | Conséquence |
 |---|---|---|
 | S-01 | L'API de lecture ne vérifie aucun jeton | Le portillon filtre l'affichage du site, pas l'accès aux contenus |
-| S-02 | Aucune limite de tentatives sur `POST /api/login` | Le mot de passe partagé peut être essayé sans frein |
+| S-02 | Limite de 30 tentatives par minute et par IP sur `POST /api/login` (`throttle:30,1`) | Atténué : une limite plus basse bloquerait des visiteurs légitimes derrière le NAT du campus. La longueur du mot de passe partagé reste la vraie protection. Sans `TRUSTED_PROXIES`, derrière un proxy, tous les visiteurs partagent l'IP du proxy. |
 | S-03 | Jetons sans durée de vie ni purge | Un jeton de plus en base à chaque connexion |
 | S-04 | Cookie `sc_token` sans attribut `Secure` | Le cookie peut circuler hors HTTPS |
 | S-15 | La déconnexion efface le cookie sans révoquer le jeton | Un jeton copié reste valide |

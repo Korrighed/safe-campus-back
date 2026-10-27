@@ -3,9 +3,17 @@ public/storage
 .env
 .env.backup
 .env.production
+# Aucun fichier d'environnement ne doit entrer dans l'image : les secrets
+# arrivent par les variables d'environnement de l'hebergeur.
+.env.*
 !.env.example
+!.env.production.example
 vendor
 node_modules
+# Manifestes generes par un composer install de dev : ils referencent des
+# providers require-dev (ex. Truss) absents de l'image de prod, qui crasherait
+# au demarrage. package:discover les regenere (voir docs/deploiement.md).
+bootstrap/cache/*.php
 storage/logs
 storage/framework/cache/data
 storage/framework/sessions
@@ -14,3 +22,12 @@ storage/framework/views
 tests
 .vscode
 .idea
+# Documentation, outillage de dev et CI : rien de tout cela ne sert a l'execution.
+.github
+docs
+CLAUDE.md
+README.md
+.editorconfig
+phpstan.neon
+phpunit.xml
+docker-compose*.yml

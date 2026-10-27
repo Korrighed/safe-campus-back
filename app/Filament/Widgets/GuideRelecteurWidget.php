@@ -20,4 +20,3 @@ class GuideRelecteurWidget extends Widget
         return auth()->user()?->role === UserRole::Relecteur;
     }
 }
-</content>

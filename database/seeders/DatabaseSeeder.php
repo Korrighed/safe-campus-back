@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             MediaSeeder::class,
             RedacteurDemoSeeder::class,
             HistoireSeeder::class,
+            HistoireAnxieteSeeder::class,
         ]);
     }
 }

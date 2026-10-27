@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">Nuit blanche : 3h du matin, un écran allumé, des gobelets de café qui s'accumulent</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .aiguille { transform-box: view-box; transform-origin: 160px 130px; animation: tourne 3s linear infinite; }
+    .trotteuse { transform-box: view-box; transform-origin: 160px 130px; animation: tourne .6s linear infinite; }
+    @keyframes tourne { to { transform: rotate(360deg); } }
+    .deux-points { animation: clignote 1s steps(1) infinite; }
+    @keyframes clignote { 50% { opacity: 0; } }
+    .ecran { animation: ecran 3s ease-in-out infinite alternate; }
+    @keyframes ecran { from { opacity: .35; } to { opacity: .6; } }
+    .gobelet { animation-duration: 9s; animation-iteration-count: infinite; }
+    .g1 { animation-name: g1; } .g2 { animation-name: g2; } .g3 { animation-name: g3; } .g4 { animation-name: g4; }
+    @keyframes g1 { 0%, 5% { opacity: 0; transform: translateY(-20px); } 10%, 90% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes g2 { 0%, 25% { opacity: 0; transform: translateY(-20px); } 30%, 90% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes g3 { 0%, 45% { opacity: 0; transform: translateY(-20px); } 50%, 90% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes g4 { 0%, 65% { opacity: 0; transform: translateY(-20px); } 70%, 90% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    .ligne { animation: brouille 2.4s ease-in-out infinite; }
+    .ligne:nth-child(2) { animation-delay: -.6s; }
+    .ligne:nth-child(3) { animation-delay: -1.2s; }
+    .ligne:nth-child(4) { animation-delay: -1.8s; }
+    @keyframes brouille { 0%, 100% { transform: translateX(0); opacity: 1; } 50% { transform: translateX(6px); opacity: .45; } }
+    .main { animation: tremble .25s linear infinite; }
+    @keyframes tremble { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(1.5px, -1px); } 75% { transform: translate(-1.5px, 1px); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+  <defs>
+    <radialGradient id="lueur" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8fb8ff"/>
+      <stop offset="1" stop-color="#8fb8ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="#0c0b1a"/>
+
+  <!-- Horloge murale qui s'emballe -->
+  <circle cx="160" cy="130" r="58" fill="#d8d4ea" stroke="#2c2950" stroke-width="6"/>
+  <line x1="160" y1="130" x2="160" y2="90" stroke="#1a1833" stroke-width="5" stroke-linecap="round" class="aiguille"/>
+  <line x1="160" y1="130" x2="160" y2="80" stroke="#d9534f" stroke-width="2" class="trotteuse"/>
+  <line x1="160" y1="130" x2="184" y2="148" stroke="#1a1833" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="160" cy="130" r="4" fill="#1a1833"/>
+
+  <!-- Lueur et ordinateur -->
+  <ellipse cx="560" cy="290" rx="330" ry="210" fill="url(#lueur)" class="ecran"/>
+  <rect x="400" y="140" width="320" height="200" rx="10" fill="#1b2240" stroke="#3b4570" stroke-width="8"/>
+  <rect x="412" y="152" width="296" height="176" fill="#dfe8ff"/>
+  <g>
+    <rect x="432" y="176" width="240" height="10" rx="5" fill="#7d8bb3" class="ligne"/>
+    <rect x="432" y="204" width="210" height="10" rx="5" fill="#7d8bb3" class="ligne"/>
+    <rect x="432" y="232" width="250" height="10" rx="5" fill="#7d8bb3" class="ligne"/>
+    <rect x="432" y="260" width="180" height="10" rx="5" fill="#7d8bb3" class="ligne"/>
+  </g>
+  <path d="M370 352 L750 352 L770 380 L350 380 Z" fill="#2c3354"/>
+
+  <!-- Bureau -->
+  <rect x="0" y="380" width="1024" height="192" fill="#241c25"/>
+  <rect x="0" y="380" width="1024" height="8" fill="#33293a"/>
+
+  <!-- Reveil numerique -->
+  <rect x="120" y="420" width="150" height="62" rx="10" fill="#141222" stroke="#2c2950" stroke-width="3"/>
+  <g font-size="34" font-weight="700" fill="#ff6b5e">
+    <text x="140" y="464">03</text>
+    <text x="190" y="462" class="deux-points">:</text>
+    <text x="204" y="464">12</text>
+  </g>
+
+  <!-- Main posee sur le bureau, qui tremble -->
+  <g class="main">
+    <ellipse cx="560" cy="440" rx="58" ry="24" fill="#c99a7c"/>
+    <rect x="500" y="430" width="70" height="22" rx="11" fill="#c99a7c"/>
+    <rect x="540" y="452" width="140" height="40" rx="18" fill="#4b5d8a"/>
+  </g>
+
+  <!-- Gobelets de cafe qui s'accumulent -->
+  <g fill="#e6dccb">
+    <g class="gobelet g1"><path d="M780 402 L820 402 L814 460 L786 460 Z"/><rect x="776" y="396" width="48" height="8" rx="3" fill="#6b4a36"/></g>
+    <g class="gobelet g2"><path d="M836 410 L876 410 L870 468 L842 468 Z"/><rect x="832" y="404" width="48" height="8" rx="3" fill="#6b4a36"/></g>
+    <g class="gobelet g3"><path d="M892 400 L932 400 L926 458 L898 458 Z"/><rect x="888" y="394" width="48" height="8" rx="3" fill="#6b4a36"/></g>
+    <g class="gobelet g4"><path d="M820 466 L860 466 L854 524 L826 524 Z" transform="rotate(80 840 495)"/></g>
+  </g>
+</svg>

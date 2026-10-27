@@ -16,6 +16,7 @@ Les fichiers Markdown de ce dossier sont la source de vérité. Les PDF livrés 
 |---|---|
 | [schema_bd.md](schema_bd.md) | Modèle de données, contrats d'API, rôles |
 | [deploiement.md](deploiement.md) | Images de production, variables, commandes post-déploiement, logs d'audit |
+| [deploiement-render.md](deploiement-render.md) | Démo publique temporaire sur Render et Neon : services, variables, démarrage, limites du plan gratuit |
 | [retours-tests.md](retours-tests.md) | Retours de la campagne de tests du back-office |
 
 Conventions de développement : `CLAUDE.md` et `README.md` de chaque dépôt.

@@ -38,6 +38,13 @@ services:
             # leve une exception sans VISITEUR_PASSWORD.
             VISITEUR_EMAIL: '${VISITEUR_EMAIL}'
             VISITEUR_PASSWORD: '${VISITEUR_PASSWORD}'
+            # Optionnels (docker/8.4/start-prod) : migrations et contenu de demo au
+            # demarrage, pour un hebergeur sans commande post-deploiement ni disque
+            # persistant. Desactives par defaut.
+            RUN_MIGRATIONS: '${RUN_MIGRATIONS:-false}'
+            DEMO_CONTENT: '${DEMO_CONTENT:-false}'
+            REDACTEUR_DEMO_EMAIL: '${REDACTEUR_DEMO_EMAIL:-}'
+            REDACTEUR_DEMO_PASSWORD: '${REDACTEUR_DEMO_PASSWORD:-}'
         # Medias uploades et journaux (audit compris) : sans volume, chaque
         # redeploiement les efface (S-06).
         volumes:

@@ -12,7 +12,8 @@
 - `composer install --no-dev --optimize-autoloader --no-scripts` au build, pas à chaque démarrage.
 - Pas d'Adminer, pas de port PostgreSQL publié sur l'hôte : seul `sc_back` atteint `pgsql`.
 - `container_name` et réseau (`scback_prod`) distincts du stack dev : les deux peuvent tourner en parallèle sans collision.
-- Le conteneur ne parle que HTTP sur `APP_PORT`, sans nginx à l'intérieur. Le TLS est terminé par le reverse proxy de l'hébergement.
+- Le conteneur ne parle que HTTP, sans nginx à l'intérieur, sur `PORT` (imposé par certains hébergeurs), sinon `APP_PORT`, sinon 8000. Le TLS est terminé par le reverse proxy de l'hébergement.
+- Le point d'entrée est `docker/8.4/start-prod` : il recrée `public/storage`, puis, si `RUN_MIGRATIONS=true`, migre, et si `DEMO_CONTENT=true`, rejoue les seeders de démo. Les deux variables sont désactivées par défaut. Voir [deploiement-render.md](deploiement-render.md) pour un hébergeur sans commande post-déploiement.
 
 > ⚠️ **À régler avant la mise en production** — voir [securite-rgpd.md § 10](securite-rgpd.md#10-mesures-complémentaires-à-mettre-en-œuvre) :
 > - S-10 : les images exigent encore le compte visiteur du prototype. `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` sont passés par `docker-compose.prod.yml` à `sc_back`, mais la migration `seed_visiteur` lève une exception si `VISITEUR_PASSWORD` est vide : le premier `migrate --force` échoue. Le portillon visiteur (compte, page de connexion, middleware) est à retirer au lancement officiel.

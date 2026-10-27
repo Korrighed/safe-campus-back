@@ -23,7 +23,7 @@ use RuntimeException;
  * titre), un choix par (scene, texte), un media par chemin. Rejouer le seeder
  * met a jour sans dupliquer. Changer le nom d'un fichier image (ex. .svg en
  * .jpg) cree un nouveau media : l'ancien reste en base, a supprimer a la main.
- * Jamais en production : c'est du contenu de demo.
+ * Ignore en production, sauf DEMO_CONTENT=true (demo publique, voir config/demo.php).
  * Le compte redacteur proprietaire est cree par RedacteurDemoSeeder, qui doit
  * s'executer avant.
  *
@@ -53,7 +53,7 @@ abstract class HistoireDemoSeeder extends Seeder
 
     public function run(): void
     {
-        if (app()->environment('production')) {
+        if (app()->environment('production') && ! config('demo.content')) {
             return;
         }
 

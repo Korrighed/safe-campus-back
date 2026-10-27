@@ -77,3 +77,10 @@ Parcours navigateur : admin, supprimer un rédacteur auteur : la liste « Compte
 - Ne pas modifier la policy `UserPolicy`.
 
 ## Notes d'exécution
+
+- Étapes 1 à 7 appliquées. Fichiers touchés : `SuppressionCompteService.php`, `UserResource.php`, `UserResourceTest.php` (uniquement).
+- Étape 8 (vérification) non exécutée : consigne de l'utilisateur, les contrôles sont reportés à la fin du lot. Commandes à lancer alors : celles de la section « Vérification » ci-dessus.
+- Relecture manuelle du diff effectuée (syntaxe, accolades, `$this` dans la closure de `supprimer()`, imports inchangés : `UserRole` déjà importé dans le service).
+- `grep "Un autre rédacteur"` : une seule occurrence de code (`SuppressionCompteService.php`, message de l'exception). Aucune assertion dans `tests/` sur ce message. `PurgeComptesInactifsTest.php` : aucune assertion sur le message ni sur le libellé, aucun changement nécessaire.
+- Documentation non modifiée (hors périmètre, `docs/` interdit sauf notes) : `docs/securite-rgpd.md` l. 135, `docs/schema_bd.md` l. 594-595, `docs/cahier-des-charges-techniques.md` l. 153 et 167, `docs/TRD.md`, `docs/IMPLEMENTATION-PLAN.md` encore formulés « rédacteur » seul. À traiter par T012 (`docs/tasks/T012-documentation.md` l. 41 le prévoit).
+- Parcours navigateur non exécuté (vérification reportée).

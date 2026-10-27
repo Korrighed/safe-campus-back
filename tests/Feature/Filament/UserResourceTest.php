@@ -240,6 +240,23 @@ class UserResourceTest extends TestCase
         }
     }
 
+    public function test_un_relecteur_peut_reprendre_les_histoires(): void
+    {
+        $this->actingAs($this->admin());
+        $partant = User::factory()->create(['role' => UserRole::Redacteur]);
+        $repreneur = User::factory()->create(['role' => UserRole::Relecteur]);
+        $histoires = Histoire::factory()->count(2)->create(['user_id' => $partant->id]);
+
+        Livewire::test(ListUsers::class)
+            ->callTableAction('supprimer', $partant, data: ['repreneur_id' => $repreneur->id])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertModelMissing($partant);
+        foreach ($histoires as $histoire) {
+            $this->assertSame($repreneur->id, $histoire->fresh()->user_id);
+        }
+    }
+
     public function test_sans_repreneur_le_redacteur_et_ses_histoires_sont_conserves(): void
     {
         $this->actingAs($this->admin());
@@ -254,7 +271,7 @@ class UserResourceTest extends TestCase
         $this->assertModelExists($histoire);
     }
 
-    public function test_le_repreneur_doit_etre_un_redacteur(): void
+    public function test_le_repreneur_doit_etre_un_redacteur_ou_un_relecteur(): void
     {
         $this->actingAs($this->admin());
         $partant = User::factory()->create(['role' => UserRole::Redacteur]);

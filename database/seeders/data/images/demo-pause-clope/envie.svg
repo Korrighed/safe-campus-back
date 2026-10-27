@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">L'envie : une vague qui monte puis redescend toute seule en quelques minutes</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .trace { stroke-dasharray: 1100; stroke-dashoffset: 1100; animation: trace 10s ease-in-out infinite; }
+    @keyframes trace { 0% { stroke-dashoffset: 1100; } 70%, 90% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+    .surfeur { offset-path: path("M120 420 C 300 420, 380 140, 512 140 S 724 420, 904 420"); animation: surf 10s ease-in-out infinite; }
+    @keyframes surf { 0% { offset-distance: 0%; } 70%, 100% { offset-distance: 100%; } }
+    .fin { animation: fin 10s infinite; opacity: 0; }
+    @keyframes fin { 0%, 70% { opacity: 0; } 76%, 94% { opacity: 1; } 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .trace { stroke-dashoffset: 0; }
+      .surfeur { offset-distance: 50%; }
+      .fin { opacity: 1; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d3557"/>
+      <stop offset="1" stop-color="#2a6f97"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="url(#fond)"/>
+
+  <!-- Axes -->
+  <line x1="100" y1="440" x2="940" y2="440" stroke="#a8dadc" stroke-opacity=".4" stroke-width="2"/>
+  <line x1="100" y1="440" x2="100" y2="100" stroke="#a8dadc" stroke-opacity=".4" stroke-width="2"/>
+  <text x="110" y="96" font-size="16" fill="#a8dadc">envie</text>
+  <g font-size="15" fill="#a8dadc" text-anchor="middle">
+    <text x="120" y="468">0 min</text>
+    <text x="512" y="468">2 min</text>
+    <text x="904" y="468">5 min</text>
+  </g>
+
+  <!-- Courbe de l'envie -->
+  <path d="M120 420 C 300 420, 380 140, 512 140 S 724 420, 904 420" fill="none" stroke="#a8dadc" stroke-opacity=".15" stroke-width="10" stroke-linecap="round"/>
+  <path class="trace" d="M120 420 C 300 420, 380 140, 512 140 S 724 420, 904 420" fill="none" stroke="#f1faee" stroke-width="6" stroke-linecap="round"/>
+  <circle class="surfeur" r="14" fill="#f4a261"/>
+
+  <text x="512" y="112" font-size="20" fill="#f1faee" text-anchor="middle" font-style="italic">« juste une… »</text>
+  <text class="fin" x="904" y="390" font-size="20" font-weight="700" fill="#f4a261" text-anchor="end">… et ça redescend.</text>
+
+  <!-- Verre d'eau -->
+  <g transform="translate(860 140)">
+    <path d="M0 0 h60 l-8 90 h-44 z" fill="#ffffff" fill-opacity=".2" stroke="#f1faee" stroke-width="3"/>
+    <path d="M6 30 h48 l-5 56 h-38 z" fill="#8ecae6" fill-opacity=".8"/>
+  </g>
+
+  <text x="512" y="530" font-size="18" fill="#f1faee" text-anchor="middle">Une envie de fumer passe en quelques minutes, même sans cigarette.</text>
+</svg>

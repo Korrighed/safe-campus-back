@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">L'escalier : une silhouette essoufflée au deuxième étage, un porte-monnaie qui se vide</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .souffle { animation: souffle 2.4s ease-out infinite; opacity: 0; }
+    .s2 { animation-delay: -.8s; } .s3 { animation-delay: -1.6s; }
+    @keyframes souffle { 0% { opacity: 0; transform: translate(0, 0); } 30% { opacity: .9; } 100% { opacity: 0; transform: translate(40px, -10px); } }
+    .corps { animation: halete 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
+    @keyframes halete { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.96); } }
+    .piece { animation: tombe 4s ease-in infinite; opacity: 0; }
+    .p2 { animation-delay: -1.3s; } .p3 { animation-delay: -2.6s; }
+    @keyframes tombe { 0% { opacity: 0; transform: translateY(0); } 10% { opacity: 1; } 80% { opacity: 1; transform: translateY(110px); } 100% { opacity: 0; transform: translateY(120px); } }
+    .jauge { animation: vide 8s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
+    @keyframes vide { 0% { transform: scaleY(1); } 90%, 100% { transform: scaleY(.15); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4c38b"/>
+      <stop offset="1" stop-color="#e48d6b"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="url(#fond)"/>
+
+  <!-- Escalier -->
+  <g fill="#7d4f45">
+    <rect x="0" y="500" width="620" height="72"/>
+    <rect x="80" y="440" width="540" height="60"/>
+    <rect x="160" y="380" width="460" height="60"/>
+    <rect x="240" y="320" width="380" height="60"/>
+    <rect x="320" y="260" width="300" height="60"/>
+  </g>
+  <g fill="#9a645a">
+    <rect x="0" y="500" width="620" height="8"/>
+    <rect x="80" y="440" width="540" height="8"/>
+    <rect x="160" y="380" width="460" height="8"/>
+    <rect x="240" y="320" width="380" height="8"/>
+    <rect x="320" y="260" width="300" height="8"/>
+  </g>
+  <text x="560" y="250" font-size="16" font-weight="700" fill="#fff4e6">2e étage</text>
+
+  <!-- Silhouette penchee, main sur le genou -->
+  <g fill="#2f2a3a">
+    <circle cx="270" cy="262" r="20"/>
+    <path class="corps" d="M252 280 q-10 30 4 44 l36 0 q8 -24 -6 -44 z"/>
+    <rect x="256" y="320" width="12" height="60" rx="6"/>
+    <rect x="280" y="320" width="12" height="60" rx="6"/>
+    <path d="M288 290 l26 22 l-6 6 l-26 -18 z"/>
+  </g>
+  <g fill="#ffffff">
+    <circle class="souffle" cx="296" cy="258" r="6"/>
+    <circle class="souffle s2" cx="296" cy="258" r="5"/>
+    <circle class="souffle s3" cx="296" cy="258" r="6"/>
+  </g>
+
+  <!-- Budget du mois -->
+  <g transform="translate(760 120)">
+    <rect x="0" y="0" width="180" height="300" rx="18" fill="#fff4e6"/>
+    <text x="90" y="40" font-size="18" font-weight="700" fill="#7d4f45" text-anchor="middle">Budget du mois</text>
+    <rect x="50" y="70" width="80" height="190" rx="10" fill="#f1dccb"/>
+    <rect class="jauge" x="50" y="70" width="80" height="190" rx="10" fill="#6aa673"/>
+    <text x="90" y="285" font-size="14" fill="#7d4f45" text-anchor="middle">un paquet de plus…</text>
+  </g>
+  <g fill="#e9b949" stroke="#b8862a" stroke-width="2">
+    <circle class="piece" cx="700" cy="130" r="12"/>
+    <circle class="piece p2" cx="720" cy="150" r="12"/>
+    <circle class="piece p3" cx="690" cy="170" r="12"/>
+  </g>
+</svg>

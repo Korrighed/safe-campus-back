@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">Un agenda plein : les cases de la semaine se remplissent une à une, des notifications s'empilent</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .case { animation: remplit 10s ease-out infinite; opacity: 0; }
+    .c1 { animation-delay: 0s; } .c2 { animation-delay: .5s; } .c3 { animation-delay: 1s; } .c4 { animation-delay: 1.5s; }
+    .c5 { animation-delay: 2s; } .c6 { animation-delay: 2.5s; } .c7 { animation-delay: 3s; } .c8 { animation-delay: 3.5s; }
+    .c9 { animation-delay: 4s; } .c10 { animation-delay: 4.5s; } .c11 { animation-delay: 5s; } .c12 { animation-delay: 5.5s; }
+    @keyframes remplit { 0% { opacity: 0; transform: scale(.8); } 6%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; } }
+    .case { transform-box: fill-box; transform-origin: center; }
+    .notif { animation: notif 10s ease-out infinite; opacity: 0; }
+    .n2 { animation-delay: 1.2s; } .n3 { animation-delay: 2.4s; } .n4 { animation-delay: 6s; }
+    @keyframes notif { 0% { opacity: 0; transform: translateX(40px); } 5%, 88% { opacity: 1; transform: translateX(0); } 100% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .case, .notif { opacity: 1; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff1e6"/>
+      <stop offset="1" stop-color="#fde2e4"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="url(#fond)"/>
+
+  <!-- Grille de l'agenda -->
+  <rect x="60" y="60" width="600" height="440" rx="16" fill="#ffffff" stroke="#e2cfc4" stroke-width="2"/>
+  <g font-size="15" font-weight="700" fill="#6d597a" text-anchor="middle">
+    <text x="170" y="94">Lun</text><text x="290" y="94">Mar</text><text x="410" y="94">Mer</text><text x="530" y="94">Jeu</text>
+  </g>
+  <g font-size="12" fill="#b5838d">
+    <text x="72" y="140">8h</text><text x="72" y="240">14h</text><text x="72" y="340">18h</text><text x="72" y="440">21h</text>
+  </g>
+
+  <!-- Cours -->
+  <g fill="#6d597a">
+    <rect class="case c1" x="116" y="116" width="108" height="80" rx="8"/>
+    <rect class="case c2" x="236" y="116" width="108" height="80" rx="8"/>
+    <rect class="case c3" x="356" y="116" width="108" height="80" rx="8"/>
+    <rect class="case c4" x="476" y="116" width="108" height="80" rx="8"/>
+  </g>
+  <!-- Job -->
+  <g fill="#e56b6f">
+    <rect class="case c5" x="116" y="316" width="108" height="80" rx="8"/>
+    <rect class="case c6" x="356" y="316" width="108" height="80" rx="8"/>
+    <rect class="case c7" x="476" y="316" width="108" height="80" rx="8"/>
+    <rect class="case c8" x="236" y="216" width="108" height="80" rx="8"/>
+  </g>
+  <!-- Asso -->
+  <g fill="#eaac8b">
+    <rect class="case c9" x="236" y="316" width="108" height="80" rx="8"/>
+    <rect class="case c10" x="116" y="416" width="108" height="60" rx="8"/>
+    <rect class="case c11" x="356" y="416" width="108" height="60" rx="8"/>
+    <rect class="case c12" x="476" y="216" width="108" height="80" rx="8"/>
+  </g>
+
+  <!-- Legende -->
+  <g font-size="14" fill="#6d597a">
+    <rect x="80" y="520" width="16" height="16" rx="4" fill="#6d597a"/><text x="104" y="533">cours</text>
+    <rect x="170" y="520" width="16" height="16" rx="4" fill="#e56b6f"/><text x="194" y="533">job</text>
+    <rect x="250" y="520" width="16" height="16" rx="4" fill="#eaac8b"/><text x="274" y="533">asso</text>
+  </g>
+
+  <!-- Notifications -->
+  <g font-size="14" fill="#355070">
+    <g class="notif">
+      <rect x="700" y="100" width="280" height="56" rx="14" fill="#ffffff" stroke="#e2cfc4"/>
+      <text x="720" y="124" font-weight="700">Asso</text><text x="720" y="144">Le bilan pour vendredi ?</text>
+    </g>
+    <g class="notif n2">
+      <rect x="700" y="170" width="280" height="56" rx="14" fill="#ffffff" stroke="#e2cfc4"/>
+      <text x="720" y="194" font-weight="700">Groupe TD</text><text x="720" y="214">Qui fait l'intro du dossier ?</text>
+    </g>
+    <g class="notif n3">
+      <rect x="700" y="240" width="280" height="56" rx="14" fill="#ffffff" stroke="#e2cfc4"/>
+      <text x="720" y="264" font-weight="700">Rappel</text><text x="720" y="284">Partiel de droit lundi 8h</text>
+    </g>
+    <g class="notif n4">
+      <rect x="700" y="310" width="280" height="76" rx="14" fill="#e56b6f"/>
+      <text x="720" y="336" font-weight="700" fill="#ffffff">Collègue</text>
+      <text x="720" y="358" fill="#ffffff">Tu peux me remplacer</text>
+      <text x="720" y="376" fill="#ffffff">samedi ? stp</text>
+    </g>
+  </g>
+</svg>

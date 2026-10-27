@@ -30,7 +30,7 @@ flowchart LR
 - Phase 1 : T001 (rôle) et T007 (masquage du contenu en log).
 - Phase 2 : T002 à T006 (droits, états, scènes, repreneur, guides).
 - Phase 3 : T008 à T010 (événements d'audit).
-- Phase 4 : T011 (limites de saisie, bloquée), T012 (documentation), T013 (année du pied de page, en dernier).
+- Phase 4 : T011 (limites de saisie), T012 (documentation), T013 (année du pied de page, en dernier).
 
 ## 4. Tâches
 
@@ -46,7 +46,7 @@ flowchart LR
 | T008 | Événement de changement d'état | US-06 | `HistoireObserver`, `AppServiceProvider`, tests | T007 | | à faire |
 | T009 | Événements de rattachement | US-06 | `ScenesHistoire`, `EditHistoire`, tests | T003, T004, T008 | | à faire |
 | T010 | Journaliser les accès refusés | US-06 | `HistoireResource`, pages, tests | T009 | | à faire |
-| T011 | Limites de saisie visibles | US-03 | formulaires histoire et scène | T010 | | bloquée (question PRD § 10) |
+| T011 | Limites de saisie visibles | US-03 | formulaires histoire et scène | T010 | | à faire |
 | T012 | Mettre la documentation à jour | tous | `docs/*.md` | T001 à T011 | | à faire |
 | T013 | Corriger l'année du pied de page (2025 → 2026) | hors lot | `footer.blade.php` | T012 | | à faire |
 
@@ -90,7 +90,7 @@ flowchart TD
 | Tests existants qui supposent qu'un rédacteur voit toutes les histoires. | Certaine | Moyen | T002 les corrige (factory `pour($auteur)`). |
 | Ordre des hooks Filament pour la sauvegarde des sous-thèmes. | Moyenne | Faible | T009 impose la lecture de `vendor/` et note le résultat. |
 | Docker non disponible dans l'environnement de l'exécutant. | Faible | Moyen | Signaler en escalade. Ne pas contourner. |
-| Longueur maximale de `dialogue_text` : textes existants plus longs. | Moyenne | Moyen | T011 mesure le maximum existant avant de fixer la limite. |
+| Textes de `dialogue_text` existants plus longs que 1 000 caractères. | Moyenne | Moyen | T011 mesure le maximum existant avant d'écrire la limite et s'arrête si elle est dépassée. |
 
 ## 8. Suivi
 

@@ -1,6 +1,6 @@
 # T011 — Limites de saisie visibles
 
-Statut : bloquée — la valeur de `DIALOGUE_MAX` (proposée : 2000) doit être confirmée ([PRD](../PRD.md) § 10)
+Statut : à faire
 Story : US-03 · Exigences : F-11, T-13
 Dépend de : T010
 Parallélisable : non
@@ -35,7 +35,7 @@ Chaque champ texte des formulaires d'histoire, de scène et de choix a une limit
 ```php
     public const TITRE_MAX = 255;
 
-    public const DIALOGUE_MAX = 2000;
+    public const DIALOGUE_MAX = 1000;
 
     public const TEXTE_CHOIX_MAX = 255;
 
@@ -51,7 +51,7 @@ Chaque champ texte des formulaires d'histoire, de scène et de choix a une limit
 6. Tests :
    - `HistoireResourceTest` : `test_le_dialogue_de_la_premiere_scene_est_limite` : `fillForm` avec un dialogue de `DIALOGUE_MAX + 1` caractères (`str_repeat('a', …)`) → `assertHasFormErrors(['premiere_scene.dialogue_text' => 'max'])`. Variante avec exactement `DIALOGUE_MAX` : pas d'erreur.
    - `HistoireScenesTest` : même vérification sur `donnees.dialogue_text` via `enregistrer`.
-   - `test_les_formulaires_affichent_la_limite` : `Livewire::test(CreateHistoire::class)->assertSee('2000 caractères maximum.')` (utiliser la constante dans l'assertion).
+   - `test_les_formulaires_affichent_la_limite` : `Livewire::test(CreateHistoire::class)->assertSee('1000 caractères maximum.')` (utiliser la constante dans l'assertion).
 7. Lancer la vérification.
 
 ## Critères d'acceptation
@@ -68,7 +68,7 @@ docker compose exec sc_back vendor/bin/phpstan analyse
 docker compose exec sc_back php artisan test --filter="HistoireResourceTest|HistoireScenesTest"
 ```
 
-Parcours navigateur : créer une histoire, lire la limite sous chaque champ ; coller 2001 caractères dans le dialogue : refus.
+Parcours navigateur : créer une histoire, lire la limite sous chaque champ ; coller 1001 caractères dans le dialogue : refus.
 
 ## Hors périmètre
 

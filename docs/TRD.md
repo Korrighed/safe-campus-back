@@ -74,7 +74,7 @@ Aucune.
 | T-10 | `Histoire.etat_change` avec `de` et `vers`, écrit après commit. | NF-03 | `AuditLogTest`. |
 | T-11 | Événements `Histoire.scene_ajoutee`, `scene_retiree`, `scene_deplacee`, `depart_defini`, `sous_themes_modifies`. Identifiants uniquement. | NF-03 | Tests Livewire + `AuditLogTest`. |
 | T-12 | Événement `Histoire.acces_refuse` (identifiant de l'histoire, motif) sur 404 hors périmètre et 403 de page. | NF-03 | Tests. |
-| T-13 | Limite et mention du maximum sur `dialogue_text`, `titre`, `text_choix`. | F-11 | Test de validation. |
+| T-13 | Limite et mention du maximum sur `dialogue_text` (1 000), `titre` (255), `text_choix` (255). | F-11 | Test de validation. |
 
 ## 6. Gestion des erreurs et états
 
@@ -136,6 +136,7 @@ Matrice des droits (pour un rédacteur, « ses histoires » = celles dont il est
 | 2026-10-28 | Réutilisation limitée aux scènes de ses histoires. Suppression d'une scène partagée refusée. | Garder le partage global : un rédacteur détruirait le contenu d'un autre. | Cohérence avec le cloisonnement. |
 | 2026-10-28 | Aucun texte rédigé en log ; nom des champs modifiés conservé. | Condensé ou hash du texte (écarté). | Règle explicite du porteur du projet. |
 | 2026-10-28 | Périmètre du masquage : scènes et choix seulement (option A). | Tous les modèles : perd des valeurs utiles sur l'annuaire. | Lot cadré. |
+| 2026-10-28 | Dialogue de scène limité à 1 000 caractères. | 2 000 (proposition initiale) : trop long pour une mise en situation. | Décision du porteur : une mise en situation, pas un récit. |
 | 2026-10-28 | Journalisation des refus d'accès aux histoires. | Ne pas journaliser. | Détection des tentatives. |
 
 ## 10. Dette et risques connus
@@ -148,4 +149,4 @@ Matrice des droits (pour un rédacteur, « ses histoires » = celles dont il est
 
 ## 11. Questions ouvertes
 
-- Longueur maximale de `dialogue_text` (voir [PRD](PRD.md) § 10).
+Aucune.

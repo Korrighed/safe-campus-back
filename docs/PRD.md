@@ -58,7 +58,7 @@ L'objectif est de distribuer des comptes rédacteur à des élèves volontaires.
 | F-08 | Une scène utilisée par une autre histoire ne peut pas être supprimée. Elle peut être retirée de l'histoire courante. | US-02 | AC-08 : Étant donné une scène partagée, quand on tente de la supprimer, alors elle reste en base et un message l'explique. |
 | F-09 | Le relecteur peut reprendre les histoires d'un compte supprimé, au même titre qu'un rédacteur. | US-01 | AC-09 : Étant donné un rédacteur auteur, quand l'admin le supprime en choisissant un relecteur comme repreneur, alors les histoires lui sont transférées. |
 | F-10 | Chaque rôle a un guide rapide sur le tableau de bord. | US-03, US-04 | AC-10 : Étant donné un relecteur, quand il ouvre le tableau de bord, alors il voit « Guide rapide — Relecteur ». |
-| F-11 | Les formulaires de saisie indiquent le nombre maximum de caractères. | US-03 | AC-11 : Étant donné un champ texte limité, quand l'écran s'affiche, alors la limite est écrite. |
+| F-11 | Les formulaires de saisie indiquent le nombre maximum de caractères. Le dialogue d'une scène est limité à 1 000 caractères. | US-03 | AC-11 : Étant donné un champ texte limité, quand l'écran s'affiche, alors la limite est écrite. |
 
 ## 7. Exigences non fonctionnelles
 
@@ -90,4 +90,4 @@ flowchart LR
 
 ## 10. Questions ouvertes
 
-- Quelle longueur maximale pour le dialogue d'une scène (`dialogue_text`) ? La colonne est de type `text`, sans limite aujourd'hui. Proposition : 2 000 caractères. Bloque la tâche T011.
+Aucune. Tranché le 2026-10-28 : le dialogue d'une scène est limité à 1 000 caractères (une mise en situation, pas un récit long).

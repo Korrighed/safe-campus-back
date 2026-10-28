@@ -6,6 +6,7 @@ use App\Enums\EtatHistoire;
 use App\Filament\Resources\HistoireResource;
 use App\Models\Histoire;
 use App\Models\Scene;
+use App\Services\AuditService;
 use Filament\Forms;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,11 @@ class CreateHistoire extends CreateRecord
 
     protected static string $resource = HistoireResource::class;
 
+    /**
+     * Id de la premiere scene creee : lu par la trace d'audit, apres la transaction.
+     */
+    private ?int $premiereSceneId = null;
+
     protected function getSteps(): array
     {
         return [
@@ -24,7 +30,7 @@ class CreateHistoire extends CreateRecord
                 ->description('Titre et rubriques')
                 ->schema([
                     HistoireResource::champTitre()
-                        ->helperText('Visible par les joueurs une fois l\'histoire publiée.'),
+                        ->helperText('Visible par les joueurs une fois l\'histoire publiée. '.HistoireResource::mentionLimite(HistoireResource::TITRE_MAX)),
                     HistoireResource::champSousThemes(),
                 ]),
             Forms\Components\Wizard\Step::make('La première scène')
@@ -33,21 +39,22 @@ class CreateHistoire extends CreateRecord
                     Forms\Components\TextInput::make('premiere_scene.titre')
                         ->label('Nom de la scène')
                         ->required()
-                        ->maxLength(255)
+                        ->maxLength(HistoireResource::TITRE_MAX)
                         ->default('Introduction')
-                        ->helperText('Repère pour toi, jamais montré au joueur.'),
+                        ->helperText('Repère pour toi, jamais montré au joueur. '.HistoireResource::mentionLimite(HistoireResource::TITRE_MAX)),
                     Forms\Components\Textarea::make('premiere_scene.dialogue_text')
                         ->label('Mise en situation')
                         ->required()
                         ->rows(5)
-                        ->helperText('Le texte que lit le joueur en arrivant dans l\'histoire. Tu ajouteras les choix ensuite, depuis la page « 2. Scènes ».'),
+                        ->maxLength(HistoireResource::DIALOGUE_MAX)
+                        ->helperText('Le texte que lit le joueur en arrivant dans l\'histoire. Tu ajouteras les choix ensuite, depuis la page « 2. Scènes ». '.HistoireResource::mentionLimite(HistoireResource::DIALOGUE_MAX)),
                 ]),
         ];
     }
 
     protected function handleRecordCreation(array $data): Model
     {
-        return DB::transaction(function () use ($data): Histoire {
+        $histoire = DB::transaction(function () use ($data): Histoire {
             $histoire = Histoire::create([
                 'titre' => $data['titre'],
                 'etat' => EtatHistoire::Brouillon,
@@ -56,9 +63,30 @@ class CreateHistoire extends CreateRecord
 
             $scene = Scene::create($data['premiere_scene']);
             $histoire->scenes()->attach($scene->id, ['est_initiale' => true, 'ordre' => 1]);
+            $this->premiereSceneId = $scene->id;
 
             return $histoire;
         });
+
+        // Apres la transaction interne. Le panel n'en ouvre pas d'englobante (databaseTransactions() absent).
+        app(AuditService::class)->ecrire('Histoire.scene_ajoutee', $histoire, ['scene_id' => $this->premiereSceneId, 'initiale' => true]);
+
+        return $histoire;
+    }
+
+    /**
+     * Appelee par create() apres saveRelationships() : les sous-themes sont deja en base.
+     */
+    protected function afterCreate(): void
+    {
+        /** @var Histoire $histoire */
+        $histoire = $this->getRecord();
+
+        $ids = $histoire->sousThemes()->pluck('sous_themes.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+
+        if ($ids !== []) {
+            app(AuditService::class)->ecrire('Histoire.sous_themes_modifies', $histoire, ['ajoutes' => $ids, 'retires' => []]);
+        }
     }
 
     protected function getRedirectUrl(): string

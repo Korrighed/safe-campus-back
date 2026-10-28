@@ -19,11 +19,14 @@ use Tests\TestCase;
 
 class HistoireScenesTest extends TestCase
 {
+    private User $redacteur;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
+        $this->redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($this->redacteur);
     }
 
     /**
@@ -33,7 +36,7 @@ class HistoireScenesTest extends TestCase
      */
     private function histoireATroisScenes(): array
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $intro = Scene::factory()->create(['titre' => 'Intro']);
         $salon = Scene::factory()->create(['titre' => 'Salon']);
         $balcon = Scene::factory()->create(['titre' => 'Balcon']);
@@ -118,7 +121,7 @@ class HistoireScenesTest extends TestCase
     public function test_une_scene_d_une_autre_histoire_est_reutilisee_en_fin_de_liste(): void
     {
         [$histoire] = $this->histoireATroisScenes();
-        $autre = Histoire::factory()->create();
+        $autre = Histoire::factory()->pour($this->redacteur)->create();
         $partagee = Scene::factory()->create(['titre' => 'Retour en bus']);
         $autre->scenes()->attach($partagee->id, ['est_initiale' => true, 'ordre' => 1]);
 
@@ -142,6 +145,117 @@ class HistoireScenesTest extends TestCase
 
         Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
             ->call('definirDepart', $etrangere->id);
+    }
+
+    public function test_une_histoire_verrouillee_est_en_lecture_seule(): void
+    {
+        $histoire = Histoire::factory()->pour($this->redacteur)->create(['etat' => EtatHistoire::Relecture]);
+        $scene = Scene::factory()->create(['titre' => 'Intro']);
+        $histoire->scenes()->attach($scene->id, ['est_initiale' => true, 'ordre' => 1]);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->assertSuccessful()
+            ->assertDontSeeHtml('wire:click="nouvelleScene"')
+            ->assertDontSeeHtml('wire:click="modifier(')
+            ->assertSee('Lecture seule');
+    }
+
+    public function test_une_action_d_ecriture_est_refusee_sur_une_histoire_verrouillee(): void
+    {
+        $histoire = Histoire::factory()->pour($this->redacteur)->create(['etat' => EtatHistoire::Relecture]);
+        $scene = Scene::factory()->create(['titre' => 'Intro']);
+        $histoire->scenes()->attach($scene->id, ['est_initiale' => true, 'ordre' => 1]);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('nouvelleScene')
+            ->assertForbidden();
+    }
+
+    public function test_les_scenes_d_un_autre_auteur_ne_sont_pas_proposees(): void
+    {
+        [$histoire] = $this->histoireATroisScenes();
+        $autre = Histoire::factory()->pour($this->redacteur)->create();
+        $histoireDeB = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
+        $sceneDeB = Scene::factory()->create(['titre' => 'Scène de B']);
+        $histoireDeB->scenes()->attach($sceneDeB->id, ['est_initiale' => true, 'ordre' => 1]);
+        $autre->scenes()->attach($sceneDeB->id, ['est_initiale' => false, 'ordre' => 1]);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->set('reutilisationOuverte', true)
+            ->assertDontSee('Scène de B')
+            ->set('sceneAReutiliser', $sceneDeB->id)
+            ->call('reutiliser');
+
+        $this->assertFalse($histoire->scenes()->whereKey($sceneDeB->id)->exists());
+    }
+
+    public function test_un_relecteur_reutilise_la_scene_d_un_autre_auteur(): void
+    {
+        [$histoire] = $this->histoireATroisScenes();
+        $autre = Histoire::factory()->pour($this->redacteur)->create();
+        $histoireDeB = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
+        $sceneDeB = Scene::factory()->create(['titre' => 'Scène de B']);
+        $histoireDeB->scenes()->attach($sceneDeB->id, ['est_initiale' => true, 'ordre' => 1]);
+        $autre->scenes()->attach($sceneDeB->id, ['est_initiale' => false, 'ordre' => 1]);
+        $this->actingAs(User::factory()->create(['role' => UserRole::Relecteur]));
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->set('reutilisationOuverte', true)
+            ->assertSee('Scène de B');
+    }
+
+    public function test_modifier_une_scene_partagee_avec_une_histoire_en_relecture_est_refuse(): void
+    {
+        [$histoire, , $salon] = $this->histoireATroisScenes();
+        $histoireDeB = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create(['etat' => EtatHistoire::Relecture]);
+        $histoireDeB->scenes()->attach($salon->id, ['est_initiale' => true, 'ordre' => 1]);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('modifier', $salon->id)
+            ->assertForbidden();
+    }
+
+    public function test_une_scene_partagee_avec_une_histoire_verrouillee_n_est_pas_modifiable(): void
+    {
+        [$histoire, $intro, $salon] = $this->histoireATroisScenes();
+        $histoireDeB = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create(['etat' => EtatHistoire::Relecture]);
+        $histoireDeB->scenes()->attach($salon->id, ['est_initiale' => true, 'ordre' => 1]);
+
+        $sections = collect(Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])->instance()->getSections())
+            ->keyBy(fn (array $section) => $section['scene']->id);
+
+        $this->assertTrue($sections[$intro->id]['modifiable']);
+        $this->assertFalse($sections[$salon->id]['modifiable']);
+    }
+
+    public function test_supprimer_une_scene_retire_les_choix_visants_depuis_une_scene_partagee(): void
+    {
+        [$histoire, $intro, $salon, $balcon] = $this->histoireATroisScenes();
+        $histoirePubliee = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create(['etat' => EtatHistoire::Publie]);
+        $histoirePubliee->scenes()->attach($intro->id, ['est_initiale' => true, 'ordre' => 1]);
+        $choixSortie = Choix::factory()->create(['scene_id' => $intro->id, 'next_scene_id' => $balcon->id, 'text_choix' => 'Sortir']);
+        $choixRester = Choix::factory()->create(['scene_id' => $salon->id, 'next_scene_id' => $balcon->id, 'text_choix' => 'Rester']);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->callAction('supprimerScene', arguments: ['scene' => $balcon->id]);
+
+        $this->assertModelMissing($balcon);
+        $this->assertModelMissing($choixSortie);
+        $this->assertModelExists($choixRester);
+        $this->assertNull($choixRester->refresh()->next_scene_id);
+        $this->assertSame(0, $intro->choix()->count());
+    }
+
+    public function test_une_scene_partagee_ne_peut_pas_etre_supprimee(): void
+    {
+        [$histoire, , $salon] = $this->histoireATroisScenes();
+        $autre = Histoire::factory()->pour($this->redacteur)->create();
+        $autre->scenes()->attach($salon->id, ['est_initiale' => false, 'ordre' => 1]);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->callAction('supprimerScene', arguments: ['scene' => $salon->id]);
+
+        $this->assertModelExists($salon);
     }
 
     public function test_une_seule_scene_en_modification_a_la_fois(): void
@@ -293,7 +407,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_une_nouvelle_scene_d_une_histoire_vide_devient_le_depart(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
 
         Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
             ->call('nouvelleScene')
@@ -319,9 +433,37 @@ class HistoireScenesTest extends TestCase
         $this->assertSame('Intro', $intro->fresh()->titre);
     }
 
+    public function test_le_dialogue_d_une_scene_est_limite(): void
+    {
+        [$histoire, $intro] = $this->histoireATroisScenes();
+        $trop = str_repeat('a', HistoireResource::DIALOGUE_MAX + 1);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('modifier', $intro->id)
+            ->fillForm(['titre' => 'Intro', 'dialogue_text' => $trop])
+            ->call('enregistrer')
+            ->assertHasFormErrors(['dialogue_text' => 'max']);
+
+        $this->assertNotSame($trop, $intro->fresh()->dialogue_text);
+    }
+
+    public function test_le_dialogue_d_une_scene_accepte_exactement_la_limite(): void
+    {
+        [$histoire, $intro] = $this->histoireATroisScenes();
+        $limite = str_repeat('a', HistoireResource::DIALOGUE_MAX);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('modifier', $intro->id)
+            ->fillForm(['titre' => 'Intro', 'dialogue_text' => $limite])
+            ->call('enregistrer')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($limite, $intro->fresh()->dialogue_text);
+    }
+
     public function test_une_histoire_complete_passe_tous_les_controles(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $histoire->sousThemes()->attach(SousTheme::factory()->create());
         $intro = Scene::factory()->create();
         $fin = Scene::factory()->create();
@@ -335,7 +477,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_les_controles_signalent_ce_qui_manque(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $intro = Scene::factory()->create();
         $orpheline = Scene::factory()->create(['titre' => 'Orpheline']);
         $ailleurs = Scene::factory()->create();
@@ -357,7 +499,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_une_scene_sans_mise_en_situation_est_signalee(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
         $vide = Scene::factory()->create(['titre' => 'À écrire', 'dialogue_text' => '']);
         $histoire->scenes()->attach($vide->id, ['est_initiale' => true, 'ordre' => 1]);
 
@@ -369,7 +511,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_enregistrer_une_histoire_incomplete_hors_brouillon_avertit_sans_bloquer(): void
     {
-        $histoire = Histoire::factory()->create(['etat' => EtatHistoire::Brouillon]);
+        $histoire = Histoire::factory()->pour($this->redacteur)->create(['etat' => EtatHistoire::Brouillon]);
 
         Livewire::test(EditHistoire::class, ['record' => $histoire->getKey()])
             ->fillForm(['etat' => EtatHistoire::Relecture->value])
@@ -382,7 +524,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_le_lien_verifier_ouvre_la_modale_avec_un_lien_pour_corriger(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
 
         Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
             ->dispatch('ouvrir-verification')
@@ -394,7 +536,7 @@ class HistoireScenesTest extends TestCase
 
     public function test_verifier_apparait_dans_le_menu_dans_une_histoire(): void
     {
-        $histoire = Histoire::factory()->create();
+        $histoire = Histoire::factory()->pour($this->redacteur)->create();
 
         $this->get(HistoireResource::getUrl('edit', ['record' => $histoire]))
             ->assertOk()

@@ -73,16 +73,18 @@ Déploiement du front : [README de Safe-Campus-front § Déploiement](../../Safe
 
 Contrôle à blanc : `docker exec SC_Back_Prod php artisan comptes:purger-inactifs --simulation`.
 
+Commande manuelle, non planifiée : `scenes:purger-orphelines [--simulation]` supprime les scènes sans histoire créées il y a plus de 24 heures, avec leurs choix. À lancer à la main uniquement. Contrôle à blanc : `docker exec SC_Back_Prod php artisan scenes:purger-orphelines --simulation`.
+
 ## Logs d'audit
 
 Qui a fait quoi, quand, depuis quelle IP : canal `audit` (`config/logging.php`), distinct de `laravel.log`.
 
 - **Fichiers** : `storage/logs/audit-AAAA-MM-JJ.log`, un par jour, **365 jours** de conservation (purge automatique par Laravel).
 - **Format** : une entrée JSON par ligne (`message`, `context`, `datetime` en UTC).
-- **Contenu** : création, modification (avant/après) et suppression de tout modèle métier. Connexion, échec de connexion (email tenté), déconnexion, inscription. Transfert d'histoires à la suppression d'un rédacteur. Purge d'un compte inactif (`User.purge_inactivite`) ou ignorée (`User.purge_ignoree`). Jamais de mot de passe ni de jeton. Textes longs tronqués à 200 caractères.
+- **Contenu** : création, modification (avant/après) et suppression de tout modèle métier. Connexion, échec de connexion (identifiant du compte s'il existe), déconnexion, inscription. Transfert d'histoires à la suppression d'un rédacteur. Purge d'un compte inactif (`User.purge_inactivite`) ou ignorée (`User.purge_ignoree`). Événements du circuit et des scènes d'une histoire (`Histoire.suppression_groupee`, `Histoire.etat_change`, `Histoire.scene_ajoutee`, `Histoire.scene_retiree`, `Histoire.scene_deplacee`, `Histoire.depart_defini`, `Histoire.sous_themes_modifies`) et accès refusés (`Histoire.acces_refuse`). Jamais de mot de passe ni de jeton. Jamais le titre ni le texte d'une scène ou d'un choix : seuls l'identifiant et le nom des champs modifiés sont écrits. Autres textes longs tronqués à 200 caractères. Les entrées écrites avant cette règle peuvent contenir les 200 premiers caractères d'un dialogue, jusqu'à leur purge à 365 jours.
 - **Niveau** : `info`, fixe, indépendant de `LOG_LEVEL` (qui vaut `error` en production).
 - **Écrit après commit** : une action annulée (transaction en échec) n'est pas tracée.
-- **Non tracé** : les rattachements N-N (histoire ↔ sous-thèmes, médias ↔ sous-thèmes), qui ne passent pas par les événements de modèle.
+- **Non tracé** : seuls les rattachements médias ↔ sous-thèmes et contacts ↔ sous-thèmes, qui ne passent pas par les événements de modèle. Les rattachements des histoires (scènes, sous-thèmes) ont leurs propres événements.
 - **Consultation** : accès serveur uniquement, aucun écran dans le back-office.
 
 ```bash

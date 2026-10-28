@@ -34,7 +34,7 @@ class UserResource extends Resource
      */
     public static function rolesAttribuables(): array
     {
-        return collect([UserRole::Webmaster, UserRole::Redacteur, UserRole::Admin])
+        return collect([UserRole::Webmaster, UserRole::Redacteur, UserRole::Relecteur, UserRole::Admin])
             ->mapWithKeys(fn (UserRole $role) => [$role->value => $role->libelle()])
             ->all();
     }
@@ -144,7 +144,7 @@ class UserResource extends Resource
     /**
      * Refus d'une demande (compte sans role) ou suppression d'un compte actif,
      * partage entre la liste et la fiche. Si le compte a des histoires, un
-     * autre redacteur doit les reprendre : sinon la cascade les effacerait.
+     * autre redacteur ou relecteur doit les reprendre : sinon la cascade les effacerait.
      */
     public static function configurerSuppression(
         Tables\Actions\Action|Actions\Action $action,
@@ -172,12 +172,12 @@ class UserResource extends Resource
 
                 return [
                     Forms\Components\Select::make('repreneur_id')
-                        ->label('Rédacteur qui reprend les histoires')
+                        ->label('Compte qui reprend les histoires')
                         ->options($repreneurs)
                         ->required()
                         ->native(false)
                         ->helperText($repreneurs === []
-                            ? 'Aucun autre rédacteur : attribuez d\'abord le rôle rédacteur à un compte.'
+                            ? 'Aucun autre rédacteur ni relecteur : attribuez d\'abord l\'un de ces rôles à un compte.'
                             : "Ce compte est l'auteur de {$nombre} histoire(s), qui seraient supprimées sans repreneur."),
                 ];
             })

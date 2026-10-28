@@ -29,9 +29,13 @@ class AuditAuthentification
 
     public function handleFailed(Failed $event): void
     {
-        // Email tente uniquement, jamais le mot de passe saisi.
+        // Jamais l'adresse saisie (elle peut contenir un mot de passe tape au
+        // mauvais endroit) : l'identifiant du compte s'il existe, sinon rien.
+        $compte = $event->user instanceof User ? $event->user : null;
+
         $this->audit->ecrire('auth.echec', null, [
-            'email_tente' => $event->credentials['email'] ?? null,
+            'compte_id' => $compte?->getKey(),
+            'compte_connu' => $compte !== null,
         ]);
     }
 

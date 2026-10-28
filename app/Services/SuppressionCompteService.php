@@ -69,13 +69,13 @@ class SuppressionCompteService
     }
 
     /**
-     * Redacteurs pouvant reprendre les histoires du compte supprime.
+     * Redacteurs et relecteurs pouvant reprendre les histoires du compte supprime.
      *
      * @return array<int, string>
      */
     public function repreneursPossibles(User $compte): array
     {
-        return User::where('role', UserRole::Redacteur->value)
+        return User::whereIn('role', $this->rolesRepreneurs())
             ->whereKeyNot($compte->getKey())
             ->orderBy('nom')
             ->get()
@@ -99,11 +99,11 @@ class SuppressionCompteService
 
             if ($histoires->isNotEmpty()) {
                 $repreneur = $repreneurId !== null
-                    ? User::whereKey($repreneurId)->where('role', UserRole::Redacteur->value)->first()
+                    ? User::whereKey($repreneurId)->whereIn('role', $this->rolesRepreneurs())->first()
                     : null;
 
                 if ($repreneur === null || $repreneur->is($compte)) {
-                    throw new InvalidArgumentException('Un autre rédacteur doit reprendre les histoires de ce compte.');
+                    throw new InvalidArgumentException('Un autre rédacteur ou un relecteur doit reprendre les histoires de ce compte.');
                 }
 
                 // Une par une (et non update() en masse) : chaque transfert
@@ -122,5 +122,15 @@ class SuppressionCompteService
 
             $compte->delete();
         });
+    }
+
+    /**
+     * Roles pouvant reprendre les histoires d'un compte supprime.
+     *
+     * @return list<string>
+     */
+    private function rolesRepreneurs(): array
+    {
+        return [UserRole::Redacteur->value, UserRole::Relecteur->value];
     }
 }

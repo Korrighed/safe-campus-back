@@ -37,4 +37,12 @@ class HistoireFactory extends Factory
             'etat' => EtatHistoire::Publie,
         ]);
     }
+
+    /**
+     * Histoire dont l'auteur est donne.
+     */
+    public function pour(User $auteur): static
+    {
+        return $this->state(fn (array $attributes) => ['user_id' => $auteur->id]);
+    }
 }

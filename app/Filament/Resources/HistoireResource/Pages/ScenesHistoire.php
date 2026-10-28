@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\JournaliseLesRefus;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
@@ -12,6 +13,8 @@ use App\Models\Histoire;
 use App\Models\Media;
 use App\Models\Scene;
 use App\Models\SousTheme;
+use App\Services\AuditService;
+use App\Services\NettoyageScenesService;
 use App\Services\VerificationHistoireService;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -22,6 +25,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +40,7 @@ class ScenesHistoire extends Page
 {
     use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use JournaliseLesRefus;
     use LitHistoire;
     use OuvreVerification;
 
@@ -72,7 +77,10 @@ class ScenesHistoire extends Page
     {
         $this->record = $this->resolveRecord($record);
 
-        abort_unless(auth()->user()?->can('view', $this->histoire()), 403);
+        if (! auth()->user()?->can('view', $this->histoire())) {
+            $this->journaliserRefus('view');
+            abort(403);
+        }
 
         $this->form->fill();
     }
@@ -107,8 +115,13 @@ class ScenesHistoire extends Page
         return 'Scènes';
     }
 
+    public function peutModifier(): bool
+    {
+        return auth()->user()?->can('update', $this->histoire()) ?? false;
+    }
+
     /**
-     * @return list<array{scene: Scene, numero: int, estDepart: bool, estPremiere: bool, estDerniere: bool, badges: list<array{libelle: string, couleur: string}>, lignes: list<array{texte: string, suite: string, couleur: string}>}>
+     * @return list<array{scene: Scene, numero: int, estDepart: bool, estPremiere: bool, estDerniere: bool, modifiable: bool, badges: list<array{libelle: string, couleur: string}>, lignes: list<array{texte: string, suite: string, couleur: string}>}>
      */
     public function getSections(): array
     {
@@ -122,6 +135,7 @@ class ScenesHistoire extends Page
             'estDepart' => (bool) $scene->pivot->getAttribute('est_initiale'),
             'estPremiere' => $index === 0,
             'estDerniere' => $index === $scenes->count() - 1,
+            'modifiable' => auth()->user()?->can('update', $scene) ?? false,
             'badges' => $this->badges($scene, in_array($scene->id, $atteignables, true)),
             'lignes' => $scene->choix
                 ->map(fn (Choix $choix) => ['texte' => $choix->text_choix, ...$this->suite($choix, $numeros->all())])
@@ -154,9 +168,7 @@ class ScenesHistoire extends Page
      */
     public function getScenesReutilisables(): array
     {
-        return Scene::query()
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
-            ->whereHas('histoires')
+        return $this->scenesReutilisablesQuery()
             ->with('histoires:id,titre')
             ->orderBy('titre')
             ->get()
@@ -177,13 +189,14 @@ class ScenesHistoire extends Page
                 Forms\Components\TextInput::make('titre')
                     ->label('Nom de la scène')
                     ->required()
-                    ->maxLength(255)
-                    ->helperText('Repère pour toi, jamais montré au joueur.'),
+                    ->maxLength(HistoireResource::TITRE_MAX)
+                    ->helperText('Repère pour toi, jamais montré au joueur. '.HistoireResource::mentionLimite(HistoireResource::TITRE_MAX)),
                 Forms\Components\Textarea::make('dialogue_text')
                     ->label('Mise en situation')
                     ->required()
                     ->rows(4)
-                    ->helperText('Le texte que lit le joueur avant de choisir.'),
+                    ->maxLength(HistoireResource::DIALOGUE_MAX)
+                    ->helperText('Le texte que lit le joueur avant de choisir. '.HistoireResource::mentionLimite(HistoireResource::DIALOGUE_MAX)),
                 Forms\Components\Section::make('Média et thème')
                     ->description(fn (Get $get): string => $this->resumeMediaEtTheme($get('media_id'), $get('sous_theme_id')))
                     ->collapsible()
@@ -222,7 +235,8 @@ class ScenesHistoire extends Page
                                     ->hiddenLabel()
                                     ->placeholder('Ce que le joueur peut répondre')
                                     ->required()
-                                    ->maxLength(255)
+                                    ->maxLength(HistoireResource::TEXTE_CHOIX_MAX)
+                                    ->helperText(HistoireResource::mentionLimite(HistoireResource::TEXTE_CHOIX_MAX))
                                     ->columnSpan(['lg' => 4]),
                                 Forms\Components\ToggleButtons::make('suite')
                                     ->label('Que se passe-t-il ensuite ?')
@@ -267,6 +281,11 @@ class ScenesHistoire extends Page
         }
 
         $scene = $this->sceneDeLHistoire($sceneId);
+
+        if (! auth()->user()?->can('update', $scene)) {
+            $this->journaliserRefus('update');
+            abort(403);
+        }
 
         $this->form->fill([
             'titre' => $scene->titre,
@@ -317,6 +336,11 @@ class ScenesHistoire extends Page
         $scene = DB::transaction(function () use ($donnees, $estNouvelle): Scene {
             $scene = $estNouvelle ? new Scene : $this->sceneDeLHistoire($this->sceneEnEdition);
 
+            if (! $estNouvelle && ! auth()->user()?->can('update', $scene)) {
+                $this->journaliserRefus('update');
+                abort(403);
+            }
+
             $scene->fill(Arr::only($donnees, ['titre', 'dialogue_text', 'media_id', 'sous_theme_id']))->save();
 
             if ($estNouvelle) {
@@ -346,10 +370,14 @@ class ScenesHistoire extends Page
                 $conserves[] = $choix->getKey();
             }
 
-            $scene->choix()->whereNotIn('id', $conserves)->delete();
+            $scene->choix()->whereNotIn('id', $conserves)->get()->each->delete();
 
             return $scene;
         });
+
+        if ($estNouvelle) {
+            $this->tracer('Histoire.scene_ajoutee', ['scene_id' => $scene->getKey()]);
+        }
 
         $this->sceneEnEdition = null;
         $this->form->fill();
@@ -379,6 +407,8 @@ class ScenesHistoire extends Page
             $relation->updateExistingPivot($scene->getKey(), ['est_initiale' => true]);
         });
 
+        $this->tracer('Histoire.depart_defini', ['scene_id' => $scene->getKey()]);
+
         Notification::make()->success()->title("« {$scene->titre} » est maintenant la scène de départ.")->send();
     }
 
@@ -396,10 +426,8 @@ class ScenesHistoire extends Page
     {
         $this->autoriserModification();
 
-        $scene = Scene::query()
+        $scene = $this->scenesReutilisablesQuery()
             ->whereKey($this->sceneAReutiliser)
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
-            ->whereHas('histoires')
             ->first();
 
         if ($scene === null) {
@@ -409,6 +437,7 @@ class ScenesHistoire extends Page
         }
 
         $this->rattacher($scene);
+        $this->tracer('Histoire.scene_ajoutee', ['scene_id' => $scene->getKey(), 'reutilisee' => true]);
         $this->reutilisationOuverte = false;
         $this->sceneAReutiliser = null;
 
@@ -420,11 +449,12 @@ class ScenesHistoire extends Page
         return Action::make('retirerScene')
             ->requiresConfirmation()
             ->modalHeading(fn (array $arguments): string => 'Retirer « '.$this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0))->titre.' » de l\'histoire ?')
-            ->modalDescription('La scène n\'est pas supprimée : elle reste disponible pour être réutilisée.')
+            ->modalDescription('La scène est retirée de cette histoire. Si aucune autre histoire ne l\'utilise, elle ne sera plus accessible depuis le back-office et pourra être supprimée lors d\'un nettoyage.')
             ->modalSubmitActionLabel('Retirer')
             ->action(function (array $arguments): void {
                 $scene = $this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0));
                 $this->histoire()->scenes()->detach($scene->getKey());
+                $this->tracer('Histoire.scene_retiree', ['scene_id' => $scene->getKey()]);
 
                 Notification::make()->success()->title("« {$scene->titre} » est retirée de l'histoire.")->send();
             });
@@ -436,10 +466,33 @@ class ScenesHistoire extends Page
             ->requiresConfirmation()
             ->color('danger')
             ->modalHeading(fn (array $arguments): string => 'Supprimer « '.$this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0))->titre.' » ?')
-            ->modalDescription('La scène et ses choix seront supprimés définitivement, y compris dans les autres histoires qui la réutilisent.')
+            ->modalDescription('La scène et ses choix seront supprimés définitivement.')
             ->modalSubmitActionLabel('Supprimer')
             ->action(function (array $arguments): void {
                 $scene = $this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0));
+
+                if (! auth()->user()?->can('delete', $scene)) {
+                    Notification::make()
+                        ->warning()
+                        ->title('Cette scène ne peut pas être supprimée.')
+                        ->body('Elle est utilisée par une histoire que vous ne pouvez pas modifier.')
+                        ->send();
+
+                    return;
+                }
+
+                if ($scene->histoires()->whereKeyNot($this->histoire()->getKey())->exists()) {
+                    Notification::make()
+                        ->warning()
+                        ->title('Cette scène est utilisée par une autre histoire.')
+                        ->body('Retirez-la de cette histoire plutôt que de la supprimer.')
+                        ->send();
+
+                    return;
+                }
+
+                app(NettoyageScenesService::class)->retirerChoixVisantLaScene($scene);
+
                 $scene->delete();
 
                 Notification::make()->success()->title("« {$scene->titre} » est supprimée.")->send();
@@ -458,6 +511,20 @@ class ScenesHistoire extends Page
             ->get();
     }
 
+    /**
+     * Scenes reutilisables dans cette histoire : rattachees a une autre histoire
+     * visible par l'utilisateur, et pas deja dans celle-ci.
+     *
+     * @return Builder<Scene>
+     */
+    protected function scenesReutilisablesQuery(): Builder
+    {
+        return Scene::query()
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
+            ->whereHas('histoires')
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereNotIn('histoires.id', Histoire::query()->visiblePar(auth()->user())->select('histoires.id')));
+    }
+
     protected function sceneDeLHistoire(int $sceneId): Scene
     {
         $this->autoriserModification();
@@ -467,7 +534,21 @@ class ScenesHistoire extends Page
 
     protected function autoriserModification(): void
     {
-        abort_unless(auth()->user()?->can('update', $this->histoire()), 403);
+        if (! auth()->user()?->can('update', $this->histoire())) {
+            $this->journaliserRefus('update');
+            abort(403);
+        }
+    }
+
+    /**
+     * Evenement d'audit sur l'histoire ouverte. Identifiants uniquement :
+     * jamais le titre ni le texte d'une scene.
+     *
+     * @param  array<string, mixed>  $details
+     */
+    protected function tracer(string $action, array $details): void
+    {
+        app(AuditService::class)->ecrire($action, $this->histoire(), $details);
     }
 
     /**
@@ -508,6 +589,8 @@ class ScenesHistoire extends Page
                 $relation->updateExistingPivot($id, ['ordre' => $position + 1]);
             }
         });
+
+        $this->tracer('Histoire.scene_deplacee', ['scene_id' => $sceneId, 'sens' => $sens < 0 ? 'haut' : 'bas']);
     }
 
     /**

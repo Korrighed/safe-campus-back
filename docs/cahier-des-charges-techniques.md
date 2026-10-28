@@ -44,7 +44,8 @@ Les étudiants confrontés à une addiction, à une souffrance psychique ou à d
 |---|---|---|
 | Étudiant | Trouver vite et discrètement une information fiable et un contact joignable. Consultation sur smartphone, souvent dans un moment de stress. | Site étudiant public. Pendant les événements du prototype : portillon visiteur à mot de passe partagé. |
 | Webmaster | Tenir à jour la taxonomie, les fiches, l'annuaire et les médias. | Back-office, rôle webmaster |
-| Rédacteur | Écrire, illustrer et publier des histoires interactives. | Back-office, rôle rédacteur |
+| Rédacteur | Écrire et illustrer des histoires interactives, les soumettre en relecture. | Back-office, rôle rédacteur |
+| Relecteur | Relire, corriger, valider, publier ou renvoyer en brouillon les histoires. | Back-office, rôle relecteur |
 | Administrateur | Valider les demandes de compte, gérer les rôles et les suppressions. | Back-office, rôle administrateur |
 
 Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans compétence technique.
@@ -108,49 +109,49 @@ Une ressource refusée disparaît du menu du back-office. Appelée directement, 
 
 ### 4.1 Accès
 
-| Action | Anonyme | Visiteur | Webmaster | Rédacteur | Administrateur |
-|---|---|---|---|---|---|
-| Consulter le site étudiant | Oui ¹ | Oui | Oui ¹ | Oui ¹ | Oui ¹ |
-| Appeler l'API de lecture | Oui ² | Oui | Oui | Oui | Oui |
-| S'inscrire au back-office | Oui | Non | Non | Non | Non |
-| Se connecter au back-office | Non | Non | Oui | Oui | Oui |
-| Voir le guide du tableau de bord | Non | Non | Oui | Oui | Non |
+| Action | Anonyme | Visiteur | Webmaster | Rédacteur | Relecteur | Administrateur |
+|---|---|---|---|---|---|---|
+| Consulter le site étudiant | Oui ¹ | Oui | Oui ¹ | Oui ¹ | Oui ¹ | Oui ¹ |
+| Appeler l'API de lecture | Oui ² | Oui | Oui | Oui | Oui | Oui |
+| S'inscrire au back-office | Oui | Non | Non | Non | Non | Non |
+| Se connecter au back-office | Non | Non | Oui | Oui | Oui | Oui |
+| Voir le guide du tableau de bord | Non | Non | Oui | Oui | Oui | Non |
 
 ¹ Le site est public. Pendant les événements du prototype, il faut d'abord passer le portillon visiteur (mot de passe partagé).
 ² L'API de lecture est publique par conception.
 
 ### 4.2 Contenus
 
-| Ressource | Webmaster | Rédacteur | Administrateur |
-|---|---|---|---|
-| Thèmes | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
-| Sous-thèmes (fiches) | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
-| Contacts | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
-| Téléphones | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
-| Médias | Créer, lire, modifier, supprimer | Créer, lire, modifier, supprimer | Aucun droit |
-| Histoires | Aucun droit | Créer, lire, modifier, supprimer | Aucun droit |
-| Scènes | Aucun droit | Créer, lire, modifier, supprimer | Aucun droit |
-| Choix | Aucun droit | Créer, lire, modifier, supprimer | Aucun droit |
-| Prévisualiser une histoire | Non | Oui | Non |
-| Changer l'état d'une histoire, jusqu'à « publié » | Non | Oui | Non |
+| Ressource | Webmaster | Rédacteur | Relecteur | Administrateur |
+|---|---|---|---|---|
+| Thèmes | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit | Aucun droit |
+| Sous-thèmes (fiches) | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit | Aucun droit |
+| Contacts | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit | Aucun droit |
+| Téléphones | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit | Aucun droit |
+| Médias | Créer, lire, modifier, supprimer | Créer, lire, modifier, supprimer | Aucun droit | Aucun droit |
+| Histoires | Aucun droit | Créer, lire, modifier et supprimer les siennes en brouillon | Lire, modifier et supprimer toutes ; ne crée pas d'histoire | Aucun droit |
+| Scènes | Aucun droit | Créer, lire, modifier et supprimer les siennes en brouillon | Lire, modifier et supprimer toutes | Aucun droit |
+| Choix | Aucun droit | Créer, lire, modifier et supprimer les siennes en brouillon | Lire, modifier et supprimer toutes | Aucun droit |
+| Prévisualiser une histoire | Non | Oui (les siennes) | Oui | Non |
+| Changer l'état d'une histoire, jusqu'à « publié » | Non | Non (brouillon → relecture seulement) | Oui | Non |
 
-Le circuit brouillon → relecture → validé → publié est déclaratif : le rédacteur fixe lui-même l'état. Aucun rôle distinct ne valide la publication.
+Le circuit brouillon → relecture → validé → publié est contrôlé : le rédacteur ne peut que soumettre en relecture ; le relecteur valide, publie ou renvoie en brouillon.
 
 ### 4.3 Comptes du personnel
 
-| Action | Webmaster | Rédacteur | Administrateur |
-|---|---|---|---|
-| Lister les comptes | Non | Non | Oui |
-| Créer un compte | Non | Non | Non ³ |
-| Attribuer ou retirer un rôle | Non | Non | Oui ⁴ |
-| Modifier les coordonnées d'un compte | Non | Non | Oui ⁴ |
-| Refuser une demande ou supprimer un compte | Non | Non | Oui ⁴ ⁵ |
-| Modifier ou supprimer son propre compte | Non | Non | Non |
-| Voir, modifier ou supprimer le compte visiteur | Non | Non | Non |
+| Action | Webmaster | Rédacteur | Relecteur | Administrateur |
+|---|---|---|---|---|
+| Lister les comptes | Non | Non | Non | Oui |
+| Créer un compte | Non | Non | Non | Non ³ |
+| Attribuer ou retirer un rôle | Non | Non | Non | Oui ⁴ |
+| Modifier les coordonnées d'un compte | Non | Non | Non | Oui ⁴ |
+| Refuser une demande ou supprimer un compte | Non | Non | Non | Oui ⁴ ⁵ |
+| Modifier ou supprimer son propre compte | Non | Non | Non | Non |
+| Voir, modifier ou supprimer le compte visiteur | Non | Non | Non | Non |
 
 ³ Aucun compte n'est créé à la main : tout passe par l'inscription, puis la validation.
-⁴ Rôles attribuables : webmaster, rédacteur, administrateur. Le rôle visiteur ne s'attribue pas.
-⁵ La suppression d'un rédacteur exige un repreneur pour ses histoires.
+⁴ Rôles attribuables : webmaster, rédacteur, relecteur, administrateur. Le rôle visiteur ne s'attribue pas.
+⁵ La suppression d'un rédacteur exige un repreneur pour ses histoires : un autre rédacteur ou un relecteur.
 
 ### 4.4 Cycle de vie d'un compte et de son rôle
 
@@ -158,7 +159,7 @@ Le circuit brouillon → relecture → validé → publié est déclaratif : le 
 stateDiagram-v2
   direction LR
   SansRole : Sans rôle, connexion refusée
-  Actif : Actif, rôle webmaster, rédacteur ou administrateur
+  Actif : Actif, rôle webmaster, rédacteur, relecteur ou administrateur
   [*] --> SansRole : inscription
   SansRole --> Actif : un administrateur attribue un rôle
   Actif --> Actif : changement de rôle
@@ -424,7 +425,7 @@ flowchart LR
   H -->|Oui| J["Visible sur les fiches des sous-thèmes rattachés"]
 ```
 
-#### Parcours 5 — Rédacteur : écriture et publication d'une histoire
+#### Parcours 5 — Rédacteur : écriture et soumission d'une histoire
 
 ```mermaid
 flowchart LR
@@ -433,8 +434,9 @@ flowchart LR
   C --> D["Prévisualisation dans le back-office, sans publication (14)"]
   D --> E{"Histoire prête ?"}
   E -->|Non| C
-  E -->|Oui| F["État : brouillon, relecture, validé, puis publié"]
-  F --> G["Histoire accessible depuis le site étudiant"]
+  E -->|Oui| F["Passage en relecture : l'histoire est verrouillée"]
+  F --> G["Un relecteur la relit, la valide et la publie, ou la renvoie en brouillon"]
+  G --> H["Histoire publiée : accessible depuis le site étudiant"]
 ```
 
 #### Parcours 6 — Administrateur : suppression d'un compte
@@ -500,7 +502,7 @@ flowchart LR
 6. Importer l'annuaire, vérifier les contenus, compléter les mentions légales, retirer le filigrane « prototype ».
 7. Rejouer la recette sur l'environnement de production.
 
-Formation : guides intégrés au back-office, puis une session de prise en main par rôle (webmaster, rédacteur, administrateur).
+Formation : guides intégrés au back-office, puis une session de prise en main par rôle (webmaster, rédacteur, relecteur, administrateur).
 
 ---
 

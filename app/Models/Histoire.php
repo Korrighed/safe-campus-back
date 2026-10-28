@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\EtatHistoire;
+use App\Enums\UserRole;
+use App\Services\NettoyageScenesService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +33,14 @@ class Histoire extends Model
         ];
     }
 
+    /**
+     * Scenes de chaque histoire en cours de suppression, memorisees avant que
+     * la cascade SQL ne detache le pivot. Cle : id de l'histoire.
+     *
+     * @var array<int, list<int>>
+     */
+    private static array $scenesANettoyer = [];
+
     protected static function booted(): void
     {
         static::creating(function (Histoire $histoire): void {
@@ -39,6 +49,17 @@ class Histoire extends Model
             }
 
             $histoire->ref = self::genererRefUnique($histoire->titre);
+        });
+
+        static::deleting(function (Histoire $histoire): void {
+            self::$scenesANettoyer[$histoire->getKey()] = $histoire->scenes()->pluck('scenes.id')->map(fn ($id) => (int) $id)->all();
+        });
+
+        static::deleted(function (Histoire $histoire): void {
+            $ids = self::$scenesANettoyer[$histoire->getKey()] ?? [];
+            unset(self::$scenesANettoyer[$histoire->getKey()]);
+
+            app(NettoyageScenesService::class)->supprimerOrphelinesParmi($ids);
         });
     }
 
@@ -99,5 +120,26 @@ class Histoire extends Model
     public function scopePubliee(Builder $query): void
     {
         $query->where('etat', EtatHistoire::Publie);
+    }
+
+    /**
+     * Histoires que l'utilisateur peut voir : toutes pour un relecteur, les
+     * siennes pour un redacteur, aucune pour les autres roles.
+     *
+     * @param  Builder<Histoire>  $query
+     */
+    public function scopeVisiblePar(Builder $query, ?User $user): void
+    {
+        if ($user?->role === UserRole::Relecteur) {
+            return;
+        }
+
+        if ($user?->role === UserRole::Redacteur) {
+            $query->where('histoires.user_id', $user->id);
+
+            return;
+        }
+
+        $query->whereRaw('1 = 0');
     }
 }

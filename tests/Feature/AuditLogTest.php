@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Filament\Pages\Auth\Login;
+use App\Models\Choix;
+use App\Models\Scene;
+use App\Models\SousTheme;
 use App\Models\Theme;
 use App\Models\User;
 use Illuminate\Log\Logger;
@@ -67,8 +70,19 @@ class AuditLogTest extends TestCase
 
         $ligne = $this->ligne('Theme.cree');
         $this->assertNotNull($ligne);
-        $this->assertSame($webmaster->email, $ligne->context['auteur']['email']);
+        $this->assertSame($webmaster->id, $ligne->context['auteur']['id']);
+        $this->assertArrayNotHasKey('email', $ligne->context['auteur']);
         $this->assertSame('Thème audité', $ligne->context['valeurs']['libelle']);
+    }
+
+    public function test_le_libelle_des_autres_modeles_est_inchange(): void
+    {
+        $theme = Theme::create(['ref' => 'audit_'.uniqid(), 'libelle' => 'Thème audité', 'ordre' => 0]);
+
+        // Theme n'a pas d'email : le libelle reste son ref (ref precede libelle dans la chaine).
+        $ligne = $this->ligne('Theme.cree');
+        $this->assertNotNull($ligne);
+        $this->assertSame($theme->ref, $ligne->context['cible']['libelle']);
     }
 
     public function test_une_action_annulee_n_est_pas_tracee(): void
@@ -96,10 +110,11 @@ class AuditLogTest extends TestCase
         $this->assertNotNull($ligne);
         $this->assertSame(['role' => null], $ligne->context['avant']);
         $this->assertSame(['role' => 'redacteur'], $ligne->context['apres']);
-        $this->assertSame($user->email, $ligne->context['cible']['libelle']);
+        $this->assertSame($user->id, $ligne->context['cible']['id']);
+        $this->assertArrayNotHasKey('libelle', $ligne->context['cible']);
     }
 
-    public function test_une_suppression_garde_un_libelle_lisible(): void
+    public function test_une_suppression_garde_l_identifiant_sans_libelle(): void
     {
         $user = User::factory()->create(['role' => UserRole::Webmaster]);
 
@@ -107,7 +122,8 @@ class AuditLogTest extends TestCase
 
         $ligne = $this->ligne('User.supprime');
         $this->assertNotNull($ligne);
-        $this->assertSame($user->email, $ligne->context['cible']['libelle']);
+        $this->assertSame($user->id, $ligne->context['cible']['id']);
+        $this->assertArrayNotHasKey('libelle', $ligne->context['cible']);
         $this->assertSame('webmaster', $ligne->context['valeurs']['role']);
     }
 
@@ -123,7 +139,8 @@ class AuditLogTest extends TestCase
             $this->assertStringNotContainsString(self::MOT_DE_PASSE, $json);
         }
 
-        $this->assertSame(['nom' => 'Nouveau'], $this->ligne('User.modifie')->context['apres']);
+        $this->assertSame(['nom'], $this->ligne('User.modifie')->context['champs_modifies']);
+        $this->assertArrayNotHasKey('apres', $this->ligne('User.modifie')->context);
     }
 
     public function test_un_changement_de_remember_token_seul_n_est_pas_trace(): void
@@ -156,13 +173,134 @@ class AuditLogTest extends TestCase
 
         $echec = $this->ligne('auth.echec');
         $this->assertNotNull($echec);
-        $this->assertSame($user->email, $echec->context['email_tente']);
+        $this->assertSame($user->id, $echec->context['compte_id']);
+        $this->assertTrue($echec->context['compte_connu']);
         $this->assertStringNotContainsString('Mauvais-Mot-De-Passe', json_encode($echec->context));
 
         Livewire::test(Login::class)
             ->fillForm(['email' => $user->email, 'password' => self::MOT_DE_PASSE])
             ->call('authenticate');
 
-        $this->assertSame($user->email, $this->ligne('auth.connexion')?->context['cible']['libelle']);
+        $this->assertSame($user->id, $this->ligne('auth.connexion')?->context['cible']['id']);
+    }
+
+    public function test_aucune_adresse_email_n_apparait_dans_les_logs(): void
+    {
+        $auteur = User::factory()->create(['role' => UserRole::Webmaster, 'email' => 'auteur.'.uniqid().'@test.nc']);
+        $this->actingAs($auteur);
+
+        $marque = uniqid();
+        $email = 'confidentiel.'.$marque.'@test.nc';
+        $nom = 'Nomconfidentiel'.$marque;
+        $nouveauNom = 'Nouveaunom'.$marque;
+        $prenom = 'Prenomconfidentiel'.$marque;
+        $telephone = '+687 79 '.random_int(100000, 999999);
+
+        $user = User::factory()->create([
+            'email' => $email,
+            'nom' => $nom,
+            'prenom' => $prenom,
+            'telephone' => $telephone,
+            'role' => UserRole::Redacteur,
+        ]);
+        $user->update(['nom' => $nouveauNom]);
+        $user->update(['role' => UserRole::Webmaster]);
+        $user->delete();
+
+        // Garde-fou : prouve que creation, modification et suppression ont bien ete tracees.
+        $this->assertNotNull($this->ligne('User.cree'));
+        $this->assertNotNull($this->ligne('User.modifie'));
+        $this->assertNotNull($this->ligne('User.supprime'));
+
+        $personnels = [$email, $nom, $nouveauNom, $prenom, $telephone, $auteur->email];
+
+        foreach ($this->handler->getRecords() as $record) {
+            $json = json_encode($record->context);
+
+            foreach ($personnels as $valeur) {
+                $this->assertStringNotContainsString($valeur, $json);
+            }
+        }
+    }
+
+    public function test_un_echec_de_connexion_sans_compte_ne_garde_que_l_absence_de_compte(): void
+    {
+        $adresse = 'inconnu.'.uniqid().'@test.nc';
+
+        Livewire::test(Login::class)
+            ->fillForm(['email' => $adresse, 'password' => 'Mauvais-Mot-De-Passe!'])
+            ->call('authenticate');
+
+        $echec = $this->ligne('auth.echec');
+        $this->assertNotNull($echec);
+        $this->assertFalse($echec->context['compte_connu']);
+        $this->assertArrayNotHasKey('compte_id', $echec->context);
+
+        foreach ($this->handler->getRecords() as $record) {
+            $this->assertStringNotContainsString($adresse, json_encode($record->context));
+        }
+    }
+
+    public function test_le_contenu_d_une_scene_n_est_jamais_journalise(): void
+    {
+        Scene::factory()->create(['titre' => 'Titre confidentiel', 'dialogue_text' => 'Dialogue confidentiel']);
+
+        foreach ($this->handler->getRecords() as $record) {
+            $json = json_encode($record->context);
+            $this->assertStringNotContainsString('Titre confidentiel', $json);
+            $this->assertStringNotContainsString('Dialogue confidentiel', $json);
+        }
+
+        $ligne = $this->ligne('Scene.cree');
+        $this->assertNotNull($ligne);
+        $this->assertArrayNotHasKey('libelle', $ligne->context['cible']);
+    }
+
+    public function test_modifier_un_dialogue_trace_le_nom_du_champ_sans_le_texte(): void
+    {
+        $scene = Scene::factory()->create(['titre' => 'Titre confidentiel', 'dialogue_text' => 'Dialogue confidentiel']);
+        $this->handler->clear();
+
+        $scene->update(['dialogue_text' => 'Nouveau texte confidentiel']);
+
+        $ligne = $this->ligne('Scene.modifie');
+        $this->assertNotNull($ligne);
+        $this->assertSame(['dialogue_text'], $ligne->context['champs_modifies']);
+        $this->assertArrayNotHasKey('avant', $ligne->context);
+        $this->assertArrayNotHasKey('apres', $ligne->context);
+
+        foreach ($this->handler->getRecords() as $record) {
+            $this->assertStringNotContainsString('confidentiel', json_encode($record->context));
+        }
+    }
+
+    public function test_le_texte_d_un_choix_n_est_jamais_journalise(): void
+    {
+        $choix = Choix::factory()->create(['text_choix' => 'Choix confidentiel']);
+
+        $choix->update(['text_choix' => 'Nouveau choix confidentiel']);
+
+        $ligne = $this->ligne('Choix.modifie');
+        $this->assertNotNull($ligne);
+        $this->assertSame(['text_choix'], $ligne->context['champs_modifies']);
+
+        foreach ($this->handler->getRecords() as $record) {
+            $this->assertStringNotContainsString('confidentiel', json_encode($record->context));
+        }
+    }
+
+    public function test_un_champ_non_confidentiel_d_une_scene_reste_trace(): void
+    {
+        $scene = Scene::factory()->create();
+        $sousTheme = SousTheme::factory()->create();
+        $this->handler->clear();
+
+        $scene->update(['dialogue_text' => 'Nouveau texte confidentiel', 'sous_theme_id' => $sousTheme->id]);
+
+        $ligne = $this->ligne('Scene.modifie');
+        $this->assertNotNull($ligne);
+        $this->assertSame($sousTheme->id, $ligne->context['apres']['sous_theme_id']);
+        $this->assertArrayNotHasKey('dialogue_text', $ligne->context['apres']);
+        $this->assertEqualsCanonicalizing(['dialogue_text', 'sous_theme_id'], $ligne->context['champs_modifies']);
     }
 }

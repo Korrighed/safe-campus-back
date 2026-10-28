@@ -104,3 +104,24 @@ Parcours navigateur : aucun (pas d'impact visible hors le texte de la modale).
 - Pas d'optimisation du N+1 de `getSections()` (noté, hors lot).
 
 ## Notes d'exécution
+
+- Branche vérifiée : `feature/role-relecteur`. Aucun commit, aucune écriture git.
+- Consigne utilisateur : aucune vérification hors `php -l`. `pint`, `phpstan` et `php artisan test` non exécutés. Les tests ajoutés ou réécrits ne sont donc pas exécutés.
+- `php -l` (via `docker compose exec -T sc_back`) : OK sur les 7 fichiers PHP modifiés. Relecture de fin de fichier : aucune balise parasite.
+- Étape 1 : `retirerChoixVisantLaScene()` ajoutée à `NettoyageScenesService`, appelée avant `delete()` dans `supprimerOrphelinesParmi()` et `purgerOrphelines()`. `$scenes->each->delete()` remplacé par une closure pour l'appel. `use App\Models\Choix` ajouté.
+- Étape 2 : appel dans `supprimerSceneAction()` après les gardes, avant `delete()`.
+- Étape 3 : `->get()->each->delete()` dans `enregistrer()`. Chaque choix retiré passe par le modèle et écrit `Choix.supprime`.
+- Étape 4 : texte appliqué tel quel. Voir « Décision requise » ci-dessous.
+- Étape 5 : `scenesReutilisablesQuery(): Builder` ajoutée. `getScenesReutilisables()` et `reutiliser()` l'utilisent. `use Illuminate\Database\Eloquent\Builder` ajouté.
+- Étape 6 : `vendor/filament/filament/src/Resources/Pages/CreateRecord.php`, `create()` : `handleRecordCreation()` (l.107), puis `saveRelationships()` (l.109), puis `afterCreate` via `callHook` (l.111). Les sous-thèmes (`Select::relationship('sousThemes')`) sont donc en base quand `afterCreate()` les lit. Hook retenu : `afterCreate()`.
+- Étape 6, trace `Histoire.scene_ajoutee` : écrite après la `DB::transaction` interne de `handleRecordCreation()`. `databaseTransactions()` n'est pas activé (défaut `false`, aucune occurrence dans `app/`), donc pas de transaction englobante. Si un jour activé, la trace précéderait le commit externe : passer alors à `DB::afterCommit`.
+- Étape 7 : commentaire corrigé. Vérifié : `DB::afterCommit` exécute le callback immédiatement hors transaction (`DatabaseTransactionsManager::addCallback`).
+- Étape 8, `NettoyageScenesTest` : test 3 renommé `test_le_choix_d_une_scene_conservee_vers_une_scene_supprimee_disparait`, assertion `assertModelMissing($choix)`. Test « choix d'une scène exclusive » non ajouté : déjà couvert par `test_supprimer_une_histoire_supprime_ses_scenes_orphelines` (choix `$intro` vers `$salon`, asserté absent).
+- Étape 8, `HistoireScenesTest` : `test_supprimer_une_scene_retire_les_choix_visants_depuis_une_scene_partagee` ajouté. Assertion ajoutée : `$intro->choix()->count() === 0`, pour couvrir AC-01 (H2 ne gagne aucun choix).
+- Étape 8, `AuditHistoireTest` : `test_creer_une_histoire_trace_la_premiere_scene_et_les_sous_themes` et `test_supprimer_un_choix_en_editant_une_scene_est_trace` ajoutés. Imports `CreateHistoire` et `Choix` ajoutés.
+- Dépendance : `HistoireScenesTest` suppose que `ScenePolicy::delete()` autorise la suppression de X (toutes les histoires de X en brouillon, au propriétaire). T018 modifie `ScenePolicy` : à re-vérifier au lancement des tests.
+- Décision requise (AC-02) : le texte de l'étape 4 dit « sera supprimée au prochain nettoyage ». Le code ne supprime qu'une scène orpheline créée il y a plus de 24 h (`DELAI_MINIMUM_HEURES`, sur `created_at`). Pour une scène créée depuis moins de 24 h, le texte est faux. La commande `scenes:purger-orphelines` n'est pas planifiée (`routes/console.php` ne planifie que `comptes:purger-inactifs`). Proposition : « La scène est retirée de cette histoire. Si aucune autre histoire ne l'utilise, elle ne sera plus accessible. Si elle a été créée il y a plus de 24 heures, elle sera supprimée au prochain nettoyage manuel. »
+- Risque (hors étape, non modifié) : la modale « Supprimer » dit « La scène et ses choix seront supprimés définitivement ». Elle ne mentionne pas que les choix d'autres scènes visant cette scène sont aussi retirés.
+- Risque (hors étape, non modifié) : `retirerChoixVisantLaScene()` et `delete()` ne sont pas dans une transaction commune. Si `delete()` échoue, les choix visant la scène sont déjà supprimés et la scène reste. Proposition : envelopper les deux dans `DB::transaction`.
+- Non couvert par test : le chemin `purgerOrphelines()` (commande `scenes:purger-orphelines`) n'a pas de test de suppression des choix entrants.
+- Statut de la tâche laissé à « à faire ».

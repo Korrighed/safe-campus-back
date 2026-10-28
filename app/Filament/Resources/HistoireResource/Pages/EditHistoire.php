@@ -103,7 +103,7 @@ class EditHistoire extends EditRecord
         $ajoutes = array_values(array_diff($apres, $this->sousThemesAvant));
         $retires = array_values(array_diff($this->sousThemesAvant, $apres));
 
-        // save() tourne dans une transaction : comme AuditObserver, on n'ecrit qu'apres commit.
+        // save() n'ouvre pas de transaction cote panel : DB::afterCommit s'execute alors immediatement, et reste correct si databaseTransactions() est active un jour.
         if ($ajoutes !== [] || $retires !== []) {
             $histoire = $this->histoire();
 

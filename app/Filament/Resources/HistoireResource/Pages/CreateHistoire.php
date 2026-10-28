@@ -6,6 +6,7 @@ use App\Enums\EtatHistoire;
 use App\Filament\Resources\HistoireResource;
 use App\Models\Histoire;
 use App\Models\Scene;
+use App\Services\AuditService;
 use Filament\Forms;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -16,6 +17,11 @@ class CreateHistoire extends CreateRecord
     use CreateRecord\Concerns\HasWizard;
 
     protected static string $resource = HistoireResource::class;
+
+    /**
+     * Id de la premiere scene creee : lu par la trace d'audit, apres la transaction.
+     */
+    private ?int $premiereSceneId = null;
 
     protected function getSteps(): array
     {
@@ -48,7 +54,7 @@ class CreateHistoire extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
-        return DB::transaction(function () use ($data): Histoire {
+        $histoire = DB::transaction(function () use ($data): Histoire {
             $histoire = Histoire::create([
                 'titre' => $data['titre'],
                 'etat' => EtatHistoire::Brouillon,
@@ -57,9 +63,30 @@ class CreateHistoire extends CreateRecord
 
             $scene = Scene::create($data['premiere_scene']);
             $histoire->scenes()->attach($scene->id, ['est_initiale' => true, 'ordre' => 1]);
+            $this->premiereSceneId = $scene->id;
 
             return $histoire;
         });
+
+        // Apres la transaction interne. Le panel n'en ouvre pas d'englobante (databaseTransactions() absent).
+        app(AuditService::class)->ecrire('Histoire.scene_ajoutee', $histoire, ['scene_id' => $this->premiereSceneId, 'initiale' => true]);
+
+        return $histoire;
+    }
+
+    /**
+     * Appelee par create() apres saveRelationships() : les sous-themes sont deja en base.
+     */
+    protected function afterCreate(): void
+    {
+        /** @var Histoire $histoire */
+        $histoire = $this->getRecord();
+
+        $ids = $histoire->sousThemes()->pluck('sous_themes.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+
+        if ($ids !== []) {
+            app(AuditService::class)->ecrire('Histoire.sous_themes_modifies', $histoire, ['ajoutes' => $ids, 'retires' => []]);
+        }
     }
 
     protected function getRedirectUrl(): string

@@ -14,6 +14,7 @@ use App\Models\Media;
 use App\Models\Scene;
 use App\Models\SousTheme;
 use App\Services\AuditService;
+use App\Services\NettoyageScenesService;
 use App\Services\VerificationHistoireService;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -24,6 +25,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -166,10 +168,7 @@ class ScenesHistoire extends Page
      */
     public function getScenesReutilisables(): array
     {
-        return Scene::query()
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
-            ->whereHas('histoires')
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereNotIn('histoires.id', Histoire::query()->visiblePar(auth()->user())->select('histoires.id')))
+        return $this->scenesReutilisablesQuery()
             ->with('histoires:id,titre')
             ->orderBy('titre')
             ->get()
@@ -371,7 +370,7 @@ class ScenesHistoire extends Page
                 $conserves[] = $choix->getKey();
             }
 
-            $scene->choix()->whereNotIn('id', $conserves)->delete();
+            $scene->choix()->whereNotIn('id', $conserves)->get()->each->delete();
 
             return $scene;
         });
@@ -427,11 +426,8 @@ class ScenesHistoire extends Page
     {
         $this->autoriserModification();
 
-        $scene = Scene::query()
+        $scene = $this->scenesReutilisablesQuery()
             ->whereKey($this->sceneAReutiliser)
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
-            ->whereHas('histoires')
-            ->whereDoesntHave('histoires', fn ($query) => $query->whereNotIn('histoires.id', Histoire::query()->visiblePar(auth()->user())->select('histoires.id')))
             ->first();
 
         if ($scene === null) {
@@ -453,7 +449,7 @@ class ScenesHistoire extends Page
         return Action::make('retirerScene')
             ->requiresConfirmation()
             ->modalHeading(fn (array $arguments): string => 'Retirer « '.$this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0))->titre.' » de l\'histoire ?')
-            ->modalDescription('La scène n\'est pas supprimée : elle reste disponible pour être réutilisée.')
+            ->modalDescription('La scène est retirée de cette histoire. Si aucune autre histoire ne l\'utilise, elle ne sera plus accessible depuis le back-office et pourra être supprimée lors d\'un nettoyage.')
             ->modalSubmitActionLabel('Retirer')
             ->action(function (array $arguments): void {
                 $scene = $this->sceneDeLHistoire((int) ($arguments['scene'] ?? 0));
@@ -495,6 +491,8 @@ class ScenesHistoire extends Page
                     return;
                 }
 
+                app(NettoyageScenesService::class)->retirerChoixVisantLaScene($scene);
+
                 $scene->delete();
 
                 Notification::make()->success()->title("« {$scene->titre} » est supprimée.")->send();
@@ -511,6 +509,20 @@ class ScenesHistoire extends Page
             ->orderBy('histoire_scene.ordre')
             ->orderBy('scenes.id')
             ->get();
+    }
+
+    /**
+     * Scenes reutilisables dans cette histoire : rattachees a une autre histoire
+     * visible par l'utilisateur, et pas deja dans celle-ci.
+     *
+     * @return Builder<Scene>
+     */
+    protected function scenesReutilisablesQuery(): Builder
+    {
+        return Scene::query()
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereKey($this->histoire()->getKey()))
+            ->whereHas('histoires')
+            ->whereDoesntHave('histoires', fn ($query) => $query->whereNotIn('histoires.id', Histoire::query()->visiblePar(auth()->user())->select('histoires.id')));
     }
 
     protected function sceneDeLHistoire(int $sceneId): Scene

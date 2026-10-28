@@ -4,9 +4,11 @@ namespace Tests\Feature;
 
 use App\Enums\EtatHistoire;
 use App\Enums\UserRole;
+use App\Filament\Resources\HistoireResource\Pages\CreateHistoire;
 use App\Filament\Resources\HistoireResource\Pages\EditHistoire;
 use App\Filament\Resources\HistoireResource\Pages\ListHistoires;
 use App\Filament\Resources\HistoireResource\Pages\ScenesHistoire;
+use App\Models\Choix;
 use App\Models\Histoire;
 use App\Models\Scene;
 use App\Models\SousTheme;
@@ -366,5 +368,59 @@ class AuditHistoireTest extends TestCase
         $contenu = json_encode($ligne->context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $this->assertStringNotContainsString('Titre distinctif brouillon', $contenu);
         $this->assertStringNotContainsString('Titre distinctif relecture', $contenu);
+    }
+
+    public function test_creer_une_histoire_trace_la_premiere_scene_et_les_sous_themes(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        $sousTheme = SousTheme::factory()->create();
+        $this->handler->clear();
+
+        Livewire::test(CreateHistoire::class)
+            ->fillForm([
+                'titre' => 'Histoire tracee',
+                'sousThemes' => [$sousTheme->id],
+                'premiere_scene' => ['titre' => 'Titre secret', 'dialogue_text' => 'Texte secret'],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $histoire = Histoire::query()->sole();
+
+        $scene = $this->ligne('Histoire.scene_ajoutee');
+        $this->assertNotNull($scene);
+        $this->assertSame($histoire->sceneInitiale()?->id, $scene->context['scene_id']);
+        $this->assertTrue($scene->context['initiale']);
+
+        $sousThemes = $this->lignes('Histoire.sous_themes_modifies');
+        $this->assertCount(1, $sousThemes);
+        $this->assertSame([$sousTheme->id], $sousThemes[0]->context['ajoutes']);
+        $this->assertSame([], $sousThemes[0]->context['retires']);
+
+        $this->assertStringNotContainsString('Titre secret', $this->json());
+        $this->assertStringNotContainsString('Texte secret', $this->json());
+    }
+
+    public function test_supprimer_un_choix_en_editant_une_scene_est_trace(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+        [$histoire, $scenes] = $this->histoireAvecScenes($redacteur, 2);
+        $garde = Choix::factory()->create(['scene_id' => $scenes[0]->id, 'next_scene_id' => $scenes[1]->id, 'text_choix' => 'Entrer']);
+        $retire = Choix::factory()->favorable()->create(['scene_id' => $scenes[0]->id, 'text_choix' => 'Rentrer']);
+        $this->handler->clear();
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->call('modifier', $scenes[0]->id)
+            ->set('donnees.choix', [
+                "choix-{$garde->id}" => ['id' => $garde->id, 'text_choix' => 'Entrer', 'suite' => 'continuer', 'next_scene_id' => $scenes[1]->id],
+            ])
+            ->call('enregistrer')
+            ->assertHasNoFormErrors();
+
+        $lignes = $this->lignes('Choix.supprime');
+        $this->assertCount(1, $lignes);
+        $this->assertSame($retire->id, $lignes[0]->context['cible']['id']);
     }
 }

@@ -228,6 +228,24 @@ class HistoireScenesTest extends TestCase
         $this->assertFalse($sections[$salon->id]['modifiable']);
     }
 
+    public function test_supprimer_une_scene_retire_les_choix_visants_depuis_une_scene_partagee(): void
+    {
+        [$histoire, $intro, $salon, $balcon] = $this->histoireATroisScenes();
+        $histoirePubliee = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create(['etat' => EtatHistoire::Publie]);
+        $histoirePubliee->scenes()->attach($intro->id, ['est_initiale' => true, 'ordre' => 1]);
+        $choixSortie = Choix::factory()->create(['scene_id' => $intro->id, 'next_scene_id' => $balcon->id, 'text_choix' => 'Sortir']);
+        $choixRester = Choix::factory()->create(['scene_id' => $salon->id, 'next_scene_id' => $balcon->id, 'text_choix' => 'Rester']);
+
+        Livewire::test(ScenesHistoire::class, ['record' => $histoire->getKey()])
+            ->callAction('supprimerScene', arguments: ['scene' => $balcon->id]);
+
+        $this->assertModelMissing($balcon);
+        $this->assertModelMissing($choixSortie);
+        $this->assertModelExists($choixRester);
+        $this->assertNull($choixRester->refresh()->next_scene_id);
+        $this->assertSame(0, $intro->choix()->count());
+    }
+
     public function test_une_scene_partagee_ne_peut_pas_etre_supprimee(): void
     {
         [$histoire, , $salon] = $this->histoireATroisScenes();

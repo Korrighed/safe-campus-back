@@ -41,7 +41,7 @@ class NettoyageScenesTest extends TestCase
         $this->assertModelMissing($exclusive);
     }
 
-    public function test_le_choix_d_une_scene_conservee_vers_une_scene_supprimee_perd_sa_cible(): void
+    public function test_le_choix_d_une_scene_conservee_vers_une_scene_supprimee_disparait(): void
     {
         $supprimee = Histoire::factory()->create();
         $autre = Histoire::factory()->create();
@@ -56,7 +56,7 @@ class NettoyageScenesTest extends TestCase
 
         $this->assertModelExists($s1);
         $this->assertModelMissing($s2);
-        $this->assertNull($choix->fresh()->next_scene_id);
+        $this->assertModelMissing($choix);
     }
 
     public function test_la_commande_supprime_les_scenes_orphelines_anciennes(): void

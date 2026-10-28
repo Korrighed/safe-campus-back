@@ -3,20 +3,26 @@
 namespace App\Filament\Resources;
 
 use App\Enums\EtatHistoire;
+use App\Enums\UserRole;
 use App\Filament\Resources\HistoireResource\Pages;
 use App\Models\Histoire;
+use App\Policies\HistoirePolicy;
+use App\Services\AuditService;
 use App\Services\VerificationHistoireService;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Navigation\NavigationItem;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Pages\SubNavigationPosition;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 
 class HistoireResource extends Resource
 {
@@ -27,6 +33,40 @@ class HistoireResource extends Resource
     protected static ?int $navigationSort = 5;
 
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    public const TITRE_MAX = 255;
+
+    public const DIALOGUE_MAX = 1000;
+
+    public const TEXTE_CHOIX_MAX = 255;
+
+    public static function mentionLimite(int $max): string
+    {
+        return "{$max} caractères maximum.";
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<Histoire> $requete */
+        $requete = parent::getEloquentQuery();
+
+        return $requete->visiblePar(auth()->user());
+    }
+
+    /**
+     * Une histoire hors du périmètre de l'utilisateur reste un 404 (son
+     * existence n'est pas révélée), mais la tentative est tracée.
+     */
+    public static function resolveRecordRouteBinding(int|string $key): ?Model
+    {
+        $histoire = parent::resolveRecordRouteBinding($key);
+
+        if ($histoire === null && auth()->check() && $existante = Histoire::query()->whereKey($key)->first()) {
+            app(AuditService::class)->ecrire('Histoire.acces_refuse', $existante, ['motif' => 'hors_perimetre']);
+        }
+
+        return $histoire;
+    }
 
     /**
      * Formulaire d'édition seulement : la création passe par l'assistant.
@@ -42,14 +82,14 @@ class HistoireResource extends Resource
                                 static::champTitre(),
                                 Forms\Components\Select::make('etat')
                                     ->label('État')
-                                    ->options(array_combine(
-                                        array_map(fn (EtatHistoire $etat) => $etat->value, EtatHistoire::cases()),
-                                        array_map(fn (EtatHistoire $etat) => $etat->libelle(), EtatHistoire::cases()),
-                                    ))
+                                    ->options(fn (?Histoire $record): array => static::optionsEtat($record))
                                     ->required()
+                                    ->in(fn (?Histoire $record): array => array_keys(static::optionsEtat($record)))
                                     ->native(false)
                                     ->live()
-                                    ->helperText('Brouillon → Relecture → Validé → Publié. Seul « Publié » est visible sur le site.')
+                                    ->helperText(fn (): string => auth()->user()?->role === UserRole::Relecteur
+                                        ? 'Brouillon → Relecture → Validé → Publié. Seul « Publié » est visible sur le site. Vous pouvez passer d\'un état à n\'importe quel autre.'
+                                        : 'Passez l\'histoire en « Relecture » quand elle est prête. Elle sera alors verrouillée : un relecteur la corrige, la publie ou vous la renvoie en brouillon.')
                                     ->hint(fn (Get $get, ?Histoire $record): ?string => self::histoireIncompleteHorsBrouillon($get('etat'), $record)
                                         ? 'Histoire incomplète — voir « Vérifier » dans le menu'
                                         : null)
@@ -68,7 +108,8 @@ class HistoireResource extends Resource
     {
         return Forms\Components\TextInput::make('titre')
             ->required()
-            ->maxLength(255);
+            ->maxLength(self::TITRE_MAX)
+            ->helperText(self::mentionLimite(self::TITRE_MAX));
     }
 
     public static function champSousThemes(): Forms\Components\Select
@@ -80,6 +121,24 @@ class HistoireResource extends Resource
             ->preload()
             ->searchable()
             ->helperText('Rubriques où apparaîtra le bouton « Suivre l\'histoire ».');
+    }
+
+    /**
+     * Etats que l'utilisateur connecte peut poser sur cette histoire.
+     *
+     * @return array<string, string> valeur => libelle
+     */
+    public static function optionsEtat(?Histoire $histoire): array
+    {
+        $utilisateur = auth()->user();
+
+        if ($histoire === null || $utilisateur === null) {
+            return [];
+        }
+
+        return collect(app(HistoirePolicy::class)->etatsAccessibles($utilisateur, $histoire))
+            ->mapWithKeys(fn (EtatHistoire $etat): array => [$etat->value => $etat->libelle()])
+            ->all();
     }
 
     private static function histoireIncompleteHorsBrouillon(EtatHistoire|string|null $etat, ?Histoire $record): bool
@@ -140,17 +199,43 @@ class HistoireResource extends Resource
                     ->label('Scènes')
                     ->icon('heroicon-o-film')
                     ->color('gray')
-                    ->url(fn (Histoire $record): string => static::getUrl('scenes', ['record' => $record])),
+                    ->url(fn (Histoire $record): string => static::getUrl('scenes', ['record' => $record]))
+                    ->authorize('view'),
                 Tables\Actions\Action::make('previsualiser')
                     ->label('Prévisualiser')
                     ->icon('heroicon-o-play')
                     ->color('gray')
-                    ->url(fn (Histoire $record): string => static::getUrl('preview', ['record' => $record])),
-                Tables\Actions\EditAction::make(),
+                    ->url(fn (Histoire $record): string => static::getUrl('preview', ['record' => $record]))
+                    ->authorize('view'),
+                Tables\Actions\EditAction::make()
+                    ->authorize('update'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    // DeleteBulkAction ne controle pas chaque enregistrement : la policy est appliquee ici.
+                    Tables\Actions\BulkAction::make('supprimer')
+                        ->label('Supprimer la sélection')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records): void {
+                            $utilisateur = auth()->user();
+                            [$supprimables, $refusees] = $records->partition(fn (Model $histoire): bool => $utilisateur?->can('delete', $histoire) ?? false);
+
+                            $supprimables->each->delete();
+
+                            app(AuditService::class)->ecrire('Histoire.suppression_groupee', null, [
+                                'supprimees' => $supprimables->values()->modelKeys(),
+                                'refusees' => $refusees->values()->modelKeys(),
+                            ]);
+
+                            Notification::make()
+                                ->title($supprimables->count().' histoire(s) supprimée(s)')
+                                ->body($refusees->isNotEmpty() ? $refusees->count().' histoire(s) ne peuvent pas être supprimées dans leur état actuel.' : null)
+                                ->color($refusees->isNotEmpty() ? 'warning' : 'success')
+                                ->send();
+                        }),
                 ]),
             ]);
     }
@@ -217,7 +302,13 @@ class HistoireResource extends Resource
             return null;
         }
 
-        return $record instanceof Histoire ? $record : Histoire::find($record);
+        if ($record instanceof Histoire) {
+            return $record;
+        }
+
+        $histoire = static::getEloquentQuery()->find($record);
+
+        return $histoire instanceof Histoire ? $histoire : null;
     }
 
     public static function getPages(): array

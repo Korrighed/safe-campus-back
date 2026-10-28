@@ -4,9 +4,15 @@ namespace Tests\Feature\Database;
 
 use App\Models\Histoire;
 use Database\Seeders\HistoireAnxieteSeeder;
+use Database\Seeders\HistoireBurnOutSeeder;
 use Database\Seeders\HistoireDemoSeeder;
+use Database\Seeders\HistoireDepressionSeeder;
+use Database\Seeders\HistoireDrogueSeeder;
 use Database\Seeders\HistoireHarcelementSeeder;
 use Database\Seeders\HistoireSeeder;
+use Database\Seeders\HistoireTabacSeeder;
+use Database\Seeders\HistoireViolencesSexistesSeeder;
+use Database\Seeders\HistoireViolencesSexuellesSeeder;
 use Database\Seeders\RedacteurDemoSeeder;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -31,6 +37,12 @@ class HistoireDemoSeederTest extends TestCase
             'alcool' => [HistoireSeeder::class, 'demo_soiree_qui_derape', 'alcool', 3, 9, 'demo-soiree-qui-derape', 'debut.jpg'],
             'anxiete' => [HistoireAnxieteSeeder::class, 'demo_veille_du_partiel', 'anxiete', 4, 12, 'demo-veille-du-partiel', 'pause.svg'],
             'harcelement' => [HistoireHarcelementSeeder::class, 'demo_groupe_de_td', 'harcelement', 4, 12, 'demo-groupe-de-td', 'prive.svg'],
+            'tabac' => [HistoireTabacSeeder::class, 'demo_pause_clope', 'tabac', 4, 12, 'demo-pause-clope', 'envie.svg'],
+            'drogue' => [HistoireDrogueSeeder::class, 'demo_joint_qui_tourne', 'drogue', 4, 12, 'demo-joint-qui-tourne', 'coloc.svg'],
+            'depression' => [HistoireDepressionSeeder::class, 'demo_volets_fermes', 'depression', 4, 12, 'demo-volets-fermes', 'absences.svg'],
+            'burn_out' => [HistoireBurnOutSeeder::class, 'demo_tout_tenir', 'burn_out', 4, 12, 'demo-tout-tenir', 'agenda.svg'],
+            'violences_sexistes' => [HistoireViolencesSexistesSeeder::class, 'demo_juste_une_blague', 'violences_sexistes', 4, 12, 'demo-juste-une-blague', 'soutien.svg'],
+            'violences_sexuelles' => [HistoireViolencesSexuellesSeeder::class, 'demo_retour_de_soiree', 'violences_sexuelles', 4, 12, 'demo-retour-de-soiree', 'lendemain.svg'],
         ];
     }
 

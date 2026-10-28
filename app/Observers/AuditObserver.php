@@ -20,34 +20,42 @@ class AuditObserver implements ShouldHandleEventsAfterCommit
     public function created(Model $model): void
     {
         $this->audit->ecrire(class_basename($model).'.cree', $model, [
-            'valeurs' => $this->audit->nettoyer($model->getAttributes()),
+            'valeurs' => $this->audit->nettoyer($model->getAttributes(), $model),
         ]);
     }
 
     public function updated(Model $model): void
     {
-        $apres = $this->audit->nettoyer($model->getChanges());
+        // Noms des champs modifies, contenu compris : sans modele, rien n'est retire.
+        $champs = array_keys($this->audit->nettoyer($model->getChanges()));
 
         // Rien de tracable : seul un champ sensible ou technique a change
         // (remember_token a chaque connexion, updated_at).
-        if ($apres === []) {
+        if ($champs === []) {
             return;
         }
 
+        $apres = $this->audit->nettoyer($model->getChanges(), $model);
+
         // getPrevious() et non getOriginal() : apres commit, l'original est
         // deja resynchronise sur les nouvelles valeurs.
-        $avant = $this->audit->nettoyer(array_intersect_key($model->getPrevious(), $apres));
+        $avant = $this->audit->nettoyer(array_intersect_key($model->getPrevious(), $apres), $model);
 
-        $this->audit->ecrire(class_basename($model).'.modifie', $model, [
-            'avant' => $avant,
-            'apres' => $apres,
-        ]);
+        $details = ['champs_modifies' => $champs];
+
+        // Seul du contenu redige a change : $apres est vide, seuls les noms des champs sont traces.
+        if ($apres !== []) {
+            $details['avant'] = $avant;
+            $details['apres'] = $apres;
+        }
+
+        $this->audit->ecrire(class_basename($model).'.modifie', $model, $details);
     }
 
     public function deleted(Model $model): void
     {
         $this->audit->ecrire(class_basename($model).'.supprime', $model, [
-            'valeurs' => $this->audit->nettoyer($model->getAttributes()),
+            'valeurs' => $this->audit->nettoyer($model->getAttributes(), $model),
         ]);
     }
 }

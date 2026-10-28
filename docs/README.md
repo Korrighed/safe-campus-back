@@ -17,6 +17,9 @@ Les fichiers Markdown de ce dossier sont la source de vérité. Les PDF livrés 
 | [schema_bd.md](schema_bd.md) | Modèle de données, contrats d'API, rôles |
 | [deploiement.md](deploiement.md) | Images de production, variables, commandes post-déploiement, logs d'audit |
 | [deploiement-render.md](deploiement-render.md) | Démo publique temporaire sur Render et Neon : services, variables, démarrage, limites du plan gratuit |
+| [ci.md](ci.md) | Intégration continue : déclencheurs, jobs `verif` et `approfondi`, réglages GitHub, ruleset de `main` |
 | [retours-tests.md](retours-tests.md) | Retours de la campagne de tests du back-office |
+| [PRD.md](PRD.md) | Rôle relecteur et cloisonnement des rédacteurs : besoins |
+| [TRD.md](TRD.md) | Rôle relecteur : matrice des droits, audit, décisions |
 
 Conventions de développement : `CLAUDE.md` et `README.md` de chaque dépôt.

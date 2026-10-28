@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">Fin de soirée : des lumières tamisées, ton amie qui tangue, un garçon qui insiste à côté d'elle, toi qui t'approches</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .spot { animation: spot 6s ease-in-out infinite alternate; }
+    .s2 { animation-delay: -3s; }
+    @keyframes spot { 0% { transform: translateX(-60px); opacity: .25; } 100% { transform: translateX(60px); opacity: .45; } }
+    .amie { transform-box: fill-box; transform-origin: bottom center; animation: tangue 3s ease-in-out infinite; }
+    @keyframes tangue { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+    .insiste { animation: insiste 10s ease-out infinite; opacity: 0; }
+    @keyframes insiste { 0%, 8% { opacity: 0; transform: translateY(8px); } 14%, 90% { opacity: 1; transform: translateY(0); } 96%, 100% { opacity: 0; } }
+    .toi { animation: approche 10s ease-in-out infinite; }
+    @keyframes approche { 0%, 30% { transform: translateX(0); } 60%, 92% { transform: translateX(-140px); } 100% { transform: translateX(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+      .insiste { opacity: 1; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#10002b"/>
+      <stop offset="1" stop-color="#240046"/>
+    </linearGradient>
+    <radialGradient id="faisceau" cx=".5" cy="0" r="1">
+      <stop offset="0" stop-color="#c77dff"/>
+      <stop offset="1" stop-color="#c77dff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="url(#fond)"/>
+  <path class="spot" d="M300 0 L 180 572 L 420 572 z" fill="url(#faisceau)"/>
+  <path class="spot s2" d="M720 0 L 600 572 L 840 572 z" fill="url(#faisceau)"/>
+
+  <!-- Gens au loin, de dos -->
+  <g fill="#3c096c">
+    <circle cx="90" cy="300" r="20"/><rect x="72" y="318" width="36" height="80" rx="14"/>
+    <circle cx="150" cy="310" r="20"/><rect x="132" y="328" width="36" height="70" rx="14"/>
+    <circle cx="930" cy="300" r="20"/><rect x="912" y="318" width="36" height="80" rx="14"/>
+  </g>
+  <rect x="0" y="480" width="1024" height="92" fill="#1a0033"/>
+
+  <!-- Ton amie, qui tangue -->
+  <g class="amie" fill="#f15bb5">
+    <circle cx="420" cy="320" r="30"/><rect x="388" y="350" width="64" height="130" rx="22"/>
+  </g>
+  <!-- Le garcon qui insiste -->
+  <g fill="#5a5a7a">
+    <circle cx="520" cy="300" r="32"/><rect x="486" y="332" width="68" height="148" rx="22"/>
+    <rect x="440" y="370" width="60" height="14" rx="7"/>
+  </g>
+  <g class="insiste">
+    <rect x="510" y="180" width="280" height="64" rx="18" fill="#ffffff"/>
+    <path d="M540 244 l-10 26 l30 -26 z" fill="#ffffff"/>
+    <text x="650" y="208" font-size="16" fill="#240046" text-anchor="middle">« T'inquiète, je la ramène</text>
+    <text x="650" y="230" font-size="16" fill="#240046" text-anchor="middle">chez moi. »</text>
+  </g>
+
+  <!-- Toi, qui t'approches -->
+  <g class="toi" fill="#ffd166">
+    <circle cx="820" cy="310" r="30"/><rect x="788" y="340" width="64" height="140" rx="22"/>
+  </g>
+</svg>

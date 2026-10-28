@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 572" role="img" aria-labelledby="titre">
+  <title id="titre">Le message du coloc : « j'ai raté deux partiels », « j'arrive plus à m'en passer », « j'ai honte »</title>
+  <style>
+    text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .etape { animation-duration: 14s; animation-iteration-count: infinite; animation-timing-function: ease-out; }
+    .m1 { animation-name: m1; } .m2 { animation-name: m2; } .m3 { animation-name: m3; }
+    .ecrit { animation-name: ecrit; opacity: 0; }
+    @keyframes m1 { 0%, 4% { opacity: 0; transform: translateY(12px); } 8%, 92% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes m2 { 0%, 26% { opacity: 0; transform: translateY(12px); } 30%, 92% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes m3 { 0%, 52% { opacity: 0; transform: translateY(12px); } 56%, 92% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; } }
+    @keyframes ecrit { 0%, 12% { opacity: 0; } 14%, 24% { opacity: 1; } 26%, 36% { opacity: 0; } 38%, 50% { opacity: 1; } 52%, 100% { opacity: 0; } }
+    .point { animation: rebond 1.2s ease-in-out infinite; }
+    .point2 { animation-delay: -.8s; } .point3 { animation-delay: -.4s; }
+    @keyframes rebond { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="fond" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b4332"/>
+      <stop offset="1" stop-color="#2d6a4f"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="572" fill="url(#fond)"/>
+  <circle cx="160" cy="430" r="110" fill="#ffffff" fill-opacity=".04"/>
+  <circle cx="880" cy="140" r="90" fill="#ffffff" fill-opacity=".04"/>
+
+  <!-- Telephone -->
+  <rect x="382" y="40" width="260" height="500" rx="32" fill="#0f111c"/>
+  <rect x="394" y="72" width="236" height="440" rx="12" fill="#f1f7f3"/>
+
+  <!-- En-tete -->
+  <rect x="394" y="72" width="236" height="48" rx="12" fill="#40916c"/>
+  <rect x="394" y="100" width="236" height="20" fill="#40916c"/>
+  <circle cx="420" cy="96" r="14" fill="#95d5b2"/>
+  <text x="442" y="100" font-size="14" font-weight="700" fill="#fff">Coloc</text>
+
+  <!-- Ses messages -->
+  <g class="etape m1">
+    <rect x="408" y="140" width="180" height="34" rx="17" fill="#ffffff"/>
+    <text x="424" y="162" font-size="14" fill="#2d3045">j'ai raté deux partiels</text>
+  </g>
+  <g class="etape m2">
+    <rect x="408" y="186" width="200" height="34" rx="17" fill="#ffffff"/>
+    <text x="424" y="208" font-size="14" fill="#2d3045">j'arrive plus à m'en passer</text>
+  </g>
+  <g class="etape m3">
+    <rect x="408" y="232" width="92" height="34" rx="17" fill="#ffffff"/>
+    <text x="424" y="254" font-size="14" fill="#2d3045">j'ai honte</text>
+  </g>
+
+  <!-- Il ecrit encore -->
+  <g class="etape ecrit">
+    <rect x="408" y="232" width="58" height="30" rx="15" fill="#ffffff"/>
+    <circle cx="424" cy="247" r="4" fill="#8a8fa8" class="point"/>
+    <circle cx="437" cy="247" r="4" fill="#8a8fa8" class="point point2"/>
+    <circle cx="450" cy="247" r="4" fill="#8a8fa8" class="point point3"/>
+  </g>
+
+  <!-- Barre de saisie -->
+  <rect x="404" y="476" width="216" height="28" rx="14" fill="#ffffff" stroke="#d8e8de"/>
+  <text x="418" y="495" font-size="12" fill="#9fb5a8">Que lui répondre ?</text>
+</svg>

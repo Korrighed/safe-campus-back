@@ -4,8 +4,15 @@
         $editionEnCours = $this->sceneEnEdition !== null;
         $choixEnAttente = $this->getChoixEnAttente();
     @endphp
+    @php $peutModifier = $this->peutModifier(); @endphp
 
     <div class="flex flex-col gap-y-6">
+        @if (! $peutModifier)
+            <x-filament::section compact>
+                <p class="text-sm text-gray-600 dark:text-gray-200">Lecture seule : cette histoire n'est plus en brouillon. Elle redevient modifiable si un relecteur la renvoie en brouillon.</p>
+            </x-filament::section>
+        @endif
+
         <x-filament::section
             icon="heroicon-o-light-bulb"
             icon-color="primary"
@@ -37,9 +44,11 @@
                     @foreach ($choixEnAttente as $attente)
                         <li class="flex flex-wrap items-center gap-x-3 gap-y-1">
                             <span>Scène {{ $attente['numero'] }} — {{ $attente['scene'] }} : « {{ $attente['texte'] }} »</span>
-                            <x-filament::link tag="button" size="sm" wire:click="modifier({{ $attente['sceneId'] }})">
-                                Relier ce choix
-                            </x-filament::link>
+                            @if ($peutModifier)
+                                <x-filament::link tag="button" size="sm" wire:click="modifier({{ $attente['sceneId'] }})">
+                                    Relier ce choix
+                                </x-filament::link>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
@@ -51,24 +60,26 @@
                 Une histoire avance de scène en scène. Chaque scène pose une mise en situation, puis propose des choix au joueur.
             </p>
 
-            <div class="flex items-center gap-x-2">
-                <x-filament::button wire:click="nouvelleScene" icon="heroicon-m-plus" :disabled="$editionEnCours">
-                    Nouvelle scène
-                </x-filament::button>
+            @if ($peutModifier)
+                <div class="flex items-center gap-x-2">
+                    <x-filament::button wire:click="nouvelleScene" icon="heroicon-m-plus" :disabled="$editionEnCours">
+                        Nouvelle scène
+                    </x-filament::button>
 
-                <x-filament::button
-                    color="gray"
-                    wire:click="$toggle('reutilisationOuverte')"
-                    icon="heroicon-m-chevron-down"
-                    icon-position="after"
-                    :disabled="$editionEnCours"
-                >
-                    Plus
-                </x-filament::button>
-            </div>
+                    <x-filament::button
+                        color="gray"
+                        wire:click="$toggle('reutilisationOuverte')"
+                        icon="heroicon-m-chevron-down"
+                        icon-position="after"
+                        :disabled="$editionEnCours"
+                    >
+                        Plus
+                    </x-filament::button>
+                </div>
+            @endif
         </div>
 
-        @if ($this->reutilisationOuverte)
+        @if ($peutModifier && $this->reutilisationOuverte)
             @php
                 $reutilisables = $this->getScenesReutilisables();
             @endphp
@@ -109,6 +120,11 @@
                 $scene = $section['scene'];
                 $enEdition = $this->sceneEnEdition === $scene->id;
                 $bloquee = $editionEnCours && ! $enEdition;
+                $tooltipModifier = match (true) {
+                    $bloquee => 'Termine d\'abord la scène en cours de modification',
+                    ! $section['modifiable'] => 'Cette scène est aussi utilisée par une histoire verrouillée ou d\'un autre auteur',
+                    default => null,
+                };
             @endphp
 
             <section class="flex flex-col gap-y-3" wire:key="scene-{{ $scene->id }}">
@@ -127,65 +143,67 @@
                         <x-filament::badge color="primary">Modification en cours</x-filament::badge>
                     @endif
 
-                    @unless ($enEdition)
-                        <div class="ms-auto flex items-center gap-x-2">
-                            <x-filament::button
-                                color="gray"
-                                size="sm"
-                                wire:click="modifier({{ $scene->id }})"
-                                :disabled="$bloquee"
-                                :tooltip="$bloquee ? 'Termine d\'abord la scène en cours de modification' : null"
-                            >
-                                Modifier
-                            </x-filament::button>
+                    @if ($peutModifier)
+                        @unless ($enEdition)
+                            <div class="ms-auto flex items-center gap-x-2">
+                                <x-filament::button
+                                    color="gray"
+                                    size="sm"
+                                    wire:click="modifier({{ $scene->id }})"
+                                    :disabled="$bloquee || ! $section['modifiable']"
+                                    :tooltip="$tooltipModifier"
+                                >
+                                    Modifier
+                                </x-filament::button>
 
-                            <x-filament::dropdown placement="bottom-end">
-                                <x-slot name="trigger">
-                                    <x-filament::icon-button
-                                        icon="heroicon-m-ellipsis-vertical"
-                                        color="gray"
-                                        :label="'Autres actions sur la scène '.$section['numero']"
-                                        :disabled="$bloquee"
-                                    />
-                                </x-slot>
+                                <x-filament::dropdown placement="bottom-end">
+                                    <x-slot name="trigger">
+                                        <x-filament::icon-button
+                                            icon="heroicon-m-ellipsis-vertical"
+                                            color="gray"
+                                            :label="'Autres actions sur la scène '.$section['numero']"
+                                            :disabled="$bloquee"
+                                        />
+                                    </x-slot>
 
-                                <x-filament::dropdown.list>
-                                    @unless ($section['estDepart'])
-                                        <x-filament::dropdown.list.item icon="heroicon-m-flag" wire:click="definirDepart({{ $scene->id }})">
-                                            Définir comme départ
+                                    <x-filament::dropdown.list>
+                                        @unless ($section['estDepart'])
+                                            <x-filament::dropdown.list.item icon="heroicon-m-flag" wire:click="definirDepart({{ $scene->id }})">
+                                                Définir comme départ
+                                            </x-filament::dropdown.list.item>
+                                        @endunless
+
+                                        @unless ($section['estPremiere'])
+                                            <x-filament::dropdown.list.item icon="heroicon-m-arrow-up" wire:click="monter({{ $scene->id }})">
+                                                Monter
+                                            </x-filament::dropdown.list.item>
+                                        @endunless
+
+                                        @unless ($section['estDerniere'])
+                                            <x-filament::dropdown.list.item icon="heroicon-m-arrow-down" wire:click="descendre({{ $scene->id }})">
+                                                Descendre
+                                            </x-filament::dropdown.list.item>
+                                        @endunless
+
+                                        <x-filament::dropdown.list.item
+                                            icon="heroicon-m-minus-circle"
+                                            wire:click="mountAction('retirerScene', { scene: {{ $scene->id }} })"
+                                        >
+                                            Retirer de l'histoire
                                         </x-filament::dropdown.list.item>
-                                    @endunless
 
-                                    @unless ($section['estPremiere'])
-                                        <x-filament::dropdown.list.item icon="heroicon-m-arrow-up" wire:click="monter({{ $scene->id }})">
-                                            Monter
+                                        <x-filament::dropdown.list.item
+                                            icon="heroicon-m-trash"
+                                            color="danger"
+                                            wire:click="mountAction('supprimerScene', { scene: {{ $scene->id }} })"
+                                        >
+                                            Supprimer la scène
                                         </x-filament::dropdown.list.item>
-                                    @endunless
-
-                                    @unless ($section['estDerniere'])
-                                        <x-filament::dropdown.list.item icon="heroicon-m-arrow-down" wire:click="descendre({{ $scene->id }})">
-                                            Descendre
-                                        </x-filament::dropdown.list.item>
-                                    @endunless
-
-                                    <x-filament::dropdown.list.item
-                                        icon="heroicon-m-minus-circle"
-                                        wire:click="mountAction('retirerScene', { scene: {{ $scene->id }} })"
-                                    >
-                                        Retirer de l'histoire
-                                    </x-filament::dropdown.list.item>
-
-                                    <x-filament::dropdown.list.item
-                                        icon="heroicon-m-trash"
-                                        color="danger"
-                                        wire:click="mountAction('supprimerScene', { scene: {{ $scene->id }} })"
-                                    >
-                                        Supprimer la scène
-                                    </x-filament::dropdown.list.item>
-                                </x-filament::dropdown.list>
-                            </x-filament::dropdown>
-                        </div>
-                    @endunless
+                                    </x-filament::dropdown.list>
+                                </x-filament::dropdown>
+                            </div>
+                        @endunless
+                    @endif
                 </div>
 
                 @if ($enEdition)

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\HistoireResource\Pages;
 use App\Enums\ChoixIssue;
 use App\Filament\Resources\HistoireResource;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\EnTeteAvecOnglets;
+use App\Filament\Resources\HistoireResource\Pages\Concerns\JournaliseLesRefus;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\LitHistoire;
 use App\Filament\Resources\HistoireResource\Pages\Concerns\OuvreVerification;
 use App\Models\Choix;
@@ -15,6 +16,7 @@ use App\Services\ContactResolutionService;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Illuminate\Database\Eloquent\Collection;
+use Livewire\Attributes\Locked;
 
 /**
  * Rejoue le parcours d'une histoire depuis l'admin, clic apres clic. Outil de
@@ -25,6 +27,7 @@ class PreviewHistoire extends Page
 {
     use EnTeteAvecOnglets;
     use InteractsWithRecord;
+    use JournaliseLesRefus;
     use LitHistoire;
     use OuvreVerification;
 
@@ -36,8 +39,10 @@ class PreviewHistoire extends Page
 
     protected static ?string $navigationIcon = 'heroicon-o-play';
 
+    #[Locked]
     public ?int $sceneActuelleId = null;
 
+    #[Locked]
     public ?int $choixFinalId = null;
 
     public function mount(int|string $record): void
@@ -47,7 +52,10 @@ class PreviewHistoire extends Page
         // mount(). resolveRecord() la remplace ici par le vrai modele.
         $this->record = $this->resolveRecord($record);
 
-        abort_unless(auth()->user()?->can('view', $this->getRecord()), 403);
+        if (! auth()->user()?->can('view', $this->getRecord())) {
+            $this->journaliserRefus('view');
+            abort(403);
+        }
 
         $this->sceneActuelleId = $this->histoire()->sceneInitiale()?->id;
     }
@@ -63,7 +71,11 @@ class PreviewHistoire extends Page
             return null;
         }
 
-        return Scene::with(['choix', 'media'])->find($this->sceneActuelleId);
+        // Borne a l'histoire : un id hors histoire renvoie null, pas la scene d'un autre auteur.
+        return $this->histoire()->scenes()
+            ->whereKey($this->sceneActuelleId)
+            ->with(['choix', 'media'])
+            ->first();
     }
 
     public function getChoixFinal(): ?Choix
@@ -72,7 +84,10 @@ class PreviewHistoire extends Page
             return null;
         }
 
-        return Choix::find($this->choixFinalId);
+        return Choix::query()
+            ->whereKey($this->choixFinalId)
+            ->whereIn('scene_id', $this->histoire()->scenes()->select('scenes.id'))
+            ->first();
     }
 
     public function choisir(int $choixId): void
@@ -85,6 +100,11 @@ class PreviewHistoire extends Page
             $this->choixFinalId = $choix->id;
             $this->sceneActuelleId = null;
 
+            return;
+        }
+
+        // La cible doit appartenir a l'histoire : sinon l'apercu reste sur la scene courante.
+        if (! $this->histoire()->scenes()->whereKey($choix->next_scene_id)->exists()) {
             return;
         }
 

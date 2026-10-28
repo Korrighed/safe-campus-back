@@ -21,6 +21,7 @@ use App\Models\Telephone;
 use App\Models\Theme;
 use App\Models\User;
 use App\Observers\AuditObserver;
+use App\Observers\HistoireObserver;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
@@ -69,6 +70,8 @@ class AppServiceProvider extends ServiceProvider
      * Logs d'audit (canal `audit`) : toute creation, modification ou
      * suppression de ces modeles. Les connexions sont tracees par
      * App\Listeners\AuditAuthentification.
+     *
+     * L'état d'une histoire a en plus son propre événement (HistoireObserver).
      */
     private function registerAudit(): void
     {
@@ -78,6 +81,8 @@ class AppServiceProvider extends ServiceProvider
         ] as $model) {
             $model::observe(AuditObserver::class);
         }
+
+        Histoire::observe(HistoireObserver::class);
     }
 
     /**

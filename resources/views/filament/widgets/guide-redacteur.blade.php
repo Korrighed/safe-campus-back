@@ -20,8 +20,8 @@
                         <li>Le bouton <em>Nouvelle histoire</em> ouvre un assistant en deux étapes : le titre et les sous-thèmes, puis la mise en situation de la première scène, qui devient automatiquement le point de départ.</li>
                         <li>Une fois l'histoire ouverte, un menu la découpe en trois pages : <em>1. Infos de l'histoire</em> (titre, état, sous-thèmes), <em>2. Scènes</em> et <em>3. Prévisualiser</em>.</li>
                         <li>Les <em>Sous-thèmes</em> font apparaître le bouton « Suivre l'histoire » sur les pages ressources correspondantes.</li>
-                        <li>Le champ <em>État</em> suit le circuit éditorial : <em>Brouillon</em> → <em>Relecture</em> → <em>Validé</em> → <em>Publié</em>. Seule une histoire à l'état <em>Publié</em> apparaît sur le site.</li>
-                        <li>Pour retirer une histoire du site sans perdre ton travail, repasse son état en <em>Brouillon</em> plutôt que de la supprimer.</li>
+                        <li>Le champ <em>État</em> : passe l'histoire de <em>Brouillon</em> à <em>Relecture</em> quand elle est prête. Elle est alors verrouillée : un relecteur la relit, la corrige, la publie ou te la renvoie en <em>Brouillon</em>. Seule une histoire <em>Publiée</em> apparaît sur le site.</li>
+                        <li>Tu ne vois que tes propres histoires. Pour modifier une histoire déjà soumise, demande à un relecteur de la renvoyer en <em>Brouillon</em>.</li>
                     </ul>
 
                     <x-filament::link :href="HistoireResource::getUrl()" icon="heroicon-o-arrow-right" icon-position="after" size="sm">

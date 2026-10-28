@@ -25,6 +25,7 @@ class UserRoleTest extends TestCase
 
         $this->assertTrue(User::factory()->create(['role' => UserRole::Webmaster])->canAccessPanel($panel));
         $this->assertTrue(User::factory()->create(['role' => UserRole::Redacteur])->canAccessPanel($panel));
+        $this->assertTrue(User::factory()->create(['role' => UserRole::Relecteur])->canAccessPanel($panel));
     }
 
     public function test_un_compte_sans_role_est_refuse_sur_le_panel(): void
@@ -47,6 +48,22 @@ class UserRoleTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    public function test_le_role_relecteur_est_accepte_en_base(): void
+    {
+        $email = 'relecteur.'.uniqid().'@test.nc';
+
+        \DB::table('users')->insert([
+            'nom' => 'x',
+            'email' => $email,
+            'password' => 'x',
+            'role' => 'relecteur',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'relecteur']);
     }
 
     public function test_users_et_contacts_ne_partagent_aucune_cle(): void

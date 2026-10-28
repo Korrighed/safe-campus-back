@@ -149,6 +149,7 @@ class HistoireResourceTest extends TestCase
         $autre = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
 
         Livewire::test(ListHistoires::class)
+            ->set('tableRecordsPerPage', 'all')
             ->assertCanSeeTableRecords([$sienne])
             ->assertCanNotSeeTableRecords([$autre]);
     }
@@ -178,7 +179,9 @@ class HistoireResourceTest extends TestCase
         $premiere = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
         $seconde = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
 
-        Livewire::test(ListHistoires::class)->assertCanSeeTableRecords([$premiere, $seconde]);
+        Livewire::test(ListHistoires::class)
+            ->set('tableRecordsPerPage', 'all')
+            ->assertCanSeeTableRecords([$premiere, $seconde]);
     }
 
     public function test_un_relecteur_ne_peut_pas_creer(): void

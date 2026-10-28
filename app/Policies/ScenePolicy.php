@@ -25,9 +25,12 @@ class ScenePolicy
                 && $scene->histoires()->where('histoires.user_id', $user->id)->exists());
     }
 
+    /**
+     * Le relecteur ajoute des scenes et des choix en corrigeant une histoire.
+     */
     public function create(User $user): bool
     {
-        return $this->estRedacteur($user);
+        return $this->estRedacteur($user) || $this->estRelecteur($user);
     }
 
     public function update(User $user, Scene $scene): bool

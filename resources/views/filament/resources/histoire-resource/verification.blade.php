@@ -25,11 +25,13 @@
                 @endif
 
                 @unless ($controle['ok'])
-                    <div>
-                        <x-filament::link :href="HistoireResource::urlCorrection($histoire, $controle['cle'])" icon="heroicon-m-arrow-right" icon-position="after" size="sm">
-                            Corriger
-                        </x-filament::link>
-                    </div>
+                    @if (auth()->user()?->can('update', $histoire))
+                        <div>
+                            <x-filament::link :href="HistoireResource::urlCorrection($histoire, $controle['cle'])" icon="heroicon-m-arrow-right" icon-position="after" size="sm">
+                                Corriger
+                            </x-filament::link>
+                        </div>
+                    @endif
                 @endunless
             </div>
         </li>

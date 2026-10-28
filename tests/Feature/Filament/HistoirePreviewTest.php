@@ -13,6 +13,7 @@ use App\Models\Scene;
 use App\Models\SousTheme;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -145,5 +146,47 @@ class HistoirePreviewTest extends TestCase
 
         Livewire::test(PreviewHistoire::class, ['record' => $histoire->getKey()])
             ->call('choisir', $etranger->id);
+    }
+
+    public function test_les_proprietes_de_l_apercu_sont_verrouillees(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+
+        $histoire = Histoire::factory()->pour($redacteur)->create();
+        $scene = Scene::factory()->create();
+        $histoire->scenes()->attach($scene->id, ['est_initiale' => true]);
+
+        $histoireDUnAutre = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
+        $sceneDUnAutre = Scene::factory()->create(['dialogue_text' => 'Texte secret']);
+        $histoireDUnAutre->scenes()->attach($sceneDUnAutre->id, ['est_initiale' => true]);
+
+        $this->expectException(CannotUpdateLockedPropertyException::class);
+
+        Livewire::test(PreviewHistoire::class, ['record' => $histoire->getKey()])
+            ->set('sceneActuelleId', $sceneDUnAutre->id);
+    }
+
+    public function test_un_choix_qui_mene_hors_de_l_histoire_n_avance_pas(): void
+    {
+        $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
+        $this->actingAs($redacteur);
+
+        $histoire = Histoire::factory()->pour($redacteur)->create();
+        $scene = Scene::factory()->create();
+        $histoire->scenes()->attach($scene->id, ['est_initiale' => true]);
+
+        $histoireDUnAutre = Histoire::factory()->pour(User::factory()->create(['role' => UserRole::Redacteur]))->create();
+        $sceneDUnAutre = Scene::factory()->create();
+        $histoireDUnAutre->scenes()->attach($sceneDUnAutre->id, ['est_initiale' => true]);
+        $choix = Choix::factory()->create([
+            'scene_id' => $scene->id,
+            'next_scene_id' => $sceneDUnAutre->id,
+            'text_choix' => 'Sortir',
+        ]);
+
+        Livewire::test(PreviewHistoire::class, ['record' => $histoire->getKey()])
+            ->call('choisir', $choix->id)
+            ->assertSet('sceneActuelleId', $scene->id);
     }
 }

@@ -4,6 +4,7 @@ namespace Tests\Feature\Policies;
 
 use App\Enums\EtatHistoire;
 use App\Enums\UserRole;
+use App\Models\Choix;
 use App\Models\Histoire;
 use App\Models\Scene;
 use App\Models\User;
@@ -47,6 +48,15 @@ class HistoirePolicyTest extends TestCase
         $this->assertFalse($relecteur->can('create', Histoire::class));
     }
 
+    public function test_un_relecteur_peut_creer_une_scene_mais_pas_une_histoire(): void
+    {
+        $relecteur = User::factory()->create(['role' => UserRole::Relecteur]);
+
+        $this->assertTrue($relecteur->can('create', Scene::class));
+        $this->assertTrue($relecteur->can('create', Choix::class));
+        $this->assertFalse($relecteur->can('create', Histoire::class));
+    }
+
     public function test_webmaster_admin_et_sans_role_n_accedent_pas_aux_histoires(): void
     {
         $webmaster = User::factory()->create(['role' => UserRole::Webmaster]);
@@ -60,7 +70,7 @@ class HistoirePolicyTest extends TestCase
 
     public function test_les_etats_accessibles_suivent_le_role_et_l_etat(): void
     {
-        $policy = new HistoirePolicy();
+        $policy = new HistoirePolicy;
         $relecteur = User::factory()->create(['role' => UserRole::Relecteur]);
         $redacteur = User::factory()->create(['role' => UserRole::Redacteur]);
         $brouillon = Histoire::factory()->pour($redacteur)->create(['etat' => EtatHistoire::Brouillon]);

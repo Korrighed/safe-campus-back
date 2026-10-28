@@ -18,21 +18,24 @@ class ChoixPolicy
 
     public function view(User $user, Choix $choix): bool
     {
-        return (new ScenePolicy())->view($user, $choix->scene);
+        return (new ScenePolicy)->view($user, $choix->scene);
     }
 
+    /**
+     * Le relecteur ajoute des scenes et des choix en corrigeant une histoire.
+     */
     public function create(User $user): bool
     {
-        return $user->role === UserRole::Redacteur;
+        return $user->role === UserRole::Redacteur || $user->role === UserRole::Relecteur;
     }
 
     public function update(User $user, Choix $choix): bool
     {
-        return (new ScenePolicy())->update($user, $choix->scene);
+        return (new ScenePolicy)->update($user, $choix->scene);
     }
 
     public function delete(User $user, Choix $choix): bool
     {
-        return (new ScenePolicy())->delete($user, $choix->scene);
+        return (new ScenePolicy)->delete($user, $choix->scene);
     }
 }

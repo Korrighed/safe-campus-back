@@ -21,8 +21,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
 class HistoireResource extends Resource
 {
@@ -47,7 +47,10 @@ class HistoireResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->visiblePar(auth()->user());
+        /** @var Builder<Histoire> $requete */
+        $requete = parent::getEloquentQuery();
+
+        return $requete->visiblePar(auth()->user());
     }
 
     /**
@@ -299,7 +302,13 @@ class HistoireResource extends Resource
             return null;
         }
 
-        return $record instanceof Histoire ? $record : static::getEloquentQuery()->find($record);
+        if ($record instanceof Histoire) {
+            return $record;
+        }
+
+        $histoire = static::getEloquentQuery()->find($record);
+
+        return $histoire instanceof Histoire ? $histoire : null;
     }
 
     public static function getPages(): array

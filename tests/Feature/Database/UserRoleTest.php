@@ -52,16 +52,18 @@ class UserRoleTest extends TestCase
 
     public function test_le_role_relecteur_est_accepte_en_base(): void
     {
+        $email = 'relecteur.'.uniqid().'@test.nc';
+
         \DB::table('users')->insert([
             'nom' => 'x',
-            'email' => 'relecteur@test.nc',
+            'email' => $email,
             'password' => 'x',
             'role' => 'relecteur',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $this->assertDatabaseHas('users', ['email' => 'relecteur@test.nc', 'role' => 'relecteur']);
+        $this->assertDatabaseHas('users', ['email' => $email, 'role' => 'relecteur']);
     }
 
     public function test_users_et_contacts_ne_partagent_aucune_cle(): void

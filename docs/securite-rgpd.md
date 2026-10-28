@@ -84,7 +84,7 @@ Le projet prend comme référentiel le RGPD (règlement UE 2016/679) et la loi I
 
 Le site étudiant et l'API de lecture sont publics par conception. En production, ils sont consultables sans compte ni mot de passe. Seul le back-office (`/admin`) et ses ressources sont protégés.
 
-Le prototype n'est pas déployé. Lors des événements où la plateforme est présentée, un **portillon visiteur** limite l'accès au site étudiant. Ce portillon n'est pas une authentification : il ne protège aucune donnée, l'API de lecture restant publique.
+Le prototype n'est pas déployé en production (seule la démo Render existe, § 8.2). Lors des événements où la plateforme est présentée, un **portillon visiteur** limite l'accès au site étudiant. Ce portillon n'est pas une authentification : il ne protège aucune donnée, l'API de lecture restant publique.
 
 - Un middleware global redirige vers `/login` toutes les pages, sauf `/login`, `/mentions-legales`, `/cgu` et `/donnees-personnelles`, tant que le cookie `sc_token` est absent. Il vérifie la présence du cookie, pas sa validité.
 - Le mot de passe est partagé. Le compte visiteur n'est pas nominatif. Ses identifiants sont définis dans la configuration serveur (`VISITEUR_EMAIL` / `VISITEUR_PASSWORD`), jamais dans le code. Le mot de passe est changé par variable d'environnement entre deux événements.
@@ -188,7 +188,7 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 > Les rattachements des histoires (scènes, sous-thèmes) sont tracés par des événements explicites (`Histoire.scene_ajoutee`, `Histoire.sous_themes_modifies`, etc.). Les autres rattachements (média ↔ sous-thème, contact ↔ sous-thème) ne déclenchent pas d'événement de modèle : ils ne sont pas tracés (S-16).
 
-> Sans volume persistant pour les journaux, chaque redéploiement efface le journal (S-06).
+> Les journaux sont montés sur le volume `scback-logs-prod` : un redéploiement ne les efface pas. Sur la démo Render (disque éphémère), ils disparaissent au redémarrage (S-06, § 8.2).
 
 ---
 
@@ -205,7 +205,7 @@ Une démo publique temporaire tourne sur Render et Neon (§ 8.2). Elle ne tient 
 - Le réseau Docker de production (`scback_prod`) est séparé de celui de développement (`scback`).
 - Les commandes post-déploiement excluent tout jeu de données de démonstration : `db:seed` est interdit en production. Seule exception, la démo publique : `DEMO_CONTENT=true` autorise les seeders de démo (`config/demo.php`, faux par défaut, § 8.2).
 - Une sauvegarde de la base est obligatoire avant toute migration en production.
-- Volumes persistants à créer pour les médias et les journaux : sans eux, un redéploiement les efface (S-06).
+- Les médias (`storage/app`) et les journaux (`storage/logs`) sont montés sur les volumes nommés `scback-storage-prod` et `scback-logs-prod`. Reste la sauvegarde hors serveur (S-06).
 
 ### 8.1 Préconisations pour l'hébergement
 
@@ -233,9 +233,9 @@ Mise en ligne temporaire pour présenter le prototype. Procédure et variables :
 | Hébergement applicatif | Render, 2 services web gratuits, région Oregon (États-Unis) | HTTPS et reverse proxy fournis par Render. Hébergeur hors Union européenne : voir § 16. |
 | Base de données | Neon, PostgreSQL 17, région `us-west-2` | Connexion directe, `sslmode=require`. Les droits exacts du rôle `neondb_owner` n'ont pas été vérifiés : S-18 n'est pas évalué sur cette démo. |
 | Secrets | Variables d'environnement de chaque service Render, saisies par un administrateur | Aucune valeur dans git (`.env.*` ignorés par git et Docker) ni dans les images. Un gestionnaire de secrets externe (Doppler) a été évalué puis écarté : dépendance et clé d'API Render supplémentaires, sans gain pour une démo d'une semaine. |
-| Contenu | `DEMO_CONTENT=true` : annuaire de contacts, 3 histoires, documents de démonstration | Les contacts sont des structures d'aide publiques. Aucune donnée d'étudiant n'est collectée. |
+| Contenu | `DEMO_CONTENT=true` : médias de démonstration, compte rédacteur de démo et 9 histoires (`docker/8.4/start-prod`) | Les contacts sont des structures d'aide publiques. Aucune donnée d'étudiant n'est collectée. |
 | Disque | Éphémère (plan gratuit) | Médias recréés à chaque démarrage par `docker/8.4/start-prod`. Les fichiers téléversés depuis `/admin` disparaissent au redémarrage. |
-| Histoires de démo | Rejouées à chaque démarrage | Toute modification d'une des 3 histoires dans `/admin` est écrasée au redémarrage suivant. |
+| Histoires de démo | Rejouées à chaque démarrage | Toute modification d'une des 9 histoires dans `/admin` est écrasée au redémarrage suivant. |
 
 Limites assumées de la démo :
 

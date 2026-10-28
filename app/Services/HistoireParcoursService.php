@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Prepare une histoire pour le front : le graphe complet (scenes, choix,
  * images) en une seule lecture, contacts de fin defavorable compris. Voir
- * docs/schema_bd.md § Consommation API.
+ * docs/api.md.
  */
 class HistoireParcoursService
 {

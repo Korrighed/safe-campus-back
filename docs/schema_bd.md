@@ -1,8 +1,12 @@
 # Schéma de base de données — Safe Campus
 
 > **État : implémenté.** Toutes les tables décrites ici sont migrées. Les diagrammes restent
-> conceptuels : certaines colonnes (`actif`, `ordre`, `latitude` / `longitude`, `province`,
-> `description`…) ne sont listées que dans `database/migrations/`.
+> conceptuels : certaines colonnes (`actif`, `ordre`, `libelle_court` sur `themes`,
+> `intro_ressources` sur `sous_themes`, `latitude` / `longitude` / `province` /
+> `position_territoire` sur `contacts`, `description` sur `medias`…) ne sont listées que dans
+> `database/migrations/`.
+
+Les contrats des routes d'API sont dans [api.md](api.md).
 
 Le schéma est découpé en trois domaines indépendants. Ils ne partagent que le socle commun et la
 taxonomie.
@@ -210,63 +214,13 @@ Nœud de taxonomie **et** page éditoriale. La fiche alcool, c'est la ligne `alc
 |---|---|
 | `Ref` | Clé stable — seeder, URL. Jamais affichée, jamais modifiée. |
 | `Libelle` | Titre affiché de la fiche et libellé dans le menu. |
-| `Resume` | Teaser affiché sur la carte d'accueil. Distinct d'`Article` : payload différent, endpoint différent — voir [Consommation API](#consommation-api). |
+| `Resume` | Teaser affiché sur la carte d'accueil. Distinct d'`Article` : payload différent, endpoint différent — voir [api.md](api.md). |
 | `Article` | Contenu éditorial complet de la fiche, affiché sur la page détail du sous-thème. |
 | `FK_Theme` | Thème parent. |
 | `Permet_signalement` | Expose ou non le formulaire de signalement — voir plus bas. |
 
 Une seule table, donc une seule ressource Filament et un seul jeu de droits. Ni fiche orpheline, ni
 sous-thème sans fiche : les deux cas sont impossibles par construction.
-
-### Consommation API
-
-Trois endpoints publics, trois payloads distincts — pas de sur-fetch :
-
-- `GET /api/themes` — `Theme` (`ref`, `libelle`, `resume`, `medias`) avec ses `SousTheme` imbriqués
-  en version légère (`ref`, `libelle`, `resume` — pas d'`article`, pas de `contacts`). Alimente les
-  sections et les cartes de la page d'accueil.
-- `GET /api/sous-themes/{ref}` — un seul sous-thème : `ref`, `libelle`, `article`, `contacts`
-  (triés `Ordre`, filtrés `Actif`) et leurs `Telephone`, plus `histoires` (`ref`, `titre` des seules
-  histoires `publie`, triées par titre : de quoi activer le bouton « Suivre l'histoire »). Alimente
-  la page détail. Pas de `resume` : inutilisé à cet endroit.
-- `GET /api/histoires/{ref}` — le graphe complet d'une histoire, lu en **une seule requête** : le
-  front navigue ensuite de scène en scène sans nouvel appel. Alimente le lecteur d'histoire.
-
-`Article` n'est donc jamais renvoyé par `/api/themes`, `Resume` jamais par `/api/sous-themes/{ref}`.
-
-#### Contrat de `GET /api/histoires/{ref}`
-
-```json
-{ "data": {
-    "ref": "demo_soiree_qui_derape",
-    "titre": "Une soirée qui dérape (démo)",
-    "scene_initiale_id": 18,
-    "scenes": [
-      { "id": 18,
-        "dialogue_text": "…",
-        "media": { "libelle": "…", "description": null, "url": "…", "type": "image" },
-        "choix": [
-          { "id": 10, "text_choix": "…", "next_scene_id": 19, "issue": null },
-          { "id": 13, "text_choix": "…", "next_scene_id": null, "issue": "defavorable",
-            "contacts": [ { "ref": "…", "nom": "…", "telephones": [ … ] } ] }
-        ] }
-    ] } }
-```
-
-- **Publication.** Seules les histoires `Etat = publie` sont servies, les autres répondent `404`.
-- **Fin de parcours.** `next_scene_id = null` sort du parcours, qualifié par `issue`
-  (`favorable` ou `defavorable`).
-- **Contacts.** La clé `contacts` n'existe que sur un choix `defavorable`. Elle porte les contacts
-  déjà résolus par la règle de [Résolution des contacts](#choix) (contacts `Actif` et téléphones
-  `Actif`) : le front n'a rien à calculer et ne refait aucun appel. Le bloc est répété d'un choix
-  défavorable à l'autre, volontairement : les histoires sont petites.
-- **Ordre.** Les scènes sont servies triées par `Ordre` de la liaison, puis par `id`. Les choix le
-  sont par `id`. `Ordre` lui-même ne sort pas.
-- **Ce qui ne sort pas.** `Scene.Titre` (back-office), `Etat`, l'auteur, les dates.
-- **Média.** `media` vaut `null` sans image, ou si le média est inactif ou n'est pas une image.
-- **Intégrité.** La liaison fait autorité : un choix dont `FK_Next_Scene` désigne une scène non
-  rattachée à l'histoire est écarté de la réponse plutôt que de renvoyer un `next_scene_id`
-  introuvable. `scene_initiale_id` vaut `null` si l'histoire n'a pas de scène initiale.
 
 ### Contact
 
@@ -295,6 +249,8 @@ doit l'être — `Nom`, `Prenom` et `Mail` d'un référent nommé sont des donn�
 à l'effacement RGPD s'applique. Le `DELETE` doit donc cascader sur `Telephone` et sur
 `Liaison_SousTheme_Contact`. Les deux mécanismes ne sont pas concurrents : `Actif` gère l'éditorial,
 le `DELETE` gère le juridique.
+
+**`latitude` / `longitude` / `position_territoire`.** Les coordonnées sont géocodées à la saisie (Nominatim). `position_territoire = true` marque une structure qui couvre tout le territoire : aucun point cartographiable, `latitude` et `longitude` restent `NULL` (contrainte CHECK `contacts_position_territoire_sans_coordonnees`). Coordonnées `NULL` avec `position_territoire = false` signifie « pas encore géocodé ».
 
 **Aucune notion de portée géographique.** Tous les contacts d'un sous-thème sont visibles par tout
 le public. Le front propose une carte interactive pour repérer le contact le plus proche. La base
@@ -711,7 +667,7 @@ des deux modèles.
 | `Scene` | `Scene` | `scenes` | `titre` = libellé back-office, `dialogue_text` = contenu joué |
 | `Choix` | `Choix` | `choix` | **`protected $table = 'choix'`** — Laravel infère `choixes` |
 | `Liaison_SousTheme_Contact` | — | `contact_sous_theme` | pivot + colonne `ordre` |
-| `Liaison_SousTheme_Media` | — | `media_sous_theme` | pivot |
+| `Liaison_SousTheme_Media` | — | `media_sous_theme` | pivot + colonne `ordre` |
 | `Liaison_Theme_Media` | — | `media_theme` | pivot |
 | `Liaison_Histoire_SousTheme` | — | `histoire_sous_theme` | pivot |
 | `Liaison_Histoire_Scene` | — | `histoire_scene` | pivot + colonnes `est_initiale`, `ordre` |

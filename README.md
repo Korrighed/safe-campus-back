@@ -202,7 +202,7 @@ docker compose up -d
 
 Le reste du code vit dans le bind mount et ne nécessite aucun rebuild.
 
-> Ce `docker-compose.yml` est un stack de **développement** uniquement. La stack de production (`docker-compose.prod.yml`, `docker/8.4/Dockerfile.prod`) est documentée dans [docs/deploiement.md](docs/deploiement.md). Aucun hébergeur n'est retenu à ce jour.
+> Ce `docker-compose.yml` est un stack de **développement** uniquement. La stack de production (`docker-compose.prod.yml`, `docker/8.4/Dockerfile.prod`) est documentée dans [docs/deploiement.md](docs/deploiement.md). Aucun hébergeur de production n'est retenu à ce jour ; une démo publique temporaire tourne sur Render et Neon ([docs/deploiement-render.md](docs/deploiement-render.md)).
 
 ### Le front
 
@@ -220,7 +220,7 @@ storage/app/public/medias/
 └── document/     ← PDF (fiches ressources)
 ```
 
-Aucun nouveau volume Docker : `sc_back` bind-mount déjà tout le repo (`.:/var/www/html`), `storage/` persiste comme le reste du code. La stack de prod n'a pas de bind mount : elle a besoin d'un volume nommé pour `storage/app`, pas encore déclaré (voir [docs/deploiement.md](docs/deploiement.md)).
+Aucun nouveau volume Docker : `sc_back` bind-mount déjà tout le repo (`.:/var/www/html`), `storage/` persiste comme le reste du code. La stack de prod n'a pas de bind mount : `storage/app` et `storage/logs` sont montés sur les volumes nommés `scback-storage-prod` et `scback-logs-prod` (voir [docs/deploiement.md](docs/deploiement.md)).
 
 Servis en statique via le lien symbolique `public/storage` (voir `storage:link` ci-dessus), donc accessibles en lecture directe par le front — un PDF s'ouvre dans un nouvel onglet via un simple lien (`target="_blank"`, pas de viewer embarqué), sans endpoint de téléchargement dédié.
 
@@ -286,6 +286,8 @@ production), identifiants bidon définis dans `.env.example` (`WEBMASTER_DEMO_EM
 Pour changer ces valeurs, surcharger `WEBMASTER_DEMO_EMAIL`/`WEBMASTER_DEMO_PASSWORD` dans `.env`
 avant `migrate` — le compte n'est (re)créé que s'il n'existe pas déjà.
 
+Un compte `redacteur` de démonstration (`REDACTEUR_DEMO_EMAIL` / `REDACTEUR_DEMO_PASSWORD`, `redacteur@test.local` / `password` par défaut) est créé par `RedacteurDemoSeeder` au `db:seed`. Il est l'auteur des histoires de démonstration.
+
 Un compte `admin` est provisionné de la même façon au `migrate` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`,
 valeurs de dev dans `.env.example` : `admin@safe-campus.nc` / `password`). Il gère uniquement les
 comptes : validation des inscriptions, attribution des rôles et suppression de comptes (dont sur
@@ -319,8 +321,11 @@ graph TD
     docs --> cdc["cahier-des-charges-techniques.md"]
     docs --> secu["securite-rgpd.md"]
     docs --> maint["maintenance-evolutive-2025-2029.md"]
-    docs --> deploy["deploiement.md\nMise en production"]
+    docs --> deploy["deploiement.md, deploiement-render.md\nMise en production et démo"]
     docs --> schema["schema_bd.md\nSchéma de base de données"]
+    docs --> ci["ci.md\nIntégration continue"]
+    docs --> api["api.md\nContrats de l'API"]
+    docs --> relecteur["PRD, TRD, IMPLEMENTATION-PLAN\nLot rôle relecteur"]
 
     scfront --> fdocker["docker/\nDockerfile Node 22 (dev)\nDockerfile.prod (prod)\nstart-container (entrypoint dev)"]
     scfront --> fdc["docker-compose.yml\nOrchestration : sc_front\n(reseau `scback` partage avec le back)"]

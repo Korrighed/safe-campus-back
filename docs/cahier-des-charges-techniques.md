@@ -82,7 +82,7 @@ Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans co
 | Suppression d'un rédacteur avec transfert obligatoire de ses histoires. | Scénario 9 | Conforme |
 | Suppression d'un compte par un administrateur sur demande de la personne (droit à l'effacement). | Scénario 9 | Conforme |
 | Suppression automatique des comptes sans connexion depuis 3 ans (hors visiteur, administrateurs et auteurs d'histoires). | Scénario 16 | À valider en recette |
-| Guides contextuels pour le webmaster et le rédacteur, sur le tableau de bord et par section. | Revue du back-office | Conforme |
+| Guides contextuels pour le webmaster, le rédacteur et le relecteur, sur le tableau de bord et par section. | Revue du back-office | Conforme |
 | Journal d'audit : création, modification, suppression, connexion, échec de connexion, inscription. | Scénario 15 | Conforme |
 
 ### 3.3 API
@@ -203,8 +203,8 @@ Purge automatique : une tâche quotidienne supprime les comptes sans connexion d
 | Limitation des tentatives : 5 connexions et 2 inscriptions par minute au back-office. | Essais répétés | Conforme |
 | Mots de passe du back-office : 14 à 72 caractères, majuscule, minuscule, caractère spécial, refus des mots de passe ayant fuité. Stockage haché. | Essai d'inscription | Conforme |
 | Le message « en attente de validation » n'apparaît qu'après un mot de passe correct : il ne révèle pas si un email est inscrit. | Scénario 7 | Conforme |
-| Cookies sécurisés en production, en-têtes HTTP de sécurité. | Inspection des réponses HTTP | Non conforme |
-| Requêtes inter-domaines limitées au domaine du site étudiant. | Appel depuis un autre domaine | Non conforme |
+| Cookies sécurisés en production, en-têtes HTTP de sécurité. | Inspection des réponses HTTP | Partiel : back conforme (cookie de session `secure`, middleware `SecurityHeaders`) ; site étudiant sans en-têtes de sécurité, cookie `sc_token` sans `Secure` ni `HttpOnly` |
+| Requêtes inter-domaines limitées au domaine du site étudiant. | Appel depuis un autre domaine | Conforme (`CORS_ALLOWED_ORIGINS`) |
 | Téléversement des médias limité à une liste blanche de formats vérifiés sur le contenu (ni SVG ni HTML), 10 Mo par fichier. | Tests automatisés du back-office | Conforme |
 
 ### 5.4 Traçabilité
@@ -227,7 +227,7 @@ Purge automatique : une tâche quotidienne supprime les comptes sans connexion d
 
 | Exigence | Vérification | État |
 |---|---|---|
-| Lint, vérification de types et tests au vert avant chaque fusion. | Commandes de qualité | Partiel : lancées à la main, sans intégration continue |
+| Lint, vérification de types et tests au vert avant chaque fusion. | Intégration continue ([ci.md](ci.md)) | Conforme : job `verif` sur chaque push et pull request, job `approfondi` avant `main`. Le front n'a pas de tests automatisés (build, typecheck, lint). |
 | Environnement de développement entièrement conteneurisé, identique pour tous. | Démarrage par `docker compose up -d` | Conforme |
 
 ---
@@ -308,9 +308,9 @@ Aucun hébergeur n'est retenu. Le livrable est un jeu d'images Docker de product
 | Images de production dédiées, sans outils de développement ni de débogage. Le site étudiant ne contient que son build. | Conforme |
 | Base de données non exposée hors du réseau Docker interne. | Conforme |
 | HTTPS assuré par un reverse proxy et un certificat fournis par l'hébergement. | À fournir par l'hébergeur |
-| Volumes persistants pour les médias et les journaux. | Non conforme : un redéploiement les efface |
+| Volumes persistants pour les médias et les journaux. | Partiel : volumes `scback-storage-prod` et `scback-logs-prod` déclarés ; sauvegarde hors serveur non faite |
 | Serveur d'application de production (PHP-FPM ou équivalent). | Non conforme : serveur de développement `artisan serve` |
-| Conteneurs exécutés avec un utilisateur non administrateur. | Partiel : back conforme, site étudiant exécuté en administrateur |
+| Conteneurs exécutés avec un utilisateur non administrateur. | Conforme : back (`scback`) et site étudiant (`node`) |
 | Images de production sans portillon visiteur (compte, page de connexion, middleware). | Non conforme : les images exigent encore le compte visiteur, à adapter au lancement officiel |
 | Sauvegarde quotidienne de la base et des médias, stockée hors du serveur, restauration testée chaque trimestre. | Non conforme |
 | Supervision de la disponibilité et des erreurs, avec alertes. | Non conforme |

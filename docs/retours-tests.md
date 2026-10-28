@@ -7,11 +7,11 @@ Filtré sur les retours back uniquement. Trié par temps de travail estimé, du 
 - [x] **[S]** Contraste des bordures : revoir les variables root Tailwind pour mieux faire ressortir les éléments d'UI.
 - [x] **[S]** Visibilité du dépliant guide sur l'accueil : améliorer et remanier son emplacement/mise en avant.
 - [x] **[S/M]** Rappel guide par section (petit encart d'aide contextuel par section du panel).
-- [ ] **[S/M]** Guide : expliquer clairement comment rattacher un média / contact à un sous-thème.
+- [x] **[S/M]** Guide : expliquer clairement comment rattacher un média / contact à un sous-thème.
 - [x] **[M]** Compléter les sites internet pour les sites officiels et structures (Province Sud, etc.).
 - [x] **[M]** Étoffer le guide avec plus d'éléments d'information.
 - [ ] **[M/L]** Vérifier la gestion des langues FR/EN (comment fonctionnent les traductions) et permettre de choisir français/anglais.
-- [ ] **[L]** À la saisie d'adresse en back, afficher un embed Leaflet pour visualiser le point sur la carte, avec possibilité d'ajuster légèrement la position depuis l'embed (et répercussion côté front).
+- [x] **[L]** À la saisie d'adresse en back, afficher un embed Leaflet pour visualiser le point sur la carte, avec possibilité d'ajuster légèrement la position depuis l'embed (et répercussion côté front).
 - [ ] Split le guide rapide en plusieurs section pour mimic les menus et pas avoir un seul gros block a déplier
 
 Légende : XS < 2h · S ≈ demi-journée · M ≈ 1 jour · L ≈ 2-3 jours (estimations à affiner).

@@ -1,6 +1,6 @@
 # Plan d'implémentation — Rôle relecteur
 
-Statut : brouillon
+Statut : exécuté (T001 à T019, hors T017 absente). Fusionné dans `dev`.
 Couvre : [PRD](PRD.md) F-01 … F-11, NF-01 … NF-04 · [TRD](TRD.md) T-01 … T-13
 Branche : `feature/role-relecteur` (depuis `dev`)
 
@@ -55,7 +55,7 @@ flowchart LR
 | T018 | Correctifs de la revue : aperçu borné, policies, PHPStan, Pint, tests | revue | `PreviewHistoire`, policies, `HistoireResource`, tests | T016 | oui | fait |
 | T019 | Correctifs de la revue : choix orphelins, texte de retrait, traçabilité | revue | `NettoyageScenesService`, `ScenesHistoire`, `CreateHistoire`, tests | T016 | oui | fait |
 
-Fichier détaillé de chaque tâche : `docs/tasks/Txxx-slug.md`.
+Les fichiers de tâches (`docs/tasks/Txxx-slug.md`) ont été supprimés après exécution du lot. Ils restent dans l'historique git, au commit indiqué au § 8 ou avant.
 
 L'ordre d'exécution conseillé : T001, T007, T002, T005, T006, T003, T004, T008, T009, T010, T011, T012, T013. Les vérifications (pint, phpstan avec `--memory-limit=512M`, suite de tests) sont lancées une seule fois après la dernière tâche. Le `[P]` signale l'absence de fichier commun avec les tâches de la même vague. L'exécution reste séquentielle (une tâche, un commit, un arrêt).
 
@@ -120,4 +120,4 @@ flowchart TD
 | T018 | e934861 | | |
 | T019 | e7b26b1 | | |
 
-Correctif hors tâche : `edefa74` (balise parasite dans `GuideRelecteurWidget`). Aucune tâche n'a été vérifiée par pint, phpstan ou la suite de tests : le passage de fin de lot reste à faire.
+Correctifs hors tâche : `edefa74` (balise parasite dans `GuideRelecteurWidget`), `07d5865` (types PHPStan et tests corrigés au passage de fin de lot). Le résultat final de pint, phpstan et de la suite de tests n'est pas consigné ici : la CI (`verif`) le rejoue sur chaque push, voir [ci.md](ci.md). La tâche T017 n'existe pas.

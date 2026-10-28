@@ -36,18 +36,26 @@ API/admin backend : les contrôleurs renvoient du JSON, pas de vues. L'admin est
 
 ```
 app/
+├── Console/Commands/   comptes:purger-inactifs, scenes:purger-orphelines
 ├── Enums/              Backed enums castés sur les modèles
+├── Filament/           Resources, Pages (auth), Widgets (guides par rôle), Forms/Components
 ├── Http/
 │   ├── Controllers/    One controller per resource (PascalCase), max 7 CRUD methods
-│   └── Requests/       Form Requests for all validation (never inline in controllers)
+│   ├── Middleware/     SecurityHeaders (en-têtes de sécurité du back)
+│   ├── Requests/       Form Requests for all validation (never inline in controllers)
+│   └── Resources/      API Resources : forme JSON des réponses de routes/api.php
+├── Listeners/          Audit des connexions, date de dernière connexion
+├── Livewire/           Composants Livewire hors Filament
 ├── Models/             Eloquent — always define $fillable; use $casts for enums/arrays
-├── Services/           Business logic extracted from controllers
+├── Observers/          AuditObserver (journal d'audit), HistoireObserver (changement d'état)
 ├── Policies/           Authorization per resource
-└── Providers/Filament/ AdminPanelProvider — config du panel Filament
+├── Providers/Filament/ AdminPanelProvider — config du panel Filament
+└── Services/           Business logic extracted from controllers (audit, géocodage, purges…)
 
 routes/
-├── web.php             Actuellement minimal (health check `/`)
-└── api.php             Routes JSON du front Nuxt (login visiteur, themes, sous-themes, histoires)
+├── web.php             Health check `/`, pages légales `/mentions-legales` et `/cgu`
+├── api.php             Routes JSON du front Nuxt (login visiteur, themes, sous-themes, histoires)
+└── console.php         Planification : `comptes:purger-inactifs` quotidienne
 ```
 
 Le schéma de base de données est décrit dans [docs/schema_bd.md](docs/schema_bd.md).

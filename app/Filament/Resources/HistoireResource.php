@@ -221,7 +221,7 @@ class HistoireResource extends Resource
                         ->deselectRecordsAfterCompletion()
                         ->action(function (Collection $records): void {
                             $utilisateur = auth()->user();
-                            [$supprimables, $refusees] = $records->partition(fn (Histoire $histoire): bool => $utilisateur?->can('delete', $histoire) ?? false);
+                            [$supprimables, $refusees] = $records->partition(fn (Model $histoire): bool => $utilisateur?->can('delete', $histoire) ?? false);
 
                             $supprimables->each->delete();
 

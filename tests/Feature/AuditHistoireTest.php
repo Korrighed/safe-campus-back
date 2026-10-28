@@ -65,7 +65,7 @@ class AuditHistoireTest extends TestCase
      * Contextes de toutes les lignes, concatenes en JSON. Non echappe pour
      * qu'une recherche de texte accentue ou contenant un slash reste fiable.
      */
-    private function json(): string
+    private function contextesJson(): string
     {
         return implode('', array_map(
             fn (LogRecord $record): string => json_encode(
@@ -171,8 +171,8 @@ class AuditHistoireTest extends TestCase
         $ligne = $this->ligne('Histoire.scene_ajoutee');
         $this->assertNotNull($ligne);
         $this->assertSame($histoire->scenes()->sole()->id, $ligne->context['scene_id']);
-        $this->assertStringNotContainsString('Titre secret', $this->json());
-        $this->assertStringNotContainsString('Texte secret', $this->json());
+        $this->assertStringNotContainsString('Titre secret', $this->contextesJson());
+        $this->assertStringNotContainsString('Texte secret', $this->contextesJson());
     }
 
     public function test_reutiliser_une_scene_est_trace(): void
@@ -364,7 +364,7 @@ class AuditHistoireTest extends TestCase
         $ligne = $this->ligne('Histoire.suppression_groupee');
         $this->assertNotNull($ligne);
 
-        // Seule la ligne groupee : json() concatene toutes les lignes, dont Histoire.supprime (titre non masque, TRD § 7).
+        // Seule la ligne groupee : contextesJson() concatene toutes les lignes, dont Histoire.supprime (titre non masque, TRD § 7).
         $contenu = json_encode($ligne->context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $this->assertStringNotContainsString('Titre distinctif brouillon', $contenu);
         $this->assertStringNotContainsString('Titre distinctif relecture', $contenu);
@@ -386,7 +386,7 @@ class AuditHistoireTest extends TestCase
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $histoire = Histoire::query()->sole();
+        $histoire = Histoire::query()->where('ref', 'histoire_tracee')->sole();
 
         $scene = $this->ligne('Histoire.scene_ajoutee');
         $this->assertNotNull($scene);
@@ -398,8 +398,8 @@ class AuditHistoireTest extends TestCase
         $this->assertSame([$sousTheme->id], $sousThemes[0]->context['ajoutes']);
         $this->assertSame([], $sousThemes[0]->context['retires']);
 
-        $this->assertStringNotContainsString('Titre secret', $this->json());
-        $this->assertStringNotContainsString('Texte secret', $this->json());
+        $this->assertStringNotContainsString('Titre secret', $this->contextesJson());
+        $this->assertStringNotContainsString('Texte secret', $this->contextesJson());
     }
 
     public function test_supprimer_un_choix_en_editant_une_scene_est_trace(): void

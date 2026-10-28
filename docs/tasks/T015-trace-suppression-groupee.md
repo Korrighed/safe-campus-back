@@ -1,6 +1,6 @@
 # T015 — Tracer la suppression groupée d'histoires
 
-Statut : à faire
+Statut : fait
 Story : US-06 · Exigences : NF-03
 Dépend de : T012
 Parallélisable : oui (avec T014)

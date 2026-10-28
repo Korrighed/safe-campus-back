@@ -1,6 +1,6 @@
 # T018 — Correctifs de la revue : aperçu, policies, PHPStan, Pint, tests
 
-Statut : à faire
+Statut : fait
 Story : transverse (revue du lot) · Exigences : F-02, NF-01
 Dépend de : T016
 Parallélisable : oui (avec T019)

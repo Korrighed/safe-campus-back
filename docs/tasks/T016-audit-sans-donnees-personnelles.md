@@ -1,6 +1,6 @@
 # T016 — Désigner les comptes par leur identifiant dans l'audit
 
-Statut : à faire
+Statut : fait
 Story : US-06 · Exigences : NF-02 (étendu aux comptes)
 Dépend de : T014, T015
 Parallélisable : non

@@ -49,9 +49,11 @@ flowchart LR
 | T011 | Limites de saisie visibles | US-03 | formulaires histoire et scène | T010 | | fait |
 | T012 | Mettre la documentation à jour | tous | `docs/*.md` | T001 à T011 | | fait |
 | T013 | Corriger l'année du pied de page (2025 → 2026) | hors lot | `footer.blade.php` | T012 | | fait |
-| T014 | Nettoyer les scènes orphelines | demande du porteur | `Histoire`, service, commande `scenes:purger-orphelines` | T012 | oui | à faire |
-| T015 | Tracer la suppression groupée | US-06 | `HistoireResource`, `AuditHistoireTest` | T012 | oui | à faire |
-| T016 | Désigner les comptes par leur identifiant dans l'audit (plus d'e-mail en log) | US-06 | `AuditService`, `AuditAuthentification`, tests d'audit, docs | T014, T015 | | à faire |
+| T014 | Nettoyer les scènes orphelines | demande du porteur | `Histoire`, service, commande `scenes:purger-orphelines` | T012 | oui | fait |
+| T015 | Tracer la suppression groupée | US-06 | `HistoireResource`, `AuditHistoireTest` | T012 | oui | fait |
+| T016 | Désigner les comptes par leur identifiant dans l'audit (plus d'e-mail en log) | US-06 | `AuditService`, `AuditAuthentification`, tests d'audit, docs | T014, T015 | | fait |
+| T018 | Correctifs de la revue : aperçu borné, policies, PHPStan, Pint, tests | revue | `PreviewHistoire`, policies, `HistoireResource`, tests | T016 | oui | fait |
+| T019 | Correctifs de la revue : choix orphelins, texte de retrait, traçabilité | revue | `NettoyageScenesService`, `ScenesHistoire`, `CreateHistoire`, tests | T016 | oui | fait |
 
 Fichier détaillé de chaque tâche : `docs/tasks/Txxx-slug.md`.
 
@@ -112,5 +114,10 @@ flowchart TD
 | T011 | cff4d9c | | |
 | T012 | d2a82ee | | |
 | T013 | d102d31 | | |
+| T014 | e408c9a | | |
+| T015 | bbc7637 | | |
+| T016 | 0d62046 | | |
+| T018 | e934861 | | |
+| T019 | e7b26b1 | | |
 
 Correctif hors tâche : `edefa74` (balise parasite dans `GuideRelecteurWidget`). Aucune tâche n'a été vérifiée par pint, phpstan ou la suite de tests : le passage de fin de lot reste à faire.

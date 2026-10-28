@@ -1,6 +1,6 @@
 # T014 — Nettoyer les scènes orphelines
 
-Statut : à faire
+Statut : fait
 Story : hors lot initial (demande du porteur) · Exigences : aucune
 Dépend de : T012
 Parallélisable : oui (avec T015)

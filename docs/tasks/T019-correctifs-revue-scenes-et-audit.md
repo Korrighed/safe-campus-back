@@ -1,6 +1,6 @@
 # T019 — Correctifs de la revue : choix orphelins, texte de retrait, traçabilité
 
-Statut : à faire
+Statut : fait
 Story : transverse (revue du lot) · Exigences : F-08, NF-03
 Dépend de : T016
 Parallélisable : oui (avec T018)

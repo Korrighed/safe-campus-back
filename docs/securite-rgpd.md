@@ -259,12 +259,12 @@ Limites assumées de la démo :
 | Test de restauration d'une sauvegarde | Trimestrielle |
 | Montées de version majeures | Selon le calendrier de fin de support des composants |
 
-État des dépendances au 27/10/2026 (audits rejoués par la CI, job `approfondi`, voir [ci.md](ci.md)) :
+État des dépendances au 30/10/2026 (audits rejoués par la CI, job `approfondi`, voir [ci.md](ci.md)) :
 
 | Dépôt | Outil | Vulnérabilités connues |
 |---|---|---|
-| Back | `composer audit --locked` | Aucune. Bloquant en CI. |
-| Front | `npm audit` | 7 de gravité haute et 1 basse, dans la chaîne d'outillage de Nuxt (serveur de développement, build) ; aucune critique. Les critiques bloquent la CI ; les hautes sont affichées sans bloquer. Correctif proposé par npm : retour à Nuxt 3, non retenu. |
+| Back | `composer audit --locked` | Aucune. Bloquant en CI. `symfony/mime` corrigé en v8.1.10 (CVE-2026-45070, injection d'en-tête email ; l'application n'envoie pas d'email). |
+| Front | `npm audit` | 7 de gravité basse (`deepmerge`, prototype poisoning, via la chaîne `nuxt` / `nitropack`) ; aucune haute ni critique. `node-forge` et `serialize-javascript` corrigés dans le lockfile. Les critiques bloquent la CI ; les hautes sont affichées sans bloquer. Le seul correctif proposé par npm pour la chaîne `deepmerge` est un retour à `nuxt@4.1.3`, non retenu. |
 | Images de prod | Trivy, CRITICAL corrigeables | Aucune. Bloquant en CI. |
 
 Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.

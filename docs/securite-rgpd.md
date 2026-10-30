@@ -274,7 +274,7 @@ Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 
 ## 10. Mesures complémentaires à mettre en œuvre
 
-État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (back seulement), S-06, S-14, S-16. Les autres restent à faire.
+État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (sans CSP de scripts), S-06, S-14, S-16. Les autres restent à faire.
 
 ### 10.1 Écarts à corriger avant la mise en production
 
@@ -282,7 +282,7 @@ Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 
 | ID | Mesure | Constat | Priorité |
 |---|---|---|---|
-| S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). À faire : en-têtes du front, CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
+| S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). Front : en-têtes posés par `routeRules` (`nuxt.config.ts`), sans CSP de scripts ; `x-powered-by: Nuxt` reste exposé. À faire : CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
 | S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Volumes `storage/app` et `storage/logs` créés dans `docker-compose.prod.yml`. Sauvegarde hors serveur à prévoir avec l'hébergeur final. | Haute |
 | S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
 | S-08 | Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |

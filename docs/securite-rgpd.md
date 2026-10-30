@@ -188,7 +188,7 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 > Les rattachements des histoires (scènes, sous-thèmes) sont tracés par des événements explicites (`Histoire.scene_ajoutee`, `Histoire.sous_themes_modifies`, etc.). Les autres rattachements (média ↔ sous-thème, contact ↔ sous-thème) ne déclenchent pas d'événement de modèle : ils ne sont pas tracés (S-16).
 
-> Les journaux sont montés sur le volume `scback-logs-prod` : un redéploiement ne les efface pas. Sur la démo Render (disque éphémère), ils disparaissent au redémarrage (S-06, § 8.2).
+> Les journaux sont montés sur le volume `scback-logs-prod` : un redéploiement ne les efface pas. Sur la démo Render (solution temporaire, disque éphémère), ils disparaissent au redémarrage : accepté, la conservation des journaux relève de l'hébergement final (§ 8.1).
 
 ---
 
@@ -239,8 +239,9 @@ Mise en ligne temporaire pour présenter le prototype. Procédure et variables :
 
 Limites assumées de la démo :
 
-- Pas de sauvegarde de la base en dehors de celle de Neon, pas de supervision (S-07), pas de planificateur (S-19 : la purge des comptes inactifs ne tourne pas).
-- `artisan serve` avec deux processus (`PHP_CLI_SERVER_WORKERS=2`) sur 512 Mo : mono-hôte, sans haute disponibilité (S-11).
+- Solution temporaire : sauvegarde, conservation des journaux et supervision relèvent de l'hébergement final (§ 8.1) et ne sont pas évaluées sur la démo.
+- Pas de planificateur (S-19) : la purge des comptes inactifs ne tourne pas. Sur tout hébergement, elle exige un job planifié (`schedule:run` chaque minute, voir [deploiement.md](deploiement.md#tâches-planifiées)).
+- `artisan serve` avec deux processus (`PHP_CLI_SERVER_WORKERS=2`) sur 512 Mo, lancé par `docker/8.4/start-prod` : mono-hôte, sans haute disponibilité (S-11). Les tâches de démarrage (migrations, seeders) qui échouent n'empêchent pas le serveur de démarrer : lire les journaux après chaque déploiement.
 - Mise en veille après 15 minutes d'inactivité : premier appel suivant d'environ une minute.
 - Le portillon visiteur reste actif (prototype, § 4.1).
 - Aucun contrat de sous-traitance (art. 28) n'est signé avec Render ni Neon. La démo ne doit contenir que des données de démonstration. Les comptes du personnel créés dans `/admin` sont des comptes de test.
@@ -259,12 +260,12 @@ Limites assumées de la démo :
 | Test de restauration d'une sauvegarde | Trimestrielle |
 | Montées de version majeures | Selon le calendrier de fin de support des composants |
 
-État des dépendances au 27/10/2026 (audits rejoués par la CI, job `approfondi`, voir [ci.md](ci.md)) :
+État des dépendances au 30/10/2026 (audits rejoués par la CI, job `approfondi`, voir [ci.md](ci.md)) :
 
 | Dépôt | Outil | Vulnérabilités connues |
 |---|---|---|
-| Back | `composer audit --locked` | Aucune. Bloquant en CI. |
-| Front | `npm audit` | 7 de gravité haute et 1 basse, dans la chaîne d'outillage de Nuxt (serveur de développement, build) ; aucune critique. Les critiques bloquent la CI ; les hautes sont affichées sans bloquer. Correctif proposé par npm : retour à Nuxt 3, non retenu. |
+| Back | `composer audit --locked` | Aucune. Bloquant en CI. `symfony/mime` corrigé en v8.1.10 (CVE-2026-45070, injection d'en-tête email ; l'application n'envoie pas d'email). |
+| Front | `npm audit` | 7 de gravité basse (`deepmerge`, prototype poisoning, via la chaîne `nuxt` / `nitropack`) ; aucune haute ni critique. `node-forge` et `serialize-javascript` corrigés dans le lockfile. Les critiques bloquent la CI ; les hautes sont affichées sans bloquer. Le seul correctif proposé par npm pour la chaîne `deepmerge` est un retour à `nuxt@4.1.3`, non retenu. |
 | Images de prod | Trivy, CRITICAL corrigeables | Aucune. Bloquant en CI. |
 
 Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
@@ -273,14 +274,16 @@ Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 
 ## 10. Mesures complémentaires à mettre en œuvre
 
-État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (back seulement), S-06, S-14, S-16. Les autres restent à faire.
+État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (sans CSP de scripts), S-06, S-14, S-16. Les autres restent à faire.
 
 ### 10.1 Écarts à corriger avant la mise en production
 
+> La solution actuelle (images Docker et démo Render) est temporaire : un premier exemple de mise en ligne. Les lignes qui dépendent de l'hébergement final (S-06, S-07, S-18) ne sont pas des défauts de cette démo ; elles seront arrêtées avec l'hébergeur retenu. S-11 et S-19 sont des difficultés de la solution actuelle, décrites dans [deploiement.md](deploiement.md).
+
 | ID | Mesure | Constat | Priorité |
 |---|---|---|---|
-| S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). À faire : en-têtes du front, CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
-| S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Volumes `storage/app` et `storage/logs` créés dans `docker-compose.prod.yml`. Sauvegarde hors serveur non faite. Sur Render gratuit, le disque est éphémère (§ 8.2). | Haute |
+| S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). Front : en-têtes posés par `routeRules` (`nuxt.config.ts`), sans CSP de scripts ; `x-powered-by: Nuxt` reste exposé. À faire : CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
+| S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Volumes `storage/app` et `storage/logs` créés dans `docker-compose.prod.yml`. Sauvegarde hors serveur à prévoir avec l'hébergeur final. | Haute |
 | S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
 | S-08 | Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |
 | S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Fait : `config/cors.php`, origines lues dans `CORS_ALLOWED_ORIGINS` | Moyenne |

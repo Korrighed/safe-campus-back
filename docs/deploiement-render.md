@@ -92,7 +92,7 @@ Une tâche qui échoue est signalée dans les journaux (`AVERTISSEMENT`) mais n'
 | Pas de disque persistant | Voir ci-dessus |
 | 512 Mo de mémoire, 0,1 CPU | `PHP_CLI_SERVER_WORKERS=2`. Surveiller *Metrics* : un dépassement redémarre le service. |
 | Pas de shell, pas de tâche ponctuelle | Migrations et seeders passent par `start-prod` |
-| Pas de planificateur | La purge des comptes inactifs à 3 ans (S-19) ne tourne pas. Sans objet pour une démo d'une semaine. |
+| Pas de planificateur | La purge des comptes inactifs à 3 ans (S-19) ne tourne pas : elle exige un job planifié (`schedule:run` chaque minute, voir [deploiement.md § Tâches planifiées](deploiement.md#tâches-planifiées)). Non branché sur la démo d'une semaine, mais à prévoir chez l'hébergeur final. |
 | 750 heures gratuites par mois, partagées | Deux services allumés en continu les épuisent en environ 15 jours |
 
 ## Gestion des secrets

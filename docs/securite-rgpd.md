@@ -188,7 +188,7 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 > Les rattachements des histoires (scènes, sous-thèmes) sont tracés par des événements explicites (`Histoire.scene_ajoutee`, `Histoire.sous_themes_modifies`, etc.). Les autres rattachements (média ↔ sous-thème, contact ↔ sous-thème) ne déclenchent pas d'événement de modèle : ils ne sont pas tracés (S-16).
 
-> Les journaux sont montés sur le volume `scback-logs-prod` : un redéploiement ne les efface pas. Sur la démo Render (disque éphémère), ils disparaissent au redémarrage (S-06, § 8.2).
+> Les journaux sont montés sur le volume `scback-logs-prod` : un redéploiement ne les efface pas. Sur la démo Render (solution temporaire, disque éphémère), ils disparaissent au redémarrage : accepté, la conservation des journaux relève de l'hébergement final (§ 8.1).
 
 ---
 
@@ -239,8 +239,9 @@ Mise en ligne temporaire pour présenter le prototype. Procédure et variables :
 
 Limites assumées de la démo :
 
-- Pas de sauvegarde de la base en dehors de celle de Neon, pas de supervision (S-07), pas de planificateur (S-19 : la purge des comptes inactifs ne tourne pas).
-- `artisan serve` avec deux processus (`PHP_CLI_SERVER_WORKERS=2`) sur 512 Mo : mono-hôte, sans haute disponibilité (S-11).
+- Solution temporaire : sauvegarde, conservation des journaux et supervision relèvent de l'hébergement final (§ 8.1) et ne sont pas évaluées sur la démo.
+- Pas de planificateur (S-19) : la purge des comptes inactifs ne tourne pas. Sur tout hébergement, elle exige un job planifié (`schedule:run` chaque minute, voir [deploiement.md](deploiement.md#tâches-planifiées)).
+- `artisan serve` avec deux processus (`PHP_CLI_SERVER_WORKERS=2`) sur 512 Mo, lancé par `docker/8.4/start-prod` : mono-hôte, sans haute disponibilité (S-11). Les tâches de démarrage (migrations, seeders) qui échouent n'empêchent pas le serveur de démarrer : lire les journaux après chaque déploiement.
 - Mise en veille après 15 minutes d'inactivité : premier appel suivant d'environ une minute.
 - Le portillon visiteur reste actif (prototype, § 4.1).
 - Aucun contrat de sous-traitance (art. 28) n'est signé avec Render ni Neon. La démo ne doit contenir que des données de démonstration. Les comptes du personnel créés dans `/admin` sont des comptes de test.
@@ -277,10 +278,12 @@ Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 
 ### 10.1 Écarts à corriger avant la mise en production
 
+> La solution actuelle (images Docker et démo Render) est temporaire : un premier exemple de mise en ligne. Les lignes qui dépendent de l'hébergement final (S-06, S-07, S-18) ne sont pas des défauts de cette démo ; elles seront arrêtées avec l'hébergeur retenu. S-11 et S-19 sont des difficultés de la solution actuelle, décrites dans [deploiement.md](deploiement.md).
+
 | ID | Mesure | Constat | Priorité |
 |---|---|---|---|
 | S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). À faire : en-têtes du front, CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
-| S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Volumes `storage/app` et `storage/logs` créés dans `docker-compose.prod.yml`. Sauvegarde hors serveur non faite. Sur Render gratuit, le disque est éphémère (§ 8.2). | Haute |
+| S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Volumes `storage/app` et `storage/logs` créés dans `docker-compose.prod.yml`. Sauvegarde hors serveur à prévoir avec l'hébergeur final. | Haute |
 | S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
 | S-08 | Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |
 | S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Fait : `config/cors.php`, origines lues dans `CORS_ALLOWED_ORIGINS` | Moyenne |

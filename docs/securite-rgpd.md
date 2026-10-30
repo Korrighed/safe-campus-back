@@ -8,7 +8,7 @@
 | État du code | Branche `dev` au 20/10/2026 |
 | Hébergement | Aucun hébergeur retenu. Le livrable est un jeu d'images Docker de production. |
 
-Le document comprend deux parties : la sécurité (sections 1 à 10), puis la protection des données personnelles (sections 11 à 18).
+Le document comprend deux parties : la sécurité (sections 1 à 9), puis la protection des données personnelles (sections 10 à 16).
 
 > Aucune solution d'hébergement n'est choisie. Les mesures qui dépendent de l'hébergement (TLS, reverse proxy, volumes, sauvegarde, supervision) sont des préconisations : voir § 8.1. Elles seront arrêtées avec l'hébergeur retenu.
 
@@ -84,16 +84,14 @@ Le projet prend comme référentiel le RGPD (règlement UE 2016/679) et la loi I
 
 Le site étudiant et l'API de lecture sont publics par conception. En production, ils sont consultables sans compte ni mot de passe. Seul le back-office (`/admin`) et ses ressources sont protégés.
 
-Le prototype n'est pas déployé en production (seule la démo Render existe, § 8.2). Lors des événements où la plateforme est présentée, un **portillon visiteur** limite l'accès au site étudiant. Ce portillon n'est pas une authentification : il ne protège aucune donnée, l'API de lecture restant publique.
+Le prototype n'est pas déployé en production. Lors des événements où la plateforme est présentée, un **portillon visiteur** limite l'accès au site étudiant. Ce portillon n'est pas une authentification : il ne protège aucune donnée, l'API de lecture restant publique.
 
 - Un middleware global redirige vers `/login` toutes les pages, sauf `/login`, `/mentions-legales`, `/cgu` et `/donnees-personnelles`, tant que le cookie `sc_token` est absent. Il vérifie la présence du cookie, pas sa validité.
 - Le mot de passe est partagé. Le compte visiteur n'est pas nominatif. Ses identifiants sont définis dans la configuration serveur (`VISITEUR_EMAIL` / `VISITEUR_PASSWORD`), jamais dans le code. Le mot de passe est changé par variable d'environnement entre deux événements.
 - `POST /api/login` renvoie un jeton Sanctum. Le front le stocke dans le cookie `sc_token` (`SameSite=Lax`).
 - Le jeton n'a pas de durée de vie : le portillon n'a pas vocation à expirer pendant un événement.
 - Le compte visiteur ne peut pas accéder au back-office : `canAccessPanel()` n'accepte que `webmaster`, `redacteur`, `relecteur` et `admin`.
-- En production, le compte visiteur, la page de connexion et le middleware sont retirés (S-10).
-
-Les limites connues du portillon sont listées au § 10.2.
+- En production, le compte visiteur, la page de connexion et le middleware sont retirés.
 
 ### 4.2 Comptes du back-office
 
@@ -144,12 +142,12 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 ### 6.1 En transit
 
 - HTTPS de bout en bout : le certificat TLS et le reverse proxy sont à fournir par l'hébergement retenu. Les conteneurs ne parlent que HTTP.
-- Requêtes inter-domaines : `config/cors.php` limite l'API (`api/*`) aux origines de `CORS_ALLOWED_ORIGINS`, sans cookies cross-origin (S-09).
+- Requêtes inter-domaines : `config/cors.php` limite l'API (`api/*`) aux origines de `CORS_ALLOWED_ORIGINS`, sans cookies cross-origin.
 
 ### 6.2 Au repos
 
 - Base PostgreSQL accessible uniquement depuis le conteneur back. Mot de passe aléatoire d'au moins 20 caractères.
-- L'application se connecte avec le compte créé par l'image PostgreSQL (`POSTGRES_USER`), qui est superutilisateur (S-18).
+- L'application se connecte avec le compte créé par l'image PostgreSQL (`POSTGRES_USER`), qui est superutilisateur.
 - `APP_KEY` générée une seule fois, conservée dans les variables d'environnement de l'hébergement, jamais régénérée.
 - Les secrets sont stockés uniquement dans les variables d'environnement. Les fichiers `.env` sont exclus de Git et des images Docker.
 
@@ -186,9 +184,9 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 > Limite connue : les e-mails et téléphones des contacts de l'annuaire peuvent encore apparaître dans les valeurs journalisées. À traiter séparément.
 
-> Les rattachements des histoires (scènes, sous-thèmes) sont tracés par des événements explicites (`Histoire.scene_ajoutee`, `Histoire.sous_themes_modifies`, etc.). Les autres rattachements (média ↔ sous-thème, contact ↔ sous-thème) ne déclenchent pas d'événement de modèle : ils ne sont pas tracés (S-16).
+> Les rattachements des histoires (scènes, sous-thèmes) sont tracés par des événements explicites (`Histoire.scene_ajoutee`, `Histoire.sous_themes_modifies`, etc.). Les autres rattachements (média ↔ sous-thème, contact ↔ sous-thème) ne déclenchent pas d'événement de modèle : ils ne sont pas tracés.
 
-> Les journaux sont montés sur le volume `scback-logs-prod` : un redéploiement ne les efface pas. Sur la démo Render (solution temporaire, disque éphémère), ils disparaissent au redémarrage : accepté, la conservation des journaux relève de l'hébergement final (§ 8.1).
+> Les journaux sont montés sur le volume `scback-logs-prod` : un redéploiement ne les efface pas. Leur conservation hors serveur relève de l'hébergement (§ 8.1).
 
 ---
 
@@ -196,16 +194,16 @@ Chaque compte a un rôle unique. La liste des rôles est fixée par une énumér
 
 Aucun hébergeur de production n'est retenu. Le livrable s'arrête aux images Docker de production, déployables sur tout hôte Docker. Le reverse proxy, le certificat TLS, le stockage persistant et la sauvegarde sont à fournir par l'hébergement.
 
-Une démo publique temporaire tourne sur Render et Neon (§ 8.2). Elle ne tient pas lieu d'hébergement de production.
+La procédure est décrite dans le [guide de déploiement](../README.md#5-déploiement-en-production).
 
 - Les images de production sont séparées des images de développement. Elles ne contiennent ni Xdebug, ni Adminer, ni dépendances de développement. L'image front ne contient que le build `.output/`, sans code source.
 - Les fichiers `.env` sont exclus des images (`.dockerignore`).
-- Les conteneurs back et site étudiant tournent avec un utilisateur non administrateur. L'image de production du site étudiant utilise `node`, fourni par l'image Node, et ne peut pas modifier son build `.output/` (S-12, corrigé).
-- L'image back sert l'application avec `php artisan serve`, serveur de développement mono-processus (S-11).
+- Les conteneurs back et site étudiant tournent avec un utilisateur non administrateur. L'image de production du site étudiant utilise `node`, fourni par l'image Node, et ne peut pas modifier son build `.output/`.
+- L'image back sert l'application avec `php artisan serve`, serveur de développement mono-processus.
 - Le réseau Docker de production (`scback_prod`) est séparé de celui de développement (`scback`).
-- Les commandes post-déploiement excluent tout jeu de données de démonstration : `db:seed` est interdit en production. Seule exception, la démo publique : `DEMO_CONTENT=true` autorise les seeders de démo (`config/demo.php`, faux par défaut, § 8.2).
+- Les commandes post-déploiement excluent tout jeu de données de démonstration : `db:seed` est interdit en production. `DEMO_CONTENT` (seeders de démonstration, faux par défaut) reste désactivé.
 - Une sauvegarde de la base est obligatoire avant toute migration en production.
-- Les médias (`storage/app`) et les journaux (`storage/logs`) sont montés sur les volumes nommés `scback-storage-prod` et `scback-logs-prod`. Reste la sauvegarde hors serveur (S-06).
+- Les médias (`storage/app`) et les journaux (`storage/logs`) sont montés sur les volumes nommés `scback-storage-prod` et `scback-logs-prod`. Reste la sauvegarde hors serveur.
 
 ### 8.1 Préconisations pour l'hébergement
 
@@ -215,36 +213,14 @@ Ces préconisations servent de cahier des charges pour le choix de l'hébergeur.
 |---|---|
 | Exposition | Seuls les ports 80 et 443 ouverts. Le port 80 redirige vers HTTPS. Base et conteneurs jamais exposés directement. |
 | TLS | Reverse proxy devant les deux conteneurs, certificat renouvelé automatiquement. |
-| En-têtes et débit | En-têtes de sécurité (S-05) et limitation de débit posés au niveau du reverse proxy, en complément de l'application. |
-| Stockage | Volumes persistants pour la base, les médias et les journaux (S-06). |
+| En-têtes et débit | En-têtes de sécurité et limitation de débit posés au niveau du reverse proxy, en complément de l'application. |
+| Stockage | Volumes persistants pour la base, les médias et les journaux. |
 | Sauvegarde | Sauvegarde quotidienne de la base et des médias, stockée hors du serveur. Restauration testée chaque trimestre. |
 | Secrets | Variables d'environnement gérées par l'hébergement, jamais dans un fichier versionné. Accès réservé aux administrateurs techniques. |
-| Supervision | Disponibilité, erreurs applicatives, espace disque. Alertes sur les échecs de connexion répétés du journal d'audit (S-07). |
+| Supervision | Disponibilité, erreurs applicatives, espace disque. Alertes sur les échecs de connexion répétés du journal d'audit. |
 | Préproduction | Environnement identique à la production pour valider migrations et montées de version avant la mise en ligne. |
 | Localisation | Serveurs situés dans une zone compatible avec le régime de protection des données retenu par le DPO (§ 1.2). |
-| Contrat | Contrat de sous-traitance conforme à l'article 28 du RGPD (§ 16). |
-
-### 8.2 Démo publique (Render et Neon)
-
-Mise en ligne temporaire pour présenter le prototype. Procédure et variables : [deploiement-render.md](deploiement-render.md).
-
-| Élément | Choix | Conséquence pour la sécurité |
-|---|---|---|
-| Hébergement applicatif | Render, 2 services web gratuits, région Oregon (États-Unis) | HTTPS et reverse proxy fournis par Render. Hébergeur hors Union européenne : voir § 16. |
-| Base de données | Neon, PostgreSQL 17, région `us-west-2` | Connexion directe, `sslmode=require`. Les droits exacts du rôle `neondb_owner` n'ont pas été vérifiés : S-18 n'est pas évalué sur cette démo. |
-| Secrets | Variables d'environnement de chaque service Render, saisies par un administrateur | Aucune valeur dans git (`.env.*` ignorés par git et Docker) ni dans les images. Un gestionnaire de secrets externe (Doppler) a été évalué puis écarté : dépendance et clé d'API Render supplémentaires, sans gain pour une démo d'une semaine. |
-| Contenu | `DEMO_CONTENT=true` : médias de démonstration, compte rédacteur de démo et 9 histoires (`docker/8.4/start-prod`) | Les contacts sont des structures d'aide publiques. Aucune donnée d'étudiant n'est collectée. |
-| Disque | Éphémère (plan gratuit) | Médias recréés à chaque démarrage par `docker/8.4/start-prod`. Les fichiers téléversés depuis `/admin` disparaissent au redémarrage. |
-| Histoires de démo | Rejouées à chaque démarrage | Toute modification d'une des 9 histoires dans `/admin` est écrasée au redémarrage suivant. |
-
-Limites assumées de la démo :
-
-- Solution temporaire : sauvegarde, conservation des journaux et supervision relèvent de l'hébergement final (§ 8.1) et ne sont pas évaluées sur la démo.
-- Pas de planificateur (S-19) : la purge des comptes inactifs ne tourne pas. Sur tout hébergement, elle exige un job planifié (`schedule:run` chaque minute, voir [deploiement.md](deploiement.md#tâches-planifiées)).
-- `artisan serve` avec deux processus (`PHP_CLI_SERVER_WORKERS=2`) sur 512 Mo, lancé par `docker/8.4/start-prod` : mono-hôte, sans haute disponibilité (S-11). Les tâches de démarrage (migrations, seeders) qui échouent n'empêchent pas le serveur de démarrer : lire les journaux après chaque déploiement.
-- Mise en veille après 15 minutes d'inactivité : premier appel suivant d'environ une minute.
-- Le portillon visiteur reste actif (prototype, § 4.1).
-- Aucun contrat de sous-traitance (art. 28) n'est signé avec Render ni Neon. La démo ne doit contenir que des données de démonstration. Les comptes du personnel créés dans `/admin` sont des comptes de test.
+| Contrat | Contrat de sous-traitance conforme à l'article 28 du RGPD (§ 15). |
 
 ---
 
@@ -260,7 +236,7 @@ Limites assumées de la démo :
 | Test de restauration d'une sauvegarde | Trimestrielle |
 | Montées de version majeures | Selon le calendrier de fin de support des composants |
 
-État des dépendances au 30/10/2026 (audits rejoués par la CI, job `approfondi`, voir [ci.md](ci.md)) :
+État des dépendances au 30/10/2026 (audits rejoués par la CI, job `approfondi`, voir le [README](../README.md#6-intégration-continue)) :
 
 | Dépôt | Outil | Vulnérabilités connues |
 |---|---|---|
@@ -272,46 +248,7 @@ Dependabot n'est pas configuré : la revue mensuelle ci-dessus reste manuelle.
 
 ---
 
-## 10. Mesures complémentaires à mettre en œuvre
-
-État constaté dans le code le 27/10/2026. Réalisées : S-02 (atténué), S-09, S-13 ; partielles : S-05 (sans CSP de scripts), S-06, S-14, S-16. Les autres restent à faire.
-
-### 10.1 Écarts à corriger avant la mise en production
-
-> La solution actuelle (images Docker et démo Render) est temporaire : un premier exemple de mise en ligne. Les lignes qui dépendent de l'hébergement final (S-06, S-07, S-18) ne sont pas des défauts de cette démo ; elles seront arrêtées avec l'hébergeur retenu. S-11 et S-19 sont des difficultés de la solution actuelle, décrites dans [deploiement.md](deploiement.md).
-
-| ID | Mesure | Constat | Priorité |
-|---|---|---|---|
-| S-05 | Ajouter les en-têtes HTTP de sécurité (HSTS, CSP, X-Content-Type-Options, Referrer-Policy) | Back : posés par le middleware `SecurityHeaders` (HSTS en HTTPS, nosniff, Referrer-Policy, X-Frame-Options, `frame-ancestors`, CSP `default-src 'none'` sur l'API). Front : en-têtes posés par `routeRules` (`nuxt.config.ts`), sans CSP de scripts ; `x-powered-by: Nuxt` reste exposé. À faire : CSP de scripts du site et de l'admin (Alpine exige `unsafe-eval`), fichiers de `public/storage` servis hors Laravel | Moyenne |
-| S-06 | Créer les volumes persistants (médias, journaux) et la sauvegarde quotidienne hors serveur | Volumes `storage/app` et `storage/logs` créés dans `docker-compose.prod.yml`. Sauvegarde hors serveur à prévoir avec l'hébergeur final. | Haute |
-| S-07 | Mettre en place la supervision (disponibilité, erreurs) et des alertes | Rien en place | Moyenne |
-| S-08 | Héberger les polices sur le serveur au lieu de Google Fonts | Polices chargées depuis Google | Moyenne |
-| S-09 | Limiter les requêtes inter-domaines au domaine du site étudiant | Fait : `config/cors.php`, origines lues dans `CORS_ALLOWED_ORIGINS` | Moyenne |
-| S-10 | Adapter les images de production au lancement officiel : retirer le compte visiteur, la page de connexion et le middleware du front. Retirer aussi du front la ligne « portillon » et la section « cookie » de la page Données personnelles, et `/donnees-personnelles` de `PUBLIC_PATHS` | Les images exigent le compte visiteur : sans ses variables, le premier déploiement échoue | Haute (au lancement officiel) |
-| S-11 | Remplacer le serveur de développement par un serveur d'application de production | L'image lance `artisan serve`, mono-processus | Haute |
-| S-13 | Rendre sécurisé le cookie de session du back-office en production | Fait : `SESSION_SECURE_COOKIE=true` par défaut dans `docker-compose.prod.yml`. Avec `TRUSTED_PROXIES` renseigné, le cookie porte `secure; httponly` (vérifié sur l'image) | Moyenne |
-| S-14 | Figer les versions des images utilisées au build | Image Composer encore en « latest ». Dans la CI, l'action Trivy est épinglée par commit ; les autres actions GitHub le sont par étiquette (`@v4`). | Basse |
-| S-16 | Tracer les rattachements entre éléments dans le journal d'audit | Partiellement traité : rattachements des scènes et des sous-thèmes d'une histoire tracés. Médias ↔ sous-thèmes et contacts ↔ sous-thèmes non tracés. | Basse |
-| S-18 | Connecter l'application avec un utilisateur dédié, propriétaire de la base mais sans droits superutilisateur, créé par un script d'initialisation de PostgreSQL | L'application utilise le compte superutilisateur créé par l'image | Moyenne |
-| S-19 | Lancer le planificateur Laravel en production (cron de l'hôte : `schedule:run` chaque minute, voir `deploiement.md`) | Aucun planificateur dans l'image : la purge des comptes inactifs à 3 ans ne s'exécute pas | Haute |
-
-### 10.2 Limites connues du portillon visiteur
-
-Ces limites sont assumées pour le prototype. Elles disparaissent en production avec le portillon (S-10).
-
-| ID | Limite | Conséquence |
-|---|---|---|
-| S-01 | L'API de lecture ne vérifie aucun jeton | Le portillon filtre l'affichage du site, pas l'accès aux contenus |
-| S-02 | Limite de 30 tentatives par minute et par IP sur `POST /api/login` (`throttle:30,1`) | Atténué : une limite plus basse bloquerait des visiteurs légitimes derrière le NAT du campus. La longueur du mot de passe partagé reste la vraie protection. Sans `TRUSTED_PROXIES`, derrière un proxy, tous les visiteurs partagent l'IP du proxy. |
-| S-03 | Jetons sans durée de vie ni purge | Un jeton de plus en base à chaque connexion |
-| S-04 | Cookie `sc_token` sans attribut `Secure` | Le cookie peut circuler hors HTTPS |
-| S-15 | La déconnexion efface le cookie sans révoquer le jeton | Un jeton copié reste valide |
-| S-17 | Cookie posé par le navigateur, sans `HttpOnly` | Cookie lisible par JavaScript. Atténué : aucun `v-html` dans le front. |
-| — | Le middleware vérifie la présence du cookie, pas sa valeur | Un cookie `sc_token` quelconque ouvre le site |
-
----
-
-## 11. Acteurs et responsabilités
+## 10. Acteurs et responsabilités
 
 | Rôle RGPD | Acteur |
 |---|---|
@@ -322,7 +259,7 @@ Ces limites sont assumées pour le prototype. Elles disparaissent en production 
 
 ---
 
-## 12. Registre des traitements
+## 11. Registre des traitements
 
 | Traitement | Personnes concernées | Données | Finalité | Base légale | Conservation |
 |---|---|---|---|---|---|
@@ -338,7 +275,7 @@ Les bases légales sont à valider par le DPO.
 
 ---
 
-## 13. Principes appliqués
+## 12. Principes appliqués
 
 | Principe | Application dans Safe Campus |
 |---|---|
@@ -346,12 +283,12 @@ Les bases légales sont à valider par le DPO.
 | Limitation des finalités | Les données du personnel ne servent qu'à la gestion des accès. `User` et `Contact` sont deux tables sans aucun lien. |
 | Exactitude | Contacts tenus à jour par le webmaster. Champ `actif` pour retirer immédiatement une structure du site. |
 | Limitation de la conservation | Purge automatique de l'audit à 365 jours. Purge automatique des comptes sans connexion depuis 3 ans (`comptes:purger-inactifs`, quotidienne). Suppression des comptes et des contacts nommés possible à tout moment. |
-| Intégrité et confidentialité | Mesures de la partie A (§ 4 à 10) |
+| Intégrité et confidentialité | Mesures de la partie A (§ 4 à 9) |
 | Protection dès la conception | Pas de collecte côté étudiant. La consultation de thématiques sensibles (santé mentale, violences) ne laisse aucune trace nominative. |
 
 ---
 
-## 14. Droits des personnes
+## 13. Droits des personnes
 
 | Droit | Mise en œuvre |
 |---|---|
@@ -369,7 +306,7 @@ Les bases légales sont à valider par le DPO.
 
 ---
 
-## 15. Cookies et traceurs
+## 14. Cookies et traceurs
 
 | Cookie | Application | Rôle | Consentement |
 |---|---|---|---|
@@ -379,28 +316,26 @@ Les bases légales sont à valider par le DPO.
 
 Aucun cookie publicitaire ou de mesure d'audience n'est déposé : aucun bandeau de consentement n'est nécessaire.
 
-### 15.1 Ressources tierces
+### 14.1 Ressources tierces
 
-Le chargement des polices Google Fonts et des tuiles cartographiques transmet l'adresse IP du visiteur à ces services. Google est situé hors de l'Union européenne : il est recommandé d'héberger les polices sur le serveur Safe Campus (S-08). Les tuiles OpenStreetMap ne sont chargées que sur les pages contact.
+Le chargement des polices Google Fonts et des tuiles cartographiques transmet l'adresse IP du visiteur à ces services. Google est situé hors de l'Union européenne : il est recommandé d'héberger les polices sur le serveur Safe Campus. Les tuiles OpenStreetMap ne sont chargées que sur les pages contact.
 
 ---
 
-## 16. Sous-traitants et transferts
+## 15. Sous-traitants et transferts
 
 | Destinataire | Données | Localisation | Encadrement |
 |---|---|---|---|
 | Hébergeur | Toutes les données de la plateforme | À désigner | Contrat de sous-traitance (art. 28 RGPD) |
-| Render (démo publique) | Applications, journaux, variables d'environnement | États-Unis (Oregon) | Aucun contrat spécifique. Démo à données de démonstration uniquement (§ 8.2). |
-| Neon (démo publique) | Base de données de la démo | États-Unis (`us-west-2`) | Idem |
 | GitHub (dépôts publics, CI) | Code source, historique, résultats de la CI | États-Unis | Dépôts publics : aucun secret détecté dans l'historique (scan du 27/10/2026). Les noms et adresses e-mail des auteurs de commits y sont visibles. |
 | OpenStreetMap Foundation | IP du navigateur, adresses de structures | Royaume-Uni (décision d'adéquation) | Politique d'usage OSM |
 | Esri | IP du navigateur (back-office) | États-Unis | Usage limité au personnel |
-| Google Fonts | IP du navigateur | États-Unis | À supprimer (S-08) |
+| Google Fonts | IP du navigateur | États-Unis | À supprimer |
 | Have I Been Pwned | Fragment de hash non réversible | International | Pas de donnée personnelle |
 
 ---
 
-## 17. Gestion des violations de données
+## 16. Gestion des violations de données
 
 ```mermaid
 flowchart LR
@@ -415,24 +350,3 @@ flowchart LR
 - **Évaluation** : nature des données, nombre de personnes, gravité.
 - **Notification** : au DPO sans délai. À l'autorité de contrôle dans les 72 heures si la violation présente un risque. Aux personnes concernées si ce risque est élevé.
 - **Documentation** : inscription au registre des violations, retour d'expérience et mesures correctives.
-
----
-
-## 18. Actions avant mise en production
-
-| Action | Responsable |
-|---|---|
-| Désigner le responsable de traitement et compléter les mentions légales (éditeur, hébergeur, contact, DPO) | Établissement |
-| ~~Ajouter aux CGU une section « Données personnelles »~~ Fait : page `/donnees-personnelles` du site (visiteurs, liée depuis le pied de page et les menus) et section « Données personnelles » des CGU du back-office (`/cgu#donnees-personnelles`, aussi résumée sur les pages de connexion et d'inscription). Contenu à faire valider par le DPO avant la mise en production. | Équipe projet |
-| Inscrire les traitements au registre de l'établissement | DPO |
-| Choisir l'hébergeur à partir des préconisations du § 8.1 et signer le contrat de sous-traitance | Établissement |
-| Informer les référents nommés de l'annuaire de leur présence et de leurs droits | Webmaster |
-| Corriger les écarts du § 10.1, en commençant par les priorités hautes | Équipe projet |
-
-## Points à arrêter avec l'établissement
-
-1. Quel régime de protection des données s'applique en Nouvelle-Calédonie ? (à confirmer par le DPO de l'UNC)
-2. Qui est le responsable de traitement : l'UNC ou une autre entité ?
-3. L'hébergement est-il assuré par l'établissement ou par un prestataire externe ?
-4. Quel hébergeur est retenu, et où sont situés ses serveurs ?
-5. L'accès au back-office (`/admin`) doit-il être restreint au réseau de l'établissement ?

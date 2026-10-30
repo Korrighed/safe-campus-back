@@ -36,7 +36,7 @@ USER scback
 # --no-scripts : les scripts composer (package:discover, filament:upgrade) ont
 # besoin d'un .env/APP_KEY qui n'existe pas au moment du build (.env n'est jamais
 # copie dans l'image). Ils tournent en commandes post-deploiement a la place,
-# avec migrate --force (voir docs/deploiement.md).
+# avec migrate --force (voir README.md § 5).
 RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
 # Composer ne sert qu'au build : on le retire de l'image qui tourne.
@@ -48,5 +48,5 @@ EXPOSE ${APP_PORT}
 
 # start-prod ecoute sur $PORT (Render) ou $APP_PORT, recree public/storage, puis sert
 # l'appli. Migrations et contenu de demo restent desactives par defaut : voir
-# RUN_MIGRATIONS et DEMO_CONTENT dans docs/deploiement.md.
+# RUN_MIGRATIONS et DEMO_CONTENT dans README.md § 5.
 CMD ["bash", "docker/8.4/start-prod"]

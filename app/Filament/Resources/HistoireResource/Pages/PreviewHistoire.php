@@ -21,7 +21,7 @@ use Livewire\Attributes\Locked;
 /**
  * Rejoue le parcours d'une histoire depuis l'admin, clic apres clic. Outil de
  * validation de la logique du graphe pour le redacteur — pas le rendu final
- * du front (qui n'existe pas encore, voir docs/schema_bd.md § Histoires).
+ * du front (qui n'existe pas encore, voir docs/cahier-des-charges-techniques.md § 3.3).
  */
 class PreviewHistoire extends Page
 {

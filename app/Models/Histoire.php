@@ -107,7 +107,7 @@ class Histoire extends Model
 
     /**
      * Scene de depart du parcours. Au plus une par construction (index unique
-     * partiel en base) — voir docs/schema_bd.md § Scene et partage entre histoires.
+     * partiel en base) — voir docs/cahier-des-charges-techniques.md § Modele de donnees, Histoires.
      */
     public function sceneInitiale(): ?Scene
     {

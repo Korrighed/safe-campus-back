@@ -7,7 +7,7 @@ use App\Models\Media;
 use App\Models\User;
 
 /**
- * Médias : webmaster et rédacteur — voir docs/schema_bd.md § Rôles. Seule
+ * Médias : webmaster et rédacteur — voir docs/cahier-des-charges-techniques.md § 4. Seule
  * ressource Filament partagée entre les deux : illustrations et documents
  * servent aussi bien l'annuaire que les histoires.
  */

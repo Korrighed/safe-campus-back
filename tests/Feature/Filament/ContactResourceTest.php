@@ -49,7 +49,7 @@ class ContactResourceTest extends TestCase
 
     public function test_un_webmaster_cree_un_contact_sans_sous_theme(): void
     {
-        // Etat normal entre la creation et l'assignation — voir docs/schema_bd.md § Contact.
+        // Etat normal entre la creation et l'assignation — voir docs/cahier-des-charges-techniques.md § Modele de donnees, Annuaire.
         // Le champ ref n'existe plus dans le formulaire : le webmaster n'a pas a le renseigner.
         $this->actingAs(User::factory()->create(['role' => UserRole::Webmaster]));
 

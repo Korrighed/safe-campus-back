@@ -7,7 +7,7 @@ use App\Models\Contact;
 use App\Models\User;
 
 /**
- * Contacts/Téléphones : webmaster uniquement — voir docs/schema_bd.md § Rôles.
+ * Contacts/Téléphones : webmaster uniquement — voir docs/cahier-des-charges-techniques.md § 4.
  */
 class ContactPolicy
 {

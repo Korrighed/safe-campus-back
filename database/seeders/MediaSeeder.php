@@ -19,7 +19,7 @@ use RuntimeException;
  * 2026_10_20_100000_supprime_fiches_placeholder).
  *
  * Idempotent via `libelle` : Media n'a pas de `ref`, mais son libelle sert
- * deja de cle de recherche (voir docs/schema_bd.md#media).
+ * deja de cle de recherche (voir docs/cahier-des-charges-techniques.md § Modele de donnees).
  */
 class MediaSeeder extends Seeder
 {

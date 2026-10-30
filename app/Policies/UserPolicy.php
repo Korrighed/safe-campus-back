@@ -6,7 +6,7 @@ use App\Enums\UserRole;
 use App\Models\User;
 
 /**
- * Utilisateurs : admin uniquement — voir docs/schema_bd.md § Rôles. L'admin
+ * Utilisateurs : admin uniquement — voir docs/cahier-des-charges-techniques.md § 4. L'admin
  * valide les inscriptions et attribue les roles, il ne cree pas de compte.
  */
 class UserPolicy

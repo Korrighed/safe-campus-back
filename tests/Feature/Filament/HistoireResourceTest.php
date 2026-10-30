@@ -19,7 +19,7 @@ class HistoireResourceTest extends TestCase
 {
     public function test_un_webmaster_est_refuse_sur_la_liste(): void
     {
-        // Inverse de ContactResource/ThemeResource — voir docs/schema_bd.md § Rôles.
+        // Inverse de ContactResource/ThemeResource — voir docs/cahier-des-charges-techniques.md § 4.
         $this->actingAs(User::factory()->create(['role' => UserRole::Webmaster]));
 
         Livewire::test(ListHistoires::class)->assertForbidden();

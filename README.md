@@ -2,6 +2,8 @@
 
 Installation de l'environnement de développement (§ 0 à 4), déploiement en production (§ 5) et intégration continue (§ 6). Le code s'édite sur l'hôte (WSL), toutes les commandes PHP/Composer/Artisan s'exécutent dans le container.
 
+Version : **1.0.0** ([historique des versions](CHANGELOG.md)).
+
 Dépôts GitHub : [Korrighed/safe-campus-back](https://github.com/Korrighed/safe-campus-back) (ce dépôt) et [Korrighed/safe-campus-front](https://github.com/Korrighed/safe-campus-front) (site étudiant).
 
 Documentation du projet dans `docs/` : [cahier des charges techniques](docs/cahier-des-charges-techniques.md), [sécurité et RGPD](docs/securite-rgpd.md), [maintenance évolutive](docs/maintenance-evolutive-2025-2029.md).

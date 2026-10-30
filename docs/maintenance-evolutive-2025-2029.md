@@ -3,7 +3,8 @@
 | Élément | Valeur |
 |---|---|
 | Projet | Safe Campus — SAE501, Université de la Nouvelle-Calédonie |
-| Date | 20/10/2026 |
+| Version | 1.0.0 |
+| Date | 30/10/2026 |
 | Période | 2025–2026 : réalisation. 2027–2029 : maintenance. |
 
 Les dates de fin de support sont à revérifier à chaque revue trimestrielle. Une ligne marquée « à vérifier » n'a pas de source confirmée à la date du document.

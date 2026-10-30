@@ -3,7 +3,8 @@
 | Élément | Valeur |
 |---|---|
 | Projet | Safe Campus — SAE501, Université de la Nouvelle-Calédonie |
-| Date | 20/10/2026 |
+| Version | 1.0.0 |
+| Date | 30/10/2026 |
 | Périmètre | Site étudiant (Nuxt 4) · API et back-office (Laravel 13 / Filament 3) |
 | Livrables | Site étudiant, back-office d'administration, API REST JSON, images Docker de production |
 

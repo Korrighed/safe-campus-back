@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use Tests\TestCase;
 
 /**
- * En-tetes de securite (S-05), CORS (S-09) et limite de debit du portillon (S-02).
+ * En-tetes de securite, CORS et limite de debit du portillon.
  */
 class SecuriteHttpTest extends TestCase
 {

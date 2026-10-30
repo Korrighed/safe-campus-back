@@ -34,7 +34,7 @@ class MediaResourceTest extends TestCase
     public function test_un_redacteur_accede_aussi_a_la_liste(): void
     {
         // Seule ressource Filament partagee entre les deux roles — voir
-        // docs/schema_bd.md § Rôles.
+        // docs/cahier-des-charges-techniques.md § 4.
         $this->actingAs(User::factory()->create(['role' => UserRole::Redacteur]));
 
         Livewire::test(ListMedia::class)->assertSuccessful();

@@ -9,7 +9,7 @@ use App\Models\User;
 
 /**
  * Histoires : le redacteur ne touche qu'a ses histoires en brouillon, le
- * relecteur a toutes — voir docs/TRD.md § 7.
+ * relecteur a toutes — voir docs/cahier-des-charges-techniques.md § 4.1.
  */
 class HistoirePolicy
 {

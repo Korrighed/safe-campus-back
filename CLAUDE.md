@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Laravel 13 · PHP 8.4 · Filament 3 · PostgreSQL 17
 
-> API/admin backend uniquement. L'UI applicative est [Safe-Campus-front](../Safe-Campus-front) (Nuxt 4 standalone, repo séparé), qui consomme `routes/api.php`.
+> API/admin backend uniquement. L'UI applicative est [safe-campus-front](https://github.com/Korrighed/safe-campus-front) (Nuxt 4 standalone, repo séparé), qui consomme `routes/api.php`.
 
-👉 Voir [README](README.md) pour l'installation et le stack Docker, [docs/README.md](docs/README.md) pour l'index de la documentation, [docs/deploiement.md](docs/deploiement.md) pour la mise en production.
+👉 Voir [README](README.md) pour l'installation, le stack Docker, la mise en production (§ 5) et la CI (§ 6). `docs/` ne contient que les livrables : cahier des charges techniques, sécurité et RGPD, maintenance évolutive.
 
 > Le code s'édite sur l'hôte, les commandes s'exécutent dans le container via `docker compose exec sc_back <cmd>`.
 
@@ -36,21 +36,29 @@ API/admin backend : les contrôleurs renvoient du JSON, pas de vues. L'admin est
 
 ```
 app/
+├── Console/Commands/   comptes:purger-inactifs, scenes:purger-orphelines
 ├── Enums/              Backed enums castés sur les modèles
+├── Filament/           Resources, Pages (auth), Widgets (guides par rôle), Forms/Components
 ├── Http/
 │   ├── Controllers/    One controller per resource (PascalCase), max 7 CRUD methods
-│   └── Requests/       Form Requests for all validation (never inline in controllers)
+│   ├── Middleware/     SecurityHeaders (en-têtes de sécurité du back)
+│   ├── Requests/       Form Requests for all validation (never inline in controllers)
+│   └── Resources/      API Resources : forme JSON des réponses de routes/api.php
+├── Listeners/          Audit des connexions, date de dernière connexion
+├── Livewire/           Composants Livewire hors Filament
 ├── Models/             Eloquent — always define $fillable; use $casts for enums/arrays
-├── Services/           Business logic extracted from controllers
+├── Observers/          AuditObserver (journal d'audit), HistoireObserver (changement d'état)
 ├── Policies/           Authorization per resource
-└── Providers/Filament/ AdminPanelProvider — config du panel Filament
+├── Providers/Filament/ AdminPanelProvider — config du panel Filament
+└── Services/           Business logic extracted from controllers (audit, géocodage, purges…)
 
 routes/
-├── web.php             Actuellement minimal (health check `/`)
-└── api.php             Routes JSON du front Nuxt (login visiteur, themes, sous-themes, histoires)
+├── web.php             Health check `/`, pages légales `/mentions-legales` et `/cgu`
+├── api.php             Routes JSON du front Nuxt (login visiteur, themes, sous-themes, histoires)
+└── console.php         Planification : `comptes:purger-inactifs` quotidienne
 ```
 
-Le schéma de base de données est décrit dans [docs/schema_bd.md](docs/schema_bd.md).
+Le modèle de données est décrit dans le [cahier des charges § 7](docs/cahier-des-charges-techniques.md#modèle-de-données) ; les colonnes complètes sont dans `database/migrations/`.
 
 ## Backend Conventions
 
@@ -77,7 +85,7 @@ Read routes are public by design. The visitor login is a prototype-only gate for
 - Toujours demander confirmation à l'utilisateur avant de merger une `feature/*` sur `dev`. Ne jamais merger de sa propre initiative.
 - Une fois une `feature/*` mergée dans `dev` et poussée sur `origin/dev`, supprimer la branche locale (`git branch -d`). Ne pas laisser de branches `feature/*` locales après clôture.
 - Jamais de `Co-Authored-By` dans les messages de commit.
-- `main` est protégée par un ruleset : PR obligatoire, checks `verif` et `approfondi` verts, pas de force-push. `dev` doit contenir `main` avant une nouvelle PR. Détails : [docs/ci.md](docs/ci.md).
+- `main` est protégée par un ruleset : PR obligatoire, checks `verif` et `approfondi` verts, pas de force-push. `dev` doit contenir `main` avant une nouvelle PR. Détails : [README § 6](README.md#6-intégration-continue).
 - Avant de pousser `dev` : `vendor/bin/pint --test`, `vendor/bin/phpstan analyse` et `php artisan test` doivent passer (même contrôle que le job `verif`).
 - Format de message de commit obligatoire :
 

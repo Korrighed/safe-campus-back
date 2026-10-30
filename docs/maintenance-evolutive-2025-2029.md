@@ -3,7 +3,8 @@
 | Élément | Valeur |
 |---|---|
 | Projet | Safe Campus — SAE501, Université de la Nouvelle-Calédonie |
-| Date | 20/10/2026 |
+| Version | 1.0.0 |
+| Date | 30/10/2026 |
 | Période | 2025–2026 : réalisation. 2027–2029 : maintenance. |
 
 Les dates de fin de support sont à revérifier à chaque revue trimestrielle. Une ligne marquée « à vérifier » n'a pas de source confirmée à la date du document.
@@ -64,7 +65,8 @@ Les dates de fin de support sont à revérifier à chaque revue trimestrielle. U
 | Annuaire | Juillet – août 2026 | Taxonomie, contacts, médias, API annuaire, pages accueil / ressources / contact, carte |
 | Histoires | Septembre 2026 | Modèle, éditeur, prévisualisation, lecteur interactif |
 | Sécurisation | Septembre 2026 | Accès visiteur, inscription validée, rôle admin, journal d'audit |
-| Intégration | Septembre – octobre 2026 | Pages légales, refonte CSS, migration Nuxt 4, police Cabin, guides du back-office |
+| Intégration | Septembre – octobre 2026 | Pages légales, refonte CSS, migration Nuxt 4, police Cabin, guides du back-office, CI GitHub Actions, CORS et en-têtes de sécurité du back, volumes persistants |
+| Circuit de relecture | Octobre 2026 | Rôle relecteur, cloisonnement des rédacteurs, journal d'audit sans texte rédigé |
 | Recette | Octobre 2026 | Campagne de tests en cours |
 
 Reste avant mise en production : les mesures de sécurité complémentaires, les actions de conformité RGPD et le choix de l'hébergeur.
@@ -95,9 +97,8 @@ gantt
 
 | Période | Action | Type | Déclencheur |
 |---|---|---|---|
-| 4e trimestre 2026 | Réaliser les mesures de sécurité de priorité haute : volumes et sauvegardes, serveur d'application de production, retrait du portillon visiteur des images au lancement officiel | Corrective | Bloquant pour la mise en production |
-| 4e trimestre 2026 | Activer Dependabot ou Renovate sur les deux dépôts | Préventive | Aucun outil de veille en place |
-| 4e trimestre 2026 | Mettre en place une CI : lint, typecheck, tests, build des images | Préventive | Aucune CI ; vérifications à la main |
+| 4e trimestre 2026 | Réaliser les mesures de sécurité de priorité haute : sauvegarde hors serveur, serveur d'application de production, planificateur, retrait du portillon visiteur des images au lancement officiel | Corrective | Bloquant pour la mise en production |
+| 4e trimestre 2026 | Activer Dependabot ou Renovate sur les deux dépôts | Préventive | Aucun outil de veille en place (la CI rejoue `composer audit` et `npm audit`, voir le [README](../README.md#6-intégration-continue)) |
 | 1er trimestre 2027 | Migrer Node 22 → Node 24 (images Docker du front) | Adaptative | EOL Node 22 au 30/04/2027 |
 | 2e trimestre 2027 | Évaluer la migration Filament 3 → 4 | Adaptative | Support Filament 3 à vérifier |
 | 2e semestre 2027 | Migrer Laravel 13 → version suivante | Adaptative | Fin des correctifs Laravel 13, sécurité jusqu'au 17/03/2028 |
@@ -141,7 +142,7 @@ Candidates issues du périmètre reporté de la v1, des retours de tests et des 
 
 ## 7. Sauvegarde et restauration
 
-À mettre en place avant la mise en production. Aucune stratégie n'existe dans les dépôts : seul le volume `scback-pgsql-prod` est déclaré.
+À mettre en place avant la mise en production. Aucune stratégie de sauvegarde n'existe dans les dépôts : seuls les volumes `scback-pgsql-prod`, `scback-storage-prod` et `scback-logs-prod` sont déclarés, sans copie hors serveur.
 
 | Élément | Cible |
 |---|---|
@@ -181,16 +182,9 @@ Rien en place. À définir avec l'hébergeur retenu :
 |---|---|---|---|
 | Premier déploiement en échec : les images exigent encore le compte visiteur du prototype | Bloquant | Certaine en l'état | Retirer le portillon visiteur des images au lancement officiel |
 | Serveur `artisan serve` en production : mono-processus, non prévu pour la charge | Élevé | Élevée | Serveur d'application de production |
-| Perte des médias et journaux à chaque redéploiement (pas de volume) | Élevé | Certaine en l'état | Volumes persistants |
-| Aucune sauvegarde définie | Élevé | Élevée si mise en prod sans correction | Sauvegarde (section 7) |
-| Aucun porteur de maintenance après la SAE | Élevé | Élevée | Point à arrêter n° 1 |
-| Absence de CI : régressions non détectées | Moyen | Moyenne | Feuille de route, 4e trimestre 2026 |
+| Aucune sauvegarde définie (volumes sans copie hors serveur) | Élevé | Élevée si mise en prod sans correction | Sauvegarde (section 7) |
+| Aucun porteur de maintenance après la SAE | Élevé | Élevée | Désigner un porteur et un temps alloué avec l'établissement |
 | Dépendances obsolètes sans veille automatique | Moyen | Moyenne | Dependabot / Renovate |
 
 ---
 
-## Points à arrêter avec l'établissement
-
-1. Qui maintient Safe Campus après la fin de la SAE, avec quel temps alloué ?
-2. Quel niveau de service (SLA, *Service Level Agreement*) est attendu : délai de correction d'une anomalie bloquante, disponibilité cible ?
-3. Quel budget l'établissement prévoit-il pour l'hébergement et la maintenance ?

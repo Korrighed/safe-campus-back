@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * En-tetes de securite poses par l'application (S-05), en complement de ceux
+ * En-tetes de securite poses par l'application, en complement de ceux
  * du reverse proxy eventuel.
  *
  * - API JSON (`api/*`) : aucune ressource a charger, donc `default-src 'none'`.

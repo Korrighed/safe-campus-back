@@ -9,5 +9,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Purge RGPD : comptes sans connexion depuis 3 ans. Suppose un cron hote
-// qui lance `schedule:run` chaque minute (voir docs/deploiement.md).
+// qui lance `schedule:run` chaque minute (voir README.md § 5).
 Schedule::command('comptes:purger-inactifs')->daily();

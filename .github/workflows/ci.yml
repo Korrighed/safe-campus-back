@@ -4,7 +4,7 @@
 #              pousser sur dev.
 # approfondi : PR vers main et push sur main. Audit des dependances, build de
 #              l'image de prod, deploiement a blanc de docker-compose.prod.yml
-#              (commandes de docs/deploiement.md), scan Trivy.
+#              (commandes de README.md § 5), scan Trivy.
 
 name: CI
 
@@ -151,7 +151,7 @@ jobs:
           # connexion (reset) avant que le serveur ecoute. --retry-connrefused ne suffit pas.
           curl --fail --silent --show-error --retry 40 --retry-delay 3 --retry-all-errors http://127.0.0.1:8000/up > /dev/null
 
-      # Commandes post-deploiement de docs/deploiement.md. migrate et storage:link
+      # Commandes post-deploiement de README.md § 5. migrate et storage:link
       # sont deja faits par start-prod : ils doivent rester sans effet.
       - name: Commandes post-deploiement
         run: |

@@ -364,7 +364,7 @@ class AuditHistoireTest extends TestCase
         $ligne = $this->ligne('Histoire.suppression_groupee');
         $this->assertNotNull($ligne);
 
-        // Seule la ligne groupee : contextesJson() concatene toutes les lignes, dont Histoire.supprime (titre non masque, TRD § 7).
+        // Seule la ligne groupee : contextesJson() concatene toutes les lignes, dont Histoire.supprime (titre non masque, cahier des charges § 4.1).
         $contenu = json_encode($ligne->context, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
         $this->assertStringNotContainsString('Titre distinctif brouillon', $contenu);
         $this->assertStringNotContainsString('Titre distinctif relecture', $contenu);

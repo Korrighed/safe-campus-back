@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Est_initiale est porte par la liaison, pas par la scene : une scene partagee
  * peut etre le point d'entree d'une histoire et une etape intermediaire d'une
- * autre. Voir docs/schema_bd.md § Scene et partage entre histoires.
+ * autre. Voir docs/cahier-des-charges-techniques.md § Modele de donnees, Histoires.
  */
 return new class extends Migration
 {

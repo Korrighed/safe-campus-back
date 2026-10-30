@@ -1,7 +1,7 @@
 <?php
 
 /*
- * CORS de l'API (S-09). Seul le navigateur du site etudiant appelle l'API
+ * CORS de l'API. Seul le navigateur du site etudiant appelle l'API
  * depuis un autre domaine ; le SSR de Nuxt appelle le back cote serveur, hors
  * CORS. Les origines autorisees viennent de CORS_ALLOWED_ORIGINS (liste
  * separee par des virgules). Le defaut est le front de dev : en production la

@@ -1,6 +1,12 @@
-# Installation — SAE501
+# Safe Campus — back (SAE501)
 
-Environnement de développement local. Le code s'édite sur l'hôte (WSL), toutes les commandes PHP/Composer/Artisan s'exécutent dans le container.
+Installation de l'environnement de développement (§ 0 à 4), déploiement en production (§ 5) et intégration continue (§ 6). Le code s'édite sur l'hôte (WSL), toutes les commandes PHP/Composer/Artisan s'exécutent dans le container.
+
+Version : **1.0.0** ([historique des versions](CHANGELOG.md)).
+
+Dépôts GitHub : [Korrighed/safe-campus-back](https://github.com/Korrighed/safe-campus-back) (ce dépôt) et [Korrighed/safe-campus-front](https://github.com/Korrighed/safe-campus-front) (site étudiant).
+
+Documentation du projet dans `docs/` : [cahier des charges techniques](docs/cahier-des-charges-techniques.md), [sécurité et RGPD](docs/securite-rgpd.md), [maintenance évolutive](docs/maintenance-evolutive-2025-2029.md).
 
 ---
 
@@ -67,8 +73,8 @@ Chaque repo a son propre `docker-compose.yml` et se lance indépendamment. Les c
 
 ```bash
 mkdir -p ~/workspace/safe-campus && cd ~/workspace/safe-campus
-git clone git@github.com:<org>/Safe-Campus-back.git
-git clone git@github.com:<org>/Safe-Campus-front.git
+git clone git@github.com:Korrighed/safe-campus-back.git
+git clone git@github.com:Korrighed/safe-campus-front.git
 ```
 
 ---
@@ -124,7 +130,7 @@ code --install-extension mikestead.dotenv
 ## 4. Démarrer l'environnement de développement
 
 ```bash
-cd Safe-Campus-back
+cd safe-campus-back
 cp .env.example .env
 sed -i "s/^WWWUSER=.*/WWWUSER=$(id -u)/" .env
 sed -i "s/^WWWGROUP=.*/WWWGROUP=$(id -g)/" .env
@@ -146,7 +152,7 @@ Le `.env` est lu par Docker avant le build : `WWWUSER`/`WWWGROUP` créent l'util
 
 `SC_Back` exécute `composer install` à chaque démarrage, puis `artisan serve`. `key:generate`, `migrate` et `db:seed` sont à la main : l'état de la base est piloté par le dev.
 
-> `migrate` seed automatiquement la taxonomie (themes/sous-themes) et le compte webmaster de démo — donnée structurelle requise par l'app. `db:seed` reste nécessaire à part pour l'annuaire de contacts, les médias et les histoires de démonstration (`ContactSeeder`, `MediaSeeder`, puis `HistoireSeeder` (alcool), `HistoireAnxieteSeeder` (anxiété), `HistoireHarcelementSeeder` (harcèlement), `HistoireTabacSeeder` (tabac), `HistoireDrogueSeeder` (drogue), `HistoireDepressionSeeder` (dépression), `HistoireBurnOutSeeder` (burn-out), `HistoireViolencesSexistesSeeder` (violences sexistes) et `HistoireViolencesSexuellesSeeder` (violences sexuelles), bâtis sur un socle commun `HistoireDemoSeeder` — ignorés en production, sauf `DEMO_CONTENT=true` pour une démo publique : voir [docs/deploiement-render.md](docs/deploiement-render.md)). Ces seeders sont idempotents (rejouables sans dupliquer) : `migrate:fresh --seed` remet la base dans son état de référence.
+> `migrate` seed automatiquement la taxonomie (themes/sous-themes) et le compte webmaster de démo — donnée structurelle requise par l'app. `db:seed` reste nécessaire à part pour l'annuaire de contacts, les médias et les histoires de démonstration (`ContactSeeder`, `MediaSeeder`, puis `HistoireSeeder` (alcool), `HistoireAnxieteSeeder` (anxiété), `HistoireHarcelementSeeder` (harcèlement), `HistoireTabacSeeder` (tabac), `HistoireDrogueSeeder` (drogue), `HistoireDepressionSeeder` (dépression), `HistoireBurnOutSeeder` (burn-out), `HistoireViolencesSexistesSeeder` (violences sexistes) et `HistoireViolencesSexuellesSeeder` (violences sexuelles), bâtis sur un socle commun `HistoireDemoSeeder` — ignorés en production, sauf `DEMO_CONTENT=true` : voir [Démarrage du conteneur](#démarrage-du-conteneur)). Ces seeders sont idempotents (rejouables sans dupliquer) : `migrate:fresh --seed` remet la base dans son état de référence.
 >
 > Les tests (`php artisan test`) tournent sur cette même base, sans jamais la vider : chaque test est enveloppé dans une transaction annulée à la fin (`DatabaseTransactions`, voir `tests/TestCase.php`). La base doit donc être migrée et seedée avant de les lancer, et un test crée ses données par factory sans supposer une base vide.
 
@@ -157,7 +163,7 @@ Le `.env` est lu par Docker avant le build : `WWWUSER`/`WWWGROUP` créent l'util
 | `SC_Back`     | Laravel (PHP 8.4) | ce repo                                   |
 | `SC_Postgres` | PostgreSQL 17     | ce repo                                   |
 | `SC_Adminer`  | Interface DB      | ce repo                                   |
-| `SC_Front`    | Nuxt 4 + Vite HMR | [Safe-Campus-front](../Safe-Campus-front) |
+| `SC_Front`    | Nuxt 4 + Vite HMR | [safe-campus-front](https://github.com/Korrighed/safe-campus-front) |
 
 Ouvrir le code : `code .` depuis WSL, à la racine du repo.
 
@@ -202,11 +208,11 @@ docker compose up -d
 
 Le reste du code vit dans le bind mount et ne nécessite aucun rebuild.
 
-> Ce `docker-compose.yml` est un stack de **développement** uniquement. La stack de production (`docker-compose.prod.yml`, `docker/8.4/Dockerfile.prod`) est documentée dans [docs/deploiement.md](docs/deploiement.md). Aucun hébergeur n'est retenu à ce jour.
+> Ce `docker-compose.yml` est un stack de **développement** uniquement. La stack de production (`docker-compose.prod.yml`, `docker/8.4/Dockerfile.prod`) est décrite au [§ 5](#5-déploiement-en-production).
 
 ### Le front
 
-`sc_front` a son propre `docker-compose.yml` dans [Safe-Campus-front](../Safe-Campus-front) — stack indépendante, à démarrer séparément (`cd ../Safe-Campus-front && docker compose up -d`). Les deux stacks partagent le réseau Docker `scback` (nom fixe) : si les deux tournent, `sc_front` joint `sc_back` par son nom de conteneur pour le SSR ; sinon `sc_back` reste simplement injoignable depuis le front. Le code du front s'édite dans ce repo, ses commandes passent par `docker compose exec sc_front` (depuis `Safe-Campus-front`).
+`sc_front` a son propre `docker-compose.yml` dans [safe-campus-front](https://github.com/Korrighed/safe-campus-front) — stack indépendante, à démarrer séparément (`cd ../safe-campus-front && docker compose up -d`). Les deux stacks partagent le réseau Docker `scback` (nom fixe) : si les deux tournent, `sc_front` joint `sc_back` par son nom de conteneur pour le SSR ; sinon `sc_back` reste simplement injoignable depuis le front. Le code du front s'édite dans ce repo, ses commandes passent par `docker compose exec sc_front` (depuis `safe-campus-front`).
 
 ### Fichiers médias (images, PDF, ...)
 
@@ -220,7 +226,7 @@ storage/app/public/medias/
 └── document/     ← PDF (fiches ressources)
 ```
 
-Aucun nouveau volume Docker : `sc_back` bind-mount déjà tout le repo (`.:/var/www/html`), `storage/` persiste comme le reste du code. La stack de prod n'a pas de bind mount : elle a besoin d'un volume nommé pour `storage/app`, pas encore déclaré (voir [docs/deploiement.md](docs/deploiement.md)).
+Aucun nouveau volume Docker : `sc_back` bind-mount déjà tout le repo (`.:/var/www/html`), `storage/` persiste comme le reste du code. La stack de prod n'a pas de bind mount : `storage/app` et `storage/logs` sont montés sur les volumes nommés `scback-storage-prod` et `scback-logs-prod` (voir [§ 5](#volumes-et-journaux)).
 
 Servis en statique via le lien symbolique `public/storage` (voir `storage:link` ci-dessus), donc accessibles en lecture directe par le front — un PDF s'ouvre dans un nouvel onglet via un simple lien (`target="_blank"`, pas de viewer embarqué), sans endpoint de téléchargement dédié.
 
@@ -256,7 +262,7 @@ Xdebug est actif dans l'image (`docker/8.4/php.ini`, port 9003, `start_with_requ
 | `8080` | Adminer                   | http://localhost:8080 |
 | `9003` | Xdebug (container → hôte) | —                     |
 
-Ports du front (`sc_front`, stack séparée) : voir le [README de Safe-Campus-front](../Safe-Campus-front/README.md).
+Ports du front (`sc_front`, stack séparée) : voir le [README de safe-campus-front](https://github.com/Korrighed/safe-campus-front#readme).
 
 Les ports sont publiés par Docker : sous WSL 2 ils sont joignables depuis Windows.
 
@@ -286,6 +292,8 @@ production), identifiants bidon définis dans `.env.example` (`WEBMASTER_DEMO_EM
 Pour changer ces valeurs, surcharger `WEBMASTER_DEMO_EMAIL`/`WEBMASTER_DEMO_PASSWORD` dans `.env`
 avant `migrate` — le compte n'est (re)créé que s'il n'existe pas déjà.
 
+Un compte `redacteur` de démonstration (`REDACTEUR_DEMO_EMAIL` / `REDACTEUR_DEMO_PASSWORD`, `redacteur@test.local` / `password` par défaut) est créé par `RedacteurDemoSeeder` au `db:seed`. Il est l'auteur des histoires de démonstration.
+
 Un compte `admin` est provisionné de la même façon au `migrate` (`ADMIN_EMAIL` / `ADMIN_PASSWORD`,
 valeurs de dev dans `.env.example` : `admin@safe-campus.nc` / `password`). Il gère uniquement les
 comptes : validation des inscriptions, attribution des rôles et suppression de comptes (dont sur
@@ -293,34 +301,165 @@ demande d'une personne). Un compte sans connexion depuis 3 ans est supprimé aut
 `php artisan comptes:purger-inactifs` (`--simulation` pour lister sans supprimer), planifiée chaque jour.
 
 Toutes les actions du back-office sont tracées dans `storage/logs/audit-AAAA-MM-JJ.log` — voir
-[docs/deploiement.md § Logs d'audit](docs/deploiement.md#logs-daudit).
+[§ 5 Volumes et journaux](#volumes-et-journaux).
 
 Un nouveau compte peut être demandé depuis la page de connexion (« Pas de compte ? Inscrivez-vous »).
 Il est créé sans rôle et reste inactif jusqu'à attribution d'un rôle — voir
-[docs/schema_bd.md § Inscription](docs/schema_bd.md#inscription).
+[cahier des charges § 4.3](docs/cahier-des-charges-techniques.md#43-cycle-de-vie-dun-compte-et-de-son-rôle).
 
 ---
 
-## 5. Structure du projet
+## 5. Déploiement en production
+
+Aucun hébergeur n'est imposé : le livrable est un jeu d'images Docker, déployables sur tout hôte Docker. Le reverse proxy, le certificat TLS, la sauvegarde, la supervision et le planificateur sont fournis par l'hébergement choisi. Documentation associée : [cahier des charges](docs/cahier-des-charges-techniques.md), [sécurité et RGPD](docs/securite-rgpd.md), [maintenance et évolution](docs/maintenance-evolutive-2025-2029.md).
+
+### Stack de production
+
+`docker-compose.prod.yml` + `docker/8.4/Dockerfile.prod`. Différences avec le stack de développement :
+
+- Code copié dans l'image au build, pas de bind mount. `composer install --no-dev --optimize-autoloader --no-scripts` au build.
+- Pas d'Adminer, pas de port PostgreSQL publié : seul `sc_back` atteint `pgsql`.
+- `container_name` et réseau (`scback_prod`) distincts : les stacks de dev et de prod peuvent tourner en parallèle.
+- Le conteneur ne parle que HTTP, sur `PORT`, sinon `APP_PORT`, sinon 8000. Le TLS est terminé par le reverse proxy de l'hébergement.
+- Le conteneur tourne avec l'utilisateur non administrateur `scback`.
+
+> ⚠️ Points à traiter avant la mise en production :
+> - Les images exigent encore le compte visiteur du prototype : sans `VISITEUR_PASSWORD`, la migration `seed_visiteur` échoue. Le portillon (compte, page de connexion, middleware du front) est à retirer au lancement officiel.
+> - L'image sert l'application avec `php artisan serve`, serveur de développement mono-processus. À remplacer par PHP-FPM + nginx ou FrankenPHP.
+> - Aucun planificateur ne tourne dans l'image : voir [Tâches planifiées](#tâches-planifiées).
+
+### Variables d'environnement
+
+À saisir dans la configuration de l'hébergement : aucun fichier `.env` n'est copié dans l'image. Liste exacte : [.env.production.example](.env.production.example).
+
+| Variable | Valeur de production |
+|---|---|
+| `APP_ENV`, `APP_DEBUG`, `LOG_LEVEL`, `DB_CONNECTION` | Fixées dans `docker-compose.prod.yml` (`production`, `false`, `error`, `pgsql`) |
+| `APP_KEY` | Générée **une seule fois** (`php artisan key:generate --show`), jamais régénérée : la changer invalide sessions, cookies et données chiffrées |
+| `APP_URL` | URL publique en HTTPS. Sans elle, les URL des médias pointent sur `http://localhost` |
+| `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Base dédiée, mot de passe fort (20 caractères aléatoires au moins). L'utilisateur créé par l'image PostgreSQL est superutilisateur : prévoir un utilisateur dédié |
+| `SANCTUM_STATEFUL_DOMAINS` | Domaine public du front, sans schéma |
+| `CORS_ALLOWED_ORIGINS` | Origines complètes du front (schéma + hôte), séparées par des virgules |
+| `TRUSTED_PROXIES` | `*` si le conteneur n'est joignable que par le reverse proxy, sinon IP/CIDR du proxy. Vide derrière un proxy TLS : assets de `/admin` en `http://`, IP du proxy dans le journal d'audit, limite de débit de `/api/login` commune à tous les visiteurs |
+| `SESSION_SECURE_COOKIE` | `true` par défaut. `false` seulement pour tester l'image en HTTP sur localhost |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Premier compte admin, créé au premier `migrate`. Mot de passe conforme à la politique (14 caractères, majuscule, minuscule, caractère spécial), sinon la migration échoue. Retirable une fois le compte créé |
+| `VISITEUR_EMAIL` / `VISITEUR_PASSWORD` | Portillon visiteur du prototype. Sans objet après le lancement officiel |
+| `RUN_MIGRATIONS`, `DEMO_CONTENT` | Optionnelles, `false` par défaut : voir ci-dessous |
+
+Côté front ([README de safe-campus-front](https://github.com/Korrighed/safe-campus-front#readme)) : `NUXT_PUBLIC_API_BASE` (adresse de l'API pour le navigateur) et `NUXT_API_BASE_INTERNAL` (adresse pour le rendu côté serveur) pointent sur l'URL du back. Sans la seconde, les pages de contenu renvoient 404.
+
+### Démarrage du conteneur
+
+Le point d'entrée `docker/8.4/start-prod` :
+
+1. recrée `public/storage` (exclu de l'image) ;
+2. si `RUN_MIGRATIONS=true`, lance `migrate --force` ;
+3. si `DEMO_CONTENT=true`, rejoue les seeders de démonstration (médias, rédacteur de démo, histoires), idempotents ;
+4. sert l'application.
+
+Une tâche qui échoue est signalée dans les journaux (`AVERTISSEMENT`) sans empêcher le démarrage : lire les journaux après chaque déploiement. `DEMO_CONTENT` est réservé à une démonstration, jamais à la production.
+
+### Commandes post-déploiement
+
+À lancer dans `sc_back` après chaque déploiement, par un hook de l'hébergement ou à la main. Elles ne tournent pas au build : `.env` et `APP_KEY` n'y existent pas.
+
+```bash
+php artisan package:discover --ansi
+php artisan filament:upgrade
+php artisan migrate --force
+php artisan storage:link
+```
+
+> Sauvegarder la base avant tout `migrate --force`. Ne jamais lancer `db:seed` en production. `key:generate` ne s'exécute qu'une fois, avant le premier déploiement.
+
+### Tâches planifiées
+
+`comptes:purger-inactifs` (quotidienne) supprime les comptes sans connexion depuis 3 ans. Aucun planificateur ne tourne dans le conteneur : l'hôte doit lancer `schedule:run` chaque minute.
+
+```bash
+* * * * * docker exec SC_Back_Prod php artisan schedule:run >> /dev/null 2>&1
+```
+
+Contrôle à blanc : `docker exec SC_Back_Prod php artisan comptes:purger-inactifs --simulation`. `scenes:purger-orphelines [--simulation]` (scènes sans histoire depuis plus de 24 heures) se lance à la main uniquement.
+
+### Volumes et journaux
+
+`storage/app` (médias) et `storage/logs` sont montés sur les volumes nommés `scback-storage-prod` et `scback-logs-prod`, la base sur `scback-pgsql-prod` : un redéploiement ne les efface pas. Leur sauvegarde hors serveur relève de l'hébergement ([plan de maintenance § 7](docs/maintenance-evolutive-2025-2029.md#7-sauvegarde-et-restauration)).
+
+Journal d'audit : canal `audit`, distinct de `laravel.log`. Un fichier JSON par jour (`storage/logs/audit-AAAA-MM-JJ.log`), conservé 365 jours, niveau `info` quel que soit `LOG_LEVEL`. Il trace les créations, modifications et suppressions, les connexions et inscriptions, le circuit des histoires et les purges ; jamais de mot de passe, de jeton ni de texte de scène. Consultation sur le serveur uniquement :
+
+```bash
+docker exec SC_Back_Prod tail -f storage/logs/audit-AAAA-MM-JJ.log
+```
+
+### Vérifications après déploiement
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://<back>/up
+curl -s https://<back>/api/themes | head -c 200
+curl -sI -H "Origin: https://<front>" https://<back>/api/themes | grep -i access-control-allow-origin
+```
+
+- L'URL d'un média (champ `documents[].url` de `/api/sous-themes/alcool`) répond 200.
+- `/admin` : connexion avec le compte admin, cookies `secure` et `httponly`.
+
+| Symptôme | Cause |
+|---|---|
+| Pages de contenu du front en 404 | `NUXT_API_BASE_INTERNAL` absente côté front |
+| Médias en 404 | `storage:link` non lancé |
+| Assets de `/admin` en `http://` | `TRUSTED_PROXIES` absente |
+| CORS refusé | `CORS_ALLOWED_ORIGINS` différente de l'URL exacte du front |
+| Conteneur qui redémarre en boucle | Fichiers `bootstrap/cache/*.php` d'une machine de dev copiés dans l'image (exclus par `.dockerignore`) |
+
+---
+
+## 6. Intégration continue
+
+Workflow `.github/workflows/ci.yml` (**CI**), présent dans les deux dépôts. Aucun déploiement automatique : la CI vérifie seulement. Aucun secret GitHub : les valeurs utilisées sont générées à l'exécution.
+
+| Événement | Jobs |
+|---|---|
+| Push ou pull request vers `dev` ou `main` | `verif` |
+| Pull request vers `main`, push sur `main` | `verif` et `approfondi` |
+| Lancement manuel (onglet Actions) | `verif`, plus `approfondi` sur `main` |
+
+| | `verif` | `approfondi` |
+|---|---|---|
+| **Back** | Pint, migrations et seeders sur PostgreSQL 17, PHPStan niveau 5 sans baseline, tests | `composer audit --locked`, build et démarrage de `docker-compose.prod.yml`, commandes post-déploiement, contrôle HTTP de `/up`, `/api/themes` et des médias, scan Trivy |
+| **Front** | `npm ci`, build, typecheck, lint | `npm audit` (bloquant en *critical*), build de l'image de prod, scan Trivy |
+
+Avant de pousser `dev`, le même contrôle que `verif` doit passer en local :
+
+```bash
+docker compose exec sc_back vendor/bin/pint --test
+docker compose exec sc_back vendor/bin/phpstan analyse
+docker compose exec sc_back php artisan test
+```
+
+Ruleset de `main` : pull request obligatoire (fusion *Merge*), checks `verif` et `approfondi` verts et à jour, ni suppression ni force-push, historique non linéaire (git flow en `--no-ff`). Après une fusion sur `main`, `dev` doit l'intégrer avant la PR suivante : `git checkout dev && git merge origin/main`. Les noms de checks doivent être identiques à ceux des jobs.
+
+Réglages GitHub de chaque dépôt : actions autorisées (GitHub, `shivammathur/setup-php`, `aquasecurity/*`), approbation des workflows pour tous les contributeurs externes, jeton `GITHUB_TOKEN` en lecture seule, secret scanning et push protection activés. L'action Trivy est épinglée par commit ; les autres par étiquette. Dependabot n'est pas configuré.
+
+---
+
+## 7. Structure du projet
 
 ```mermaid
 graph TD
     root["safe-campus/"]
 
-    root --> scback["Safe-Campus-back/\nAPI/admin Laravel\n+ Filament (autonome)"]
-    root --> scfront["Safe-Campus-front/\nUI principale\nNuxt 4 standalone"]
+    root --> scback["safe-campus-back/\nAPI/admin Laravel\n+ Filament (autonome)"]
+    root --> scfront["safe-campus-front/\nUI principale\nNuxt 4 standalone"]
 
-    scback --> readme["README.md\nGuide d'installation"]
+    scback --> readme["README.md\nInstallation, déploiement, CI"]
     scback --> dc["docker-compose.yml\nOrchestration : sc_back, pgsql, adminer"]
     scback --> app["app/\nCode PHP Laravel + Filament"]
     scback --> docker["docker/8.4/\nDockerfile PHP 8.4 (dev)\nDockerfile.prod (prod)\nstart-container (entrypoint)"]
-    scback --> docs["docs/\nDocumentation\n(index : docs/README.md)"]
+    scback --> docs["docs/\nDocumentation"]
 
     docs --> cdc["cahier-des-charges-techniques.md"]
     docs --> secu["securite-rgpd.md"]
     docs --> maint["maintenance-evolutive-2025-2029.md"]
-    docs --> deploy["deploiement.md\nMise en production"]
-    docs --> schema["schema_bd.md\nSchéma de base de données"]
 
     scfront --> fdocker["docker/\nDockerfile Node 22 (dev)\nDockerfile.prod (prod)\nstart-container (entrypoint dev)"]
     scfront --> fdc["docker-compose.yml\nOrchestration : sc_front\n(reseau `scback` partage avec le back)"]

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Resolution des contacts affiches en fin de parcours defavorable. Voir
- * docs/schema_bd.md § Choix — Resolution des contacts en fin de parcours.
+ * docs/cahier-des-charges-techniques.md § Modele de donnees, Histoires (resolution des contacts).
  */
 class ContactResolutionService
 {

@@ -3,7 +3,8 @@
 | Élément | Valeur |
 |---|---|
 | Projet | Safe Campus — SAE501, Université de la Nouvelle-Calédonie |
-| Date | 20/10/2026 |
+| Version | 1.0.0 |
+| Date | 30/10/2026 |
 | Périmètre | Site étudiant (Nuxt 4) · API et back-office (Laravel 13 / Filament 3) |
 | Livrables | Site étudiant, back-office d'administration, API REST JSON, images Docker de production |
 
@@ -14,7 +15,7 @@ Les exigences sont classées en quatre familles :
 - les **exigences d'exploitation** décrivent comment il est hébergé et maintenu ;
 - les **contraintes** sont les limites imposées au projet.
 
-Chaque exigence est vérifiée par un scénario de recette (section 11). Son état est donné au 20/10/2026 : conforme, partiel ou non conforme.
+Chaque exigence est vérifiée par un parcours de recette, listé en tête de la section 3 et schématisé à la section 11. Son état est donné au 20/10/2026 : conforme, partiel ou non conforme.
 
 ---
 
@@ -40,52 +41,74 @@ Les étudiants confrontés à une addiction, à une souffrance psychique ou à d
 
 ## 2. Acteurs
 
-| Acteur | Besoin | Accès |
-|---|---|---|
-| Étudiant | Trouver vite et discrètement une information fiable et un contact joignable. Consultation sur smartphone, souvent dans un moment de stress. | Site étudiant public. Pendant les événements du prototype : portillon visiteur à mot de passe partagé. |
-| Webmaster | Tenir à jour la taxonomie, les fiches, l'annuaire et les médias. | Back-office, rôle webmaster |
-| Rédacteur | Écrire et illustrer des histoires interactives, les soumettre en relecture. | Back-office, rôle rédacteur |
-| Relecteur | Relire, corriger, valider, publier ou renvoyer en brouillon les histoires. | Back-office, rôle relecteur |
-| Administrateur | Valider les demandes de compte, gérer les rôles et les suppressions. | Back-office, rôle administrateur |
+L'étudiant doit trouver vite et discrètement une information fiable et un contact joignable. Il consulte sur smartphone, souvent dans un moment de stress.
 
-Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans compétence technique.
+| Droit | Étudiant | Webmaster | Rédacteur | Relecteur | Administrateur |
+|---|:-:|:-:|:-:|:-:|:-:|
+| Consulter le site étudiant | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Se connecter au back-office | — | ✓ | ✓ | ✓ | ✓ |
+| Gérer thèmes, fiches et annuaire | — | ✓ | — | — | — |
+| Gérer les médias | — | ✓ | ✓ | — | — |
+| Écrire une histoire et la soumettre en relecture | — | — | ✓ | — | — |
+| Valider, publier ou renvoyer une histoire en brouillon | — | — | — | ✓ | — |
+| Gérer les comptes et les rôles | — | — | — | — | ✓ |
+
+Le détail des droits par ressource est donné au [§ 4](#4-matrice-des-droits). Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans compétence technique.
 
 ---
 
 ## 3. Exigences fonctionnelles
 
+### Parcours de recette
+
+La colonne « Vérification » des exigences renvoie aux parcours ci-dessous, rejoués de bout en bout et schématisés au [§ 11.1](#111-parcours-de-recette).
+
+| Parcours | Acteur et objet |
+|---|---|
+| 1 | Étudiant : accès et recherche d'aide |
+| 2 | Étudiant : histoire interactive |
+| 3 | Personnel : inscription et accès au back-office |
+| 4 | Webmaster : mise à jour de l'annuaire |
+| 5 | Rédacteur : écriture et soumission d'une histoire |
+| 6 | Administrateur : suppression d'un compte |
+| 7 | Conservation des comptes : demande d'effacement et purge à 3 ans |
+| 8 | Information sur les données personnelles |
+| Hors parcours | Affichage sur mobile, tablette et poste de bureau sans défilement horizontal. Mentions légales, CGU et page Données personnelles complètes ; cette dernière accessible sans mot de passe visiteur. |
+
 ### 3.1 Site étudiant
 
 | Exigence | Vérification | État |
 |---|---|---|
-| Le site n'est accessible qu'après saisie du mot de passe partagé. Toute page redirige vers la page de connexion, puis revient à la page demandée. | Scénario 1 | Conforme |
-| L'accueil présente les thèmes en sections et les sous-thèmes en cartes. | Scénario 11 | Conforme |
-| La recherche couvre thèmes et sous-thèmes et reconnaît des synonymes (« clope » → tabac). | Scénario 2 | Conforme |
-| La fiche ressources affiche l'article du sous-thème et ses fiches PDF, ouvertes dans un nouvel onglet. | Scénario 4 | Conforme |
-| La fiche contacts liste les structures actives du sous-thème, dans l'ordre éditorial : téléphones cliquables, horaires, gratuité, anonymat, conditions d'accueil. | Scénario 3 | Conforme |
-| La fiche contacts affiche une carte des structures géolocalisées. | Scénario 3 | Conforme |
-| L'histoire interactive se joue scène par scène. Une fin défavorable affiche les contacts d'aide du thème. Le joueur peut recommencer. | Scénario 5 | Conforme |
-| Une histoire non publiée n'est pas accessible. | Scénario 6 | Conforme |
-| Mentions légales et conditions générales d'utilisation sont publiées. | Scénario 12 | Partiel : éditeur, hébergeur et directeur de publication à compléter |
+| Le site n'est accessible qu'après saisie du mot de passe partagé. Toute page redirige vers la page de connexion, puis revient à la page demandée. | Parcours 1 | Conforme |
+| L'accueil présente les thèmes en sections et les sous-thèmes en cartes. | Parcours 1 | Conforme |
+| La recherche couvre thèmes et sous-thèmes et reconnaît des synonymes (« clope » → tabac). | Parcours 1 | Conforme |
+| La fiche ressources affiche l'article du sous-thème et ses fiches PDF, ouvertes dans un nouvel onglet. | Parcours 1 | Conforme |
+| La fiche contacts liste les structures actives du sous-thème, dans l'ordre éditorial : téléphones cliquables, horaires, gratuité, anonymat, conditions d'accueil. | Parcours 1 | Conforme |
+| La fiche contacts affiche une carte des structures géolocalisées. | Parcours 1 | Conforme |
+| L'histoire interactive se joue scène par scène. Une fin défavorable affiche les contacts d'aide du thème. Le joueur peut recommencer. | Parcours 2 | Conforme |
+| Une histoire non publiée n'est pas accessible. | Parcours 2 | Conforme |
+| Mentions légales et conditions générales d'utilisation sont publiées. | Hors parcours | Partiel : éditeur, hébergeur et directeur de publication à compléter |
 
 ### 3.2 Back-office
 
 | Exigence | Vérification | État |
 |---|---|---|
-| Gestion des thèmes et sous-thèmes : libellé, résumé, article, médias associés, activation. | Scénario 10 | Conforme |
-| Gestion des contacts et de leurs téléphones, rattachement ordonné aux sous-thèmes. | Scénario 10 | Conforme |
-| Géocodage de l'adresse d'un contact à la saisie, ajustement du point sur une carte. | Scénario 13 | Conforme |
+| Gestion des thèmes et sous-thèmes : libellé, résumé, article, médias associés, activation. | Parcours 4 | Conforme |
+| Gestion des contacts et de leurs téléphones, rattachement ordonné aux sous-thèmes. | Parcours 4 | Conforme |
+| Géocodage de l'adresse d'un contact à la saisie, ajustement du point sur une carte. | Parcours 4 | Conforme |
 | Bibliothèque de médias (image, vidéo, audio, document PDF) avec libellé de recherche. | Revue du back-office | Conforme |
-| Gestion des histoires, scènes et choix. États : brouillon, relecture, validé, publié. | Scénario 6 | Conforme |
-| Prévisualisation d'une histoire avant publication. | Scénario 14 | Conforme |
-| Inscription publique. Le compte reste inactif jusqu'à l'attribution d'un rôle par un administrateur. | Scénario 7 | Conforme |
-| Suppression d'un rédacteur avec transfert obligatoire de ses histoires. | Scénario 9 | Conforme |
-| Suppression d'un compte par un administrateur sur demande de la personne (droit à l'effacement). | Scénario 9 | Conforme |
-| Suppression automatique des comptes sans connexion depuis 3 ans (hors visiteur, administrateurs et auteurs d'histoires). | Scénario 16 | À valider en recette |
-| Guides contextuels pour le webmaster et le rédacteur, sur le tableau de bord et par section. | Revue du back-office | Conforme |
-| Journal d'audit : création, modification, suppression, connexion, échec de connexion, inscription. | Scénario 15 | Conforme |
+| Gestion des histoires, scènes et choix. États : brouillon, relecture, validé, publié. | Parcours 2 | Conforme |
+| Prévisualisation d'une histoire avant publication. | Parcours 5 | Conforme |
+| Inscription publique. Le compte reste inactif jusqu'à l'attribution d'un rôle par un administrateur. | Parcours 3 | Conforme |
+| Suppression d'un rédacteur avec transfert obligatoire de ses histoires. | Parcours 6 | Conforme |
+| Suppression d'un compte par un administrateur sur demande de la personne (droit à l'effacement). | Parcours 7 | Conforme |
+| Suppression automatique des comptes sans connexion depuis 3 ans, selon les règles du [§ 4.3](#43-cycle-de-vie-dun-compte-et-de-son-rôle). | Parcours 7 | À valider en recette |
+| Guides contextuels pour le webmaster, le rédacteur et le relecteur, sur le tableau de bord et par section. | Revue du back-office | Conforme |
+| Journal d'audit : création, modification, suppression, connexion, échec de connexion, inscription. Format JSON, un fichier par jour, conservé 365 jours, sans mot de passe ni jeton. | Parcours 4 | Conforme |
 
 ### 3.3 API
+
+L'API de lecture est publique par conception.
 
 | Route | Fonction | État |
 |---|---|---|
@@ -94,12 +117,35 @@ Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans co
 | `GET /api/sous-themes/{ref}` | Détail d'un sous-thème : article, contacts actifs triés, téléphones, histoires publiées. | Conforme |
 | `GET /api/histoires/{ref}` | Graphe complet d'une histoire publiée, en une seule requête. | Conforme |
 
-### 3.4 Hors périmètre
+Les modèles sont liés par `ref`, jamais par identifiant numérique. La forme JSON est définie par les classes de `app/Http/Resources/`. Chaque route a son propre contenu, sans données superflues :
 
-- Module de signalement anonyme : modélisé en base, interface reportée. Le circuit de traitement est à définir avec la direction du numérique de l'établissement.
-- Comptes étudiants individuels, commentaires, messagerie.
-- Version anglaise.
-- Application mobile native : le site responsive en tient lieu.
+- `GET /api/themes` : thèmes actifs triés par `ordre` (`ref`, `libelle`, `libelle_court`, `resume`, `ordre`, médias actifs), avec leurs sous-thèmes actifs en version légère (`ref`, `libelle`, `resume`, `ordre`, `histoire_ref` : première histoire publiée ou `null`). Ni article ni contacts.
+- `GET /api/sous-themes/{ref}` : un sous-thème actif, `404` sinon. `ref`, `libelle`, `article`, `intro_ressources`, thème parent (`ref`, `libelle_court`), contacts actifs triés par `ordre` avec leurs téléphones actifs, `documents` (médias actifs de type `document`, soit les fiches PDF) et histoires publiées (`ref`, `titre`). Pas de `resume`.
+- `GET /api/histoires/{ref}` : le graphe complet d'une histoire, en une seule requête. Le front passe ensuite de scène en scène sans nouvel appel.
+
+```json
+{ "data": {
+    "ref": "demo_soiree_qui_derape",
+    "titre": "Une soirée qui dérape (démo)",
+    "scene_initiale_id": 18,
+    "scenes": [
+      { "id": 18,
+        "dialogue_text": "…",
+        "media": { "libelle": "…", "description": null, "url": "…", "type": "image" },
+        "choix": [
+          { "id": 10, "text_choix": "…", "next_scene_id": 19, "issue": null },
+          { "id": 13, "text_choix": "…", "next_scene_id": null, "issue": "defavorable",
+            "contacts": [ { "ref": "…", "nom": "…", "telephones": [ … ] } ] }
+        ] }
+    ] } }
+```
+
+- **Publication** : seules les histoires à l'état `publie` sont servies, les autres répondent `404`.
+- **Fin de parcours** : `next_scene_id = null` sort du parcours, qualifié par `issue` (`favorable` ou `defavorable`).
+- **Contacts** : présents seulement sur un choix `defavorable`, déjà résolus par le back (voir [Modèle de données](#modèle-de-données)). Le front n'a rien à calculer.
+- **Ordre** : scènes triées par l'ordre de la liaison puis par `id`, choix par `id`.
+- **Non exposés** : titre de scène (back-office), état, auteur, dates. `media` vaut `null` sans image active.
+- **Intégrité** : un choix qui vise une scène non rattachée à l'histoire est écarté de la réponse. `scene_initiale_id` vaut `null` sans scène initiale.
 
 ---
 
@@ -107,20 +153,7 @@ Le personnel utilise le back-office ponctuellement, sur poste de bureau, sans co
 
 Une ressource refusée disparaît du menu du back-office. Appelée directement, elle répond « accès interdit ».
 
-### 4.1 Accès
-
-| Action | Anonyme | Visiteur | Webmaster | Rédacteur | Relecteur | Administrateur |
-|---|---|---|---|---|---|---|
-| Consulter le site étudiant | Oui ¹ | Oui | Oui ¹ | Oui ¹ | Oui ¹ | Oui ¹ |
-| Appeler l'API de lecture | Oui ² | Oui | Oui | Oui | Oui | Oui |
-| S'inscrire au back-office | Oui | Non | Non | Non | Non | Non |
-| Se connecter au back-office | Non | Non | Oui | Oui | Oui | Oui |
-| Voir le guide du tableau de bord | Non | Non | Oui | Oui | Oui | Non |
-
-¹ Le site est public. Pendant les événements du prototype, il faut d'abord passer le portillon visiteur (mot de passe partagé).
-² L'API de lecture est publique par conception.
-
-### 4.2 Contenus
+### 4.1 Contenus
 
 | Ressource | Webmaster | Rédacteur | Relecteur | Administrateur |
 |---|---|---|---|---|
@@ -137,7 +170,7 @@ Une ressource refusée disparaît du menu du back-office. Appelée directement, 
 
 Le circuit brouillon → relecture → validé → publié est contrôlé : le rédacteur ne peut que soumettre en relecture ; le relecteur valide, publie ou renvoie en brouillon.
 
-### 4.3 Comptes du personnel
+### 4.2 Comptes du personnel
 
 | Action | Webmaster | Rédacteur | Relecteur | Administrateur |
 |---|---|---|---|---|
@@ -153,21 +186,16 @@ Le circuit brouillon → relecture → validé → publié est contrôlé : le r
 ⁴ Rôles attribuables : webmaster, rédacteur, relecteur, administrateur. Le rôle visiteur ne s'attribue pas.
 ⁵ La suppression d'un rédacteur exige un repreneur pour ses histoires : un autre rédacteur ou un relecteur.
 
-### 4.4 Cycle de vie d'un compte et de son rôle
+### 4.3 Cycle de vie d'un compte et de son rôle
 
 ```mermaid
-stateDiagram-v2
-  direction LR
-  SansRole : Sans rôle, connexion refusée
-  Actif : Actif, rôle webmaster, rédacteur, relecteur ou administrateur
-  [*] --> SansRole : inscription
-  SansRole --> Actif : un administrateur attribue un rôle
-  Actif --> Actif : changement de rôle
-  Actif --> SansRole : retrait du rôle, compte conservé
-  SansRole --> [*] : refus de la demande ou suppression
-  Actif --> [*] : suppression, repreneur exigé pour un rédacteur
-  Actif --> [*] : 3 ans sans connexion, purge automatique
-  SansRole --> [*] : 3 ans sans connexion, purge automatique
+flowchart LR
+  I(["Inscription"]) --> S["Sans rôle<br/>connexion refusée"]
+  S <-->|"rôle attribué ou retiré<br/>par un administrateur"| A["Actif<br/>connexion autorisée"]
+  S --> F{"Fin du compte"}
+  A --> F
+  F -->|"refus ou suppression<br/>par un administrateur"| D(["Compte supprimé"])
+  F -->|"3 ans sans connexion"| P(["Compte purgé"])
 ```
 
 Un compte sans rôle, qu'il vienne de s'inscrire ou qu'on lui ait retiré son rôle, ne peut pas se connecter. Seul un administrateur fait changer un compte d'état. Il ne peut jamais agir sur son propre compte ni sur le compte visiteur, qui reste hors de ce cycle.
@@ -191,43 +219,36 @@ Purge automatique : une tâche quotidienne supprime les comptes sans connexion d
 
 | Exigence | Vérification | État |
 |---|---|---|
-| Conception mobile-first. Aucun défilement horizontal du mobile au poste de bureau. | Scénario 11 | Conforme |
-| Un numéro d'aide joignable en trois interactions au plus depuis l'accueil. | Scénario 3 | Conforme |
+| Conception mobile-first. Aucun défilement horizontal du mobile au poste de bureau. | Hors parcours | Conforme |
+| Un numéro d'aide joignable en trois interactions au plus depuis l'accueil. | Parcours 1 | Conforme |
 | Back-office utilisable sans compétence technique : guides, champs obligatoires, valeurs contraintes, références générées automatiquement. | Retours des testeurs | Conforme |
 
 ### 5.3 Sécurité
 
 | Exigence | Vérification | État |
 |---|---|---|
-| Accès au back-office refusé à tout compte sans rôle et au compte visiteur. | Scénarios 7 et 8 | Conforme |
+| Accès au back-office refusé à tout compte sans rôle et au compte visiteur. | Parcours 3 | Conforme |
 | Limitation des tentatives : 5 connexions et 2 inscriptions par minute au back-office. | Essais répétés | Conforme |
 | Mots de passe du back-office : 14 à 72 caractères, majuscule, minuscule, caractère spécial, refus des mots de passe ayant fuité. Stockage haché. | Essai d'inscription | Conforme |
-| Le message « en attente de validation » n'apparaît qu'après un mot de passe correct : il ne révèle pas si un email est inscrit. | Scénario 7 | Conforme |
-| Cookies sécurisés en production, en-têtes HTTP de sécurité. | Inspection des réponses HTTP | Non conforme |
-| Requêtes inter-domaines limitées au domaine du site étudiant. | Appel depuis un autre domaine | Non conforme |
+| Le message « en attente de validation » n'apparaît qu'après un mot de passe correct : il ne révèle pas si un email est inscrit. | Parcours 3 | Conforme |
+| Cookies sécurisés en production, en-têtes HTTP de sécurité. | Inspection des réponses HTTP | Partiel : back conforme (cookie de session `secure`, middleware `SecurityHeaders`) ; site étudiant avec en-têtes posés par `routeRules`, mais sans CSP de scripts, `x-powered-by` exposé et cookie `sc_token` sans `Secure` ni `HttpOnly` |
+| Requêtes inter-domaines limitées au domaine du site étudiant. | Appel depuis un autre domaine | Conforme (`CORS_ALLOWED_ORIGINS`) |
 | Téléversement des médias limité à une liste blanche de formats vérifiés sur le contenu (ni SVG ni HTML), 10 Mo par fichier. | Tests automatisés du back-office | Conforme |
 
-### 5.4 Traçabilité
-
-| Exigence | Vérification | État |
-|---|---|---|
-| Journal d'audit au format JSON, un fichier par jour, conservé 365 jours, sans mot de passe ni jeton. | Scénario 15 | Conforme |
-
-### 5.5 Conformité RGPD
+### 5.4 Conformité RGPD
 
 | Exigence | Vérification | État |
 |---|---|---|
 | Aucune donnée personnelle collectée auprès des étudiants. Aucun traceur d'audience. | Inventaire des cookies | Conforme |
 | Les données d'un référent nommé de l'annuaire peuvent être effacées définitivement, en cascade. | Suppression d'un contact | Conforme |
-| Les comptes du personnel inactifs depuis 3 ans sont supprimés automatiquement. | Scénario 16 | À valider en recette |
-| Les durées de conservation et les droits sont communiqués aux personnes concernées : page « Données personnelles » du site, CGU du back-office, résumé sur les pages de connexion et d'inscription. | Scénario 17 | À valider en recette. Contenu à faire valider par le DPO |
+| Les durées de conservation et les droits sont communiqués aux personnes concernées : page « Données personnelles » du site, CGU du back-office, résumé sur les pages de connexion et d'inscription. | Parcours 8 | À valider en recette. Contenu à faire valider par le DPO |
 | Aucune ressource tierce non nécessaire chargée par le navigateur : polices hébergées sur le serveur. | Revue des requêtes réseau | Non conforme : polices chargées depuis Google |
 
-### 5.6 Maintenabilité
+### 5.5 Maintenabilité
 
 | Exigence | Vérification | État |
 |---|---|---|
-| Lint, vérification de types et tests au vert avant chaque fusion. | Commandes de qualité | Partiel : lancées à la main, sans intégration continue |
+| Lint, vérification de types et tests au vert avant chaque fusion. | Intégration continue ([README](../README.md#6-intégration-continue)) | Conforme : job `verif` sur chaque push et pull request, job `approfondi` avant `main`. Le front n'a pas de tests automatisés (build, typecheck, lint). |
 | Environnement de développement entièrement conteneurisé, identique pour tous. | Démarrage par `docker compose up -d` | Conforme |
 
 ---
@@ -283,37 +304,89 @@ flowchart LR
 
 ### Modèle de données
 
+Trois domaines indépendants, qui ne partagent que les médias, les comptes et la taxonomie. Les colonnes complètes sont dans `database/migrations/`.
+
 | Domaine | Tables principales |
 |---|---|
-| Annuaire | `themes`, `sous_themes`, `contacts`, `telephones`, `medias`, `signalements` |
+| Annuaire | `themes`, `sous_themes`, `contacts`, `telephones`, `medias`, `signalements` (module reporté) |
 | Histoires | `histoires`, `scenes`, `choix` |
 | Administration | `users` (avec rôle), `personal_access_tokens` (jetons) |
 
-Règles de modélisation :
+#### Annuaire
 
-- Chaque entité de référence porte une référence stable (URL, import), distincte du libellé affiché, qui reste modifiable.
-- Unicité des références et des emails. Une seule scène initiale par histoire.
-- Index explicite sur chaque clé étrangère.
-- Aucun lien entre les comptes du personnel et les structures d'aide publiées.
-- Champ « actif » pour retirer un contenu du site sans le supprimer. Suppression définitive en cascade pour l'effacement RGPD.
+```mermaid
+erDiagram
+    Theme ||--o{ SousTheme : contient
+    SousTheme }o--o{ Contact : "contact_sous_theme (ordre)"
+    Contact ||--o{ Telephone : possede
+    SousTheme }o--o{ Media : "media_sous_theme (ordre)"
+    Theme }o--o{ Media : media_theme
+    SousTheme ||--o{ Signalement : "si permet_signalement"
+```
+
+- **Le sous-thème est la fiche** : `sous_themes` porte le libellé, le résumé (carte d'accueil) et l'article (page détail). Ni fiche orpheline ni sous-thème sans fiche.
+- **Ordre éditorial** : l'`ordre` de `contact_sous_theme` place les contacts universitaires en tête. Tout autre tri est traité par le front.
+- **Contact** : `horaires` et `remarques` (public accueilli, conditions d'accès) en texte libre, `gratuit` et `anonyme` filtrables. Un contact sans sous-thème est invisible du front. `latitude` / `longitude` géocodées à la saisie ; `position_territoire` marque une structure qui couvre tout le territoire, sans coordonnées.
+- **Téléphone** : `libelle` distingue plusieurs numéros d'une même structure ; `numero_vert` signale un numéro gratuit.
+- **Actif et suppression** : `actif = false` retire un contenu du site sans casser les liaisons. La suppression définitive d'un contact cascade sur ses téléphones et ses rattachements (droit à l'effacement).
+- **Signalement** : table conservée, interface reportée. Anonyme par construction (aucune clé vers `users`), ouvert sous-thème par sous-thème par `permet_signalement`.
+
+#### Histoires
+
+```mermaid
+erDiagram
+    User ||--o{ Histoire : redige
+    Histoire }o--o{ SousTheme : histoire_sous_theme
+    Histoire }o--o{ Scene : "histoire_scene (est_initiale, ordre)"
+    Scene ||--o{ Choix : propose
+    Choix }o--o| Scene : "mene a (next_scene_id)"
+    Scene }o--o| SousTheme : bifurcation
+    Scene }o--o| Media : illustre
+```
+
+- **Graphe** : une histoire est un graphe de scènes ; chaque choix mène à une scène suivante, ou sort du parcours (`next_scene_id = null`) avec une `issue` favorable ou défavorable.
+- **Scène partagée** : une scène peut appartenir à plusieurs histoires. `est_initiale` et `ordre` sont portés par la liaison ; un index unique partiel garantit une seule scène initiale par histoire. La liaison fait autorité : toute scène atteignable doit y être rattachée.
+- **Résolution des contacts** : sur une sortie défavorable, contacts actifs des sous-thèmes de l'histoire, triés par `ordre`. Si la scène porte un sous-thème (bifurcation), il remplace ceux de l'histoire.
+- **Suppression d'une histoire** : ses scènes exclusives et leurs choix partent avec elle ; une scène encore utilisée reste. Les scènes orphelines se suppriment avec `scenes:purger-orphelines`.
+- **Titre de scène** : libellé de back-office, jamais affiché au joueur.
+
+#### Comptes du personnel
+
+- **Rôles** : une colonne `role` sur `users`, contrainte en base, et une policy par ressource. Rôles fixes : `webmaster`, `redacteur`, `relecteur`, `admin`, plus `visiteur` (compte technique du portillon, sans accès au back-office). Spatie Permission et Filament Shield ont été écartés : deux paquets et quatre tables pour des rôles qui ne changent pas.
+- **Inscription** : compte créé sans rôle, voir le [cycle de vie](#43-cycle-de-vie-dun-compte-et-de-son-rôle). Le téléphone est stocké au format E.164 (`+687…`).
+- **Suppression d'un rédacteur** : la clé `histoires.user_id` est en cascade en base. `SuppressionCompteService` impose donc un repreneur avant la suppression, sans quoi les histoires seraient effacées.
+- **Premier administrateur** : créé au `migrate` à partir de `ADMIN_EMAIL` / `ADMIN_PASSWORD`.
+
+#### Règles d'implémentation
+
+- Chaque entité de référence porte une `ref` stable (URL, import), jamais affichée ni modifiée, distincte du libellé, qui reste modifiable.
+- Unicité : `ref` des thèmes, sous-thèmes, contacts et histoires, `email` des comptes, clé composite de chaque pivot.
+- PostgreSQL n'indexe pas la colonne d'une clé étrangère : index déclaré explicitement sur chacune.
+- `Media` et `Choix` déclarent leur table (`medias`, `choix`) : Laravel infère `media` et `choixes`.
+- Enums stockés sans accent ni majuscule (`app/Enums`), castés sur les modèles.
+- Aucun lien entre les comptes du personnel et les structures d'aide publiées : deux tables sans clé commune.
+- Données limitées à la Nouvelle-Calédonie. Exceptions à valider : le 3114 et `arretonslesviolences.gouv.fr`.
+
+Points ouverts : partage d'une scène avec des choix différents selon l'histoire (exigerait une clé `histoire_id` sur `choix`), horaires structurés pour afficher « ouvert maintenant », contrainte liant `issue` et `next_scene_id`, circuit de traitement des signalements.
 
 ---
 
 ## 8. Exigences d'exploitation
 
-Aucun hébergeur n'est retenu. Le livrable est un jeu d'images Docker de production, déployables sur tout hôte Docker.
+Aucun hébergeur n'est retenu. Le livrable est un jeu d'images Docker de production, déployables sur tout hôte Docker ([guide de déploiement](../README.md#5-déploiement-en-production)). Les exigences qui dépendent de l'hébergement (HTTPS, sauvegarde, supervision, planificateur) seront arrêtées avec l'hébergeur retenu.
 
 | Exigence | État |
 |---|---|
 | Images de production dédiées, sans outils de développement ni de débogage. Le site étudiant ne contient que son build. | Conforme |
 | Base de données non exposée hors du réseau Docker interne. | Conforme |
 | HTTPS assuré par un reverse proxy et un certificat fournis par l'hébergement. | À fournir par l'hébergeur |
-| Volumes persistants pour les médias et les journaux. | Non conforme : un redéploiement les efface |
-| Serveur d'application de production (PHP-FPM ou équivalent). | Non conforme : serveur de développement `artisan serve` |
-| Conteneurs exécutés avec un utilisateur non administrateur. | Partiel : back conforme, site étudiant exécuté en administrateur |
+| Volumes persistants pour les médias et les journaux. | Conforme : volumes `scback-storage-prod` et `scback-logs-prod` déclarés |
+| Serveur d'application de production (PHP-FPM ou équivalent). | Non conforme : serveur de développement `artisan serve`, lancé par `docker/8.4/start-prod`. Une tâche de démarrage qui échoue (migrations, seeders) n'arrête pas le serveur : lire les journaux après chaque déploiement |
+| Conteneurs exécutés avec un utilisateur non administrateur. | Conforme : back (`scback`) et site étudiant (`node`) |
 | Images de production sans portillon visiteur (compte, page de connexion, middleware). | Non conforme : les images exigent encore le compte visiteur, à adapter au lancement officiel |
-| Sauvegarde quotidienne de la base et des médias, stockée hors du serveur, restauration testée chaque trimestre. | Non conforme |
-| Supervision de la disponibilité et des erreurs, avec alertes. | Non conforme |
+| Sauvegarde quotidienne de la base et des médias, stockée hors du serveur, restauration testée chaque trimestre. | À fournir par l'hébergeur |
+| Planificateur Laravel (`schedule:run` chaque minute), nécessaire à la purge des comptes inactifs. | À fournir par l'hébergeur : aucun planificateur dans l'image |
+| Supervision de la disponibilité et des erreurs, avec alertes. | À fournir par l'hébergeur |
 | Dimensionnement : 2 processeurs virtuels, 2 Go de mémoire, 40 Go de disque pour 50 à 500 utilisateurs simultanés. Minimum : 1 processeur virtuel, 1 Go. | Estimation |
 
 ---
@@ -351,27 +424,27 @@ Aucun hébergeur n'est retenu. Le livrable est un jeu d'images Docker de product
 
 ### 11.1 Parcours de recette
 
-Chaque parcours se rejoue de bout en bout. Les numéros entre parenthèses sont les scénarios cités dans la colonne « Vérification » des exigences : l'étape marquée doit produire le résultat indiqué.
+Chaque parcours se rejoue de bout en bout. Les exigences qu'il vérifie le citent dans leur colonne « Vérification » ; les contrôles hors parcours sont décrits en tête de la [section 3](#parcours-de-recette).
 
 #### Parcours 1 — Étudiant : accès et recherche d'aide
 
 ```mermaid
 flowchart LR
   A["Ouverture d'une page du site"] --> B{"Connecté ?"}
-  B -->|Non| C["Page de connexion (1)"]
+  B -->|Non| C["Page de connexion"]
   C --> D["Saisie du mot de passe partagé"]
-  D --> E["Retour à la page demandée (1)"]
-  B -->|Oui| F["Accueil : thèmes et cartes"]
+  D --> E["Retour à la page demandée"]
+  B -->|Oui| F["Accueil : thèmes en sections, sous-thèmes en cartes"]
   E --> F
-  F --> G["Recherche « clope » (2)"]
-  G --> H["Carte Tabac proposée (2)"]
+  F --> G["Recherche « clope »"]
+  G --> H["Carte Tabac proposée"]
   F --> I["Carte d'un sous-thème"]
   H --> I
-  I --> J["Fiche contacts : structures actives triées (3)"]
+  I --> J["Fiche contacts : structures actives triées"]
   I --> K["Fiche ressources : article"]
-  J --> L["Appel d'un numéro en un geste (3)"]
-  J --> M["Carte des structures (3)"]
-  K --> N["Fiche PDF ouverte dans un nouvel onglet (4)"]
+  J --> L["Appel d'un numéro en un geste"]
+  J --> M["Carte des structures"]
+  K --> N["Fiche PDF ouverte dans un nouvel onglet"]
 ```
 
 #### Parcours 2 — Étudiant : histoire interactive
@@ -380,12 +453,12 @@ flowchart LR
 flowchart LR
   A["Fiche du sous-thème"] --> B["Suivre l'histoire"]
   B --> C{"Histoire publiée ?"}
-  C -->|Non| D["Page indisponible (6)"]
+  C -->|Non| D["Page indisponible"]
   C -->|Oui| E["Scène"]
   E --> F["Choix"]
   F -->|Scène suivante| E
   F -->|Fin favorable| G["Fin favorable"]
-  F -->|Fin défavorable| H["Contacts d'aide du thème (5)"]
+  F -->|Fin défavorable| H["Contacts d'aide du thème"]
   G --> I{"Recommencer ?"}
   H --> I
   I -->|Oui| E
@@ -402,12 +475,12 @@ flowchart LR
   D --> E{"Mot de passe correct ?"}
   E -->|Non| F["Identifiants invalides"]
   E -->|Oui| G{"Rôle attribué ?"}
-  G -->|Non| H["« En attente de validation » (7)"]
+  G -->|Non| H["« En attente de validation »"]
   H -.-> L["Un administrateur attribue un rôle"]
   L -.-> D
-  G -->|Oui| I["Tableau de bord du rôle (7)"]
+  G -->|Oui| I["Tableau de bord du rôle"]
   I --> J["Un rédacteur ouvre la gestion des contacts"]
-  J --> K["Accès interdit, entrée absente du menu (8)"]
+  J --> K["Accès interdit, entrée absente du menu"]
 ```
 
 #### Parcours 4 — Webmaster : mise à jour de l'annuaire
@@ -416,12 +489,12 @@ flowchart LR
 flowchart LR
   A["Gestion des contacts"] --> B["Création ou modification d'un contact"]
   B --> C["Saisie de l'adresse"]
-  C --> D["Point placé sur la carte (13)"]
-  D --> E["Ajustement du point (13)"]
+  C --> D["Point placé sur la carte"]
+  D --> E["Ajustement du point"]
   E --> F["Enregistrement"]
-  F --> G["Entrée au journal d'audit : auteur, adresse IP, avant et après, sans secret (15)"]
+  F --> G["Entrée au journal d'audit : auteur, adresse IP, avant et après, sans secret"]
   F --> H{"Contact actif ?"}
-  H -->|Non| I["Disparaît immédiatement du site étudiant (10)"]
+  H -->|Non| I["Disparaît immédiatement du site étudiant"]
   H -->|Oui| J["Visible sur les fiches des sous-thèmes rattachés"]
 ```
 
@@ -431,7 +504,7 @@ flowchart LR
 flowchart LR
   A["Gestion des histoires"] --> B["Création : titre, sous-thèmes"]
   B --> C["Écriture des scènes et des choix"]
-  C --> D["Prévisualisation dans le back-office, sans publication (14)"]
+  C --> D["Prévisualisation dans le back-office, sans publication"]
   D --> E{"Histoire prête ?"}
   E -->|Non| C
   E -->|Oui| F["Passage en relecture : l'histoire est verrouillée"]
@@ -447,7 +520,7 @@ flowchart LR
   B -->|Oui| C["Refus de la demande"]
   B -->|Non| D["Suppression du compte"]
   D --> E{"Rédacteur auteur d'histoires ?"}
-  E -->|Oui| F["Choix obligatoire d'un repreneur (9)"]
+  E -->|Oui| F["Choix obligatoire d'un repreneur"]
   F --> G["Histoires transférées, compte supprimé"]
   E -->|Non| H["Compte supprimé"]
 ```
@@ -456,13 +529,13 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A["Un membre du personnel demande la suppression de son compte"] --> B["Administrateur : Utilisateurs > Supprimer (9)"]
-  B --> C["Compte supprimé, entrée au journal d'audit (15)"]
-  C --> D["Connexion impossible avec l'ancien compte (7)"]
-  E["Compte sans connexion depuis plus de 3 ans"] --> F["Tâche quotidienne : comptes:purger-inactifs (16)"]
+  A["Un membre du personnel demande la suppression de son compte"] --> B["Administrateur : Utilisateurs > Supprimer"]
+  B --> C["Compte supprimé, entrée au journal d'audit"]
+  C --> D["Connexion impossible avec l'ancien compte"]
+  E["Compte sans connexion depuis plus de 3 ans"] --> F["Tâche quotidienne : comptes:purger-inactifs"]
   F --> G{"Auteur d'histoires, administrateur ou visiteur ?"}
-  G -->|Non| H["Compte supprimé, User.purge_inactivite au journal (16)"]
-  G -->|Oui| I["Compte conservé, User.purge_ignoree au journal (16)"]
+  G -->|Non| H["Compte supprimé, User.purge_inactivite au journal"]
+  G -->|Oui| I["Compte conservé, User.purge_ignoree au journal"]
   I --> B
 ```
 
@@ -470,23 +543,18 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A["Site étudiant : pied de page ou menu"] --> B["Page Données personnelles (17)"]
-  B --> C["Durées, cookie du prototype, services tiers, droits, contact du DPO (17)"]
-  D["Back-office : page d'inscription"] --> E["Résumé des durées dont les 3 ans d'inactivité (17)"]
-  E --> F["Lien vers les CGU, section Données personnelles (17)"]
-  G["Back-office : page de connexion"] --> H["Mention du cookie de session et du journal (17)"]
+  A["Site étudiant : pied de page ou menu"] --> B["Page Données personnelles"]
+  B --> C["Durées, cookie du prototype, services tiers, droits, contact du DPO"]
+  D["Back-office : page d'inscription"] --> E["Résumé des durées dont les 3 ans d'inactivité"]
+  E --> F["Lien vers les CGU, section Données personnelles"]
+  G["Back-office : page de connexion"] --> H["Mention du cookie de session et du journal"]
   H --> F
 ```
-
-#### Contrôles hors parcours
-
-- **(11)** Affichage sur mobile, tablette et poste de bureau : aucun défilement horizontal, navigation adaptée.
-- **(12)** Mentions légales, conditions générales d'utilisation et page Données personnelles : pages complètes, sans champ à compléter. La page Données personnelles est accessible sans mot de passe visiteur.
 
 ### 11.2 Critères de validation
 
 - Tests automatisés, lint et vérification de types au vert sur les deux dépôts.
-- Les huit parcours et les deux contrôles validés sur Chrome, Firefox et Safari mobile.
+- Les huit parcours et les contrôles hors parcours validés sur Chrome, Firefox et Safari mobile.
 - Aucune anomalie bloquante ou majeure ouverte.
 - Toutes les exigences d'exploitation conformes avant la mise en production.
 

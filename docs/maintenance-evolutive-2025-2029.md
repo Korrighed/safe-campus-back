@@ -64,7 +64,7 @@ Les dates de fin de support sont à revérifier à chaque revue trimestrielle. U
 | Annuaire | Juillet – août 2026 | Taxonomie, contacts, médias, API annuaire, pages accueil / ressources / contact, carte |
 | Histoires | Septembre 2026 | Modèle, éditeur, prévisualisation, lecteur interactif |
 | Sécurisation | Septembre 2026 | Accès visiteur, inscription validée, rôle admin, journal d'audit |
-| Intégration | Septembre – octobre 2026 | Pages légales, refonte CSS, migration Nuxt 4, police Cabin, guides du back-office, CI GitHub Actions, CORS et en-têtes de sécurité du back, volumes persistants, démo Render |
+| Intégration | Septembre – octobre 2026 | Pages légales, refonte CSS, migration Nuxt 4, police Cabin, guides du back-office, CI GitHub Actions, CORS et en-têtes de sécurité du back, volumes persistants |
 | Circuit de relecture | Octobre 2026 | Rôle relecteur, cloisonnement des rédacteurs, journal d'audit sans texte rédigé |
 | Recette | Octobre 2026 | Campagne de tests en cours |
 
@@ -97,7 +97,7 @@ gantt
 | Période | Action | Type | Déclencheur |
 |---|---|---|---|
 | 4e trimestre 2026 | Réaliser les mesures de sécurité de priorité haute : sauvegarde hors serveur, serveur d'application de production, planificateur, retrait du portillon visiteur des images au lancement officiel | Corrective | Bloquant pour la mise en production |
-| 4e trimestre 2026 | Activer Dependabot ou Renovate sur les deux dépôts | Préventive | Aucun outil de veille en place (la CI rejoue `composer audit` et `npm audit`, voir [ci.md](ci.md)) |
+| 4e trimestre 2026 | Activer Dependabot ou Renovate sur les deux dépôts | Préventive | Aucun outil de veille en place (la CI rejoue `composer audit` et `npm audit`, voir le [README](../README.md#6-intégration-continue)) |
 | 1er trimestre 2027 | Migrer Node 22 → Node 24 (images Docker du front) | Adaptative | EOL Node 22 au 30/04/2027 |
 | 2e trimestre 2027 | Évaluer la migration Filament 3 → 4 | Adaptative | Support Filament 3 à vérifier |
 | 2e semestre 2027 | Migrer Laravel 13 → version suivante | Adaptative | Fin des correctifs Laravel 13, sécurité jusqu'au 17/03/2028 |
@@ -181,15 +181,9 @@ Rien en place. À définir avec l'hébergeur retenu :
 |---|---|---|---|
 | Premier déploiement en échec : les images exigent encore le compte visiteur du prototype | Bloquant | Certaine en l'état | Retirer le portillon visiteur des images au lancement officiel |
 | Serveur `artisan serve` en production : mono-processus, non prévu pour la charge | Élevé | Élevée | Serveur d'application de production |
-| Perte des médias et journaux sur la démo Render (disque éphémère) | Moyen | Certaine sur la démo | Sans objet en production : volumes nommés déclarés dans `docker-compose.prod.yml` |
 | Aucune sauvegarde définie (volumes sans copie hors serveur) | Élevé | Élevée si mise en prod sans correction | Sauvegarde (section 7) |
-| Aucun porteur de maintenance après la SAE | Élevé | Élevée | Point à arrêter n° 1 |
+| Aucun porteur de maintenance après la SAE | Élevé | Élevée | Désigner un porteur et un temps alloué avec l'établissement |
 | Dépendances obsolètes sans veille automatique | Moyen | Moyenne | Dependabot / Renovate |
 
 ---
 
-## Points à arrêter avec l'établissement
-
-1. Qui maintient Safe Campus après la fin de la SAE, avec quel temps alloué ?
-2. Quel niveau de service (SLA, *Service Level Agreement*) est attendu : délai de correction d'une anomalie bloquante, disponibilité cible ?
-3. Quel budget l'établissement prévoit-il pour l'hébergement et la maintenance ?

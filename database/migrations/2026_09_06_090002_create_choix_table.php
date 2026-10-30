@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('text_choix');
 
             // Nullable : reste NULL quand le choix poursuit l'histoire. Qualifie
-            // la sortie sinon (favorable/defavorable) — voir docs/schema_bd.md.
+            // la sortie sinon (favorable/defavorable) — voir docs/cahier-des-charges-techniques.md § Modele de donnees.
             $table->enum('issue', ['favorable', 'defavorable'])->nullable();
 
             $table->timestamps();

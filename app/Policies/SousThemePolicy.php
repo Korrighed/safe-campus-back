@@ -7,7 +7,7 @@ use App\Models\SousTheme;
 use App\Models\User;
 
 /**
- * Thèmes/Sous-thèmes : webmaster uniquement — voir docs/schema_bd.md § Rôles.
+ * Thèmes/Sous-thèmes : webmaster uniquement — voir docs/cahier-des-charges-techniques.md § 4.
  */
 class SousThemePolicy
 {
